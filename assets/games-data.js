@@ -16,7 +16,7 @@ window.GAMES_DATA = [
     subject: 'math',
     icon: '🔢',
     blurb: 'Place value, expanded form, comparing, ordering, and rounding — seven cases, plus a mixed-skill trail.',
-    url: 'games/math/numeration-detective-agency.html',
+    url: 'games/math/numeration-detective-agency',
     dateAdded: '2026-08-20',
     grade: 4
   },
@@ -26,7 +26,7 @@ window.GAMES_DATA = [
     subject: 'ela',
     icon: '📖',
     blurb: 'Author\u2019s purpose, central message, figurative language, and why authors format text the way they do.',
-    url: 'games/ela/words-division.html',
+    url: 'games/ela/words-division',
     dateAdded: '2026-08-24',
     grade: 4
   }
