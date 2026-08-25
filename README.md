@@ -88,6 +88,15 @@ token lives in the HTML, which expires in 300s, so visitors pick up both
 within five minutes. Fonts are exempt (they version by filename) because a
 preload `href` has to match the `url()` in `base.css` byte-for-byte.
 
+CI enforces this on every pull request: `scripts/check-asset-versions.js`
+diffs the branch against its merge base and fails when a changed asset is
+still linked by the token it had before. It reads which assets are
+versioned from the pages themselves, so an asset no page links with a `?v=`
+opts out by construction — that's how fonts are exempt without being named
+anywhere. Run it by hand with `node scripts/check-asset-versions.js main
+HEAD`. It's a CI step rather than a test because a shallow clone has no
+history to compare against and would fail for the wrong reason.
+
 ## Project structure
 
 ```
@@ -97,6 +106,8 @@ index.html                       Homepage — the game catalog (GAMES_DATA/
                                   base.css stays linked since it's shared
 scripts/
   dev-server.js                  Local dev server (see "Running it locally")
+  check-asset-versions.js        Fails CI when an asset changed but its ?v=
+                                  token did not (see "Deployment")
   subset-fonts.sh                Regenerates assets/fonts/ (run by hand, not
                                   a build step — see assets/fonts/LICENSE.md)
 test-support/

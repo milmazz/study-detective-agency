@@ -10,6 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The ?v= check below compares this branch against its merge
+          # base. The default depth-1 clone has no history to compare to.
+          fetch-depth: 0
       # Reads mise.toml so CI runs the exact Node version this repo
       # pins locally — one place declares it, not two.
       - uses: jdx/mise-action@v2
@@ -18,3 +22,12 @@ jobs:
       # deliberately to make sure the DOM half actually runs here.
       - run: npm ci
       - run: node --test
+      # Assets are cached immutable for a year, so one that changes while
+      # keeping its ?v= token never reaches a returning visitor. node --test
+      # can only see that a token exists, not that it moved -- telling those
+      # apart takes the previous revision, so it lives here rather than in
+      # the suite. Pull requests only: a push to main has no branch point.
+      - if: github.event_name == 'pull_request'
+        run: node scripts/check-asset-versions.js "origin/$BASE_REF" HEAD
+        env:
+          BASE_REF: ${{ github.base_ref }}
