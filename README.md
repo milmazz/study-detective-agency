@@ -16,12 +16,26 @@ Live divisions:
 No build tools required. From the project root:
 
 ```bash
-python3 -m http.server 8000
+python3 scripts/dev-server.py
 ```
 
-Then open `http://localhost:8000/index.html`. Opening `index.html` directly
-from disk also works for browsing, but a local server avoids any
-same-origin quirks.
+Then open `http://localhost:8000/`. This isn't plain `http.server` — the
+site is deployed on Cloudflare with clean URLs (`/games/math/foo`, no
+`.html`), so this script mimics that resolution locally too (see the
+script's docstring). Responses are also sent with no-cache headers, so
+edits always show up on refresh.
+
+## Deployment
+
+Hosted on Cloudflare (Workers with static assets), deployed automatically
+on push to `main`. A few repo-root files exist only for that and aren't
+part of the site itself:
+
+- `wrangler.jsonc` — deploy config (asset directory, clean-URL handling)
+- `_headers` — Cache-Control rules Cloudflare applies per path
+- `.assetsignore` — repo/tooling files excluded from what gets deployed
+  (this repo's `.git`, `README.md`, etc.) — `scripts/dev-server.py` reads
+  the same file so local dev matches
 
 ## Project structure
 
@@ -30,6 +44,8 @@ index.html                       Homepage — the game catalog (GAMES_DATA/
                                   SUBJECTS) and its own layout CSS live
                                   inline (fewer render-blocking requests);
                                   base.css stays linked since it's shared
+scripts/
+  dev-server.py                  Local dev server (see "Running it locally")
 assets/
   css/
     base.css                     Shared tokens (colors, reset) + per-subject theme
