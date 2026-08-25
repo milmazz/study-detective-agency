@@ -36,6 +36,13 @@ body{
 .masthead-top{
   display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
 }
+.home-link{
+  display:inline-block;
+  font-family:'Special Elite', monospace;
+  font-size:11px; letter-spacing:1px; text-transform:uppercase;
+  color:#C9D2E2; margin:0 0 8px;
+}
+.home-link:hover{ color:var(--mustard); text-decoration:underline; }
 .eyebrow{
   font-family:'Special Elite', monospace;
   letter-spacing:2px;
