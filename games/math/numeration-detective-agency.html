@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Number Division — Detective Agency</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Baloo+2:wght@500;600;700;800&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#16233A;
+    --ink-2:#1F3050;
+    --folder:#E8DCC0;
+    --folder-dark:#D8C7A0;
+    --paper:#F5EFE0;
+    --mustard:#D9A441;
+    --mustard-dark:#B8842A;
+    --red:#B23A48;
+    --red-dark:#8F2B37;
+    --teal:#3E7C7B;
+    --teal-dark:#2C5E5D;
+    --charcoal:#241F1A;
+    --cork:#8a6a4b;
+    --shadow: 0 6px 18px rgba(22,35,58,0.25);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 15% 10%, rgba(217,164,65,0.08), transparent 40%),
+      radial-gradient(circle at 85% 85%, rgba(62,124,123,0.10), transparent 45%),
+      var(--ink);
+    color:var(--charcoal);
+    font-family:'Baloo 2', system-ui, sans-serif;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    padding:18px 12px 40px;
+  }
+  .agency{
+    width:100%;
+    max-width:760px;
+  }
+  .masthead{
+    background: linear-gradient(180deg, var(--ink-2), var(--ink));
+    border:2px solid #0d1626;
+    border-radius:14px 14px 4px 4px;
+    padding:18px 20px 14px;
+    color:var(--paper);
+    box-shadow: var(--shadow);
+    position:relative;
+    overflow:hidden;
+  }
+  .masthead::after{
+    content:"";
+    position:absolute; left:0; right:0; bottom:0; height:6px;
+    background: repeating-linear-gradient(90deg, var(--mustard) 0 18px, transparent 18px 26px);
+    opacity:0.85;
+  }
+  .masthead-top{
+    display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+  }
+  .eyebrow{
+    font-family:'Special Elite', monospace;
+    letter-spacing:2px;
+    font-size:11px;
+    color:var(--mustard);
+    text-transform:uppercase;
+    margin:0 0 4px;
+  }
+  h1.title{
+    font-family:'Special Elite', monospace;
+    font-size:clamp(22px,5vw,30px);
+    margin:0;
+    line-height:1.15;
+  }
+  .subtitle{
+    margin:6px 0 0;
+    font-size:14.5px;
+    color:#C9D2E2;
+    max-width:46ch;
+  }
+  .badge-counter{
+    flex-shrink:0;
+    text-align:center;
+    background:rgba(217,164,65,0.14);
+    border:1.5px solid var(--mustard);
+    border-radius:10px;
+    padding:8px 12px;
+    min-width:76px;
+  }
+  .badge-counter .num{ font-size:22px; font-weight:800; color:var(--mustard); line-height:1; }
+  .badge-counter .lbl{ font-size:9.5px; letter-spacing:1px; text-transform:uppercase; color:#C9D2E2; margin-top:3px; }
+
+  #app{
+    background: var(--folder);
+    border:2px solid #0d1626;
+    border-top:none;
+    border-radius:0 0 12px 12px;
+    padding:20px;
+    box-shadow: var(--shadow);
+  }
+
+  /* ---------- HOME / CASE SELECT ---------- */
+  .home-intro{
+    font-size:14.5px;
+    color:#4b4234;
+    margin:0 0 16px;
+    line-height:1.5;
+  }
+  .case-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px,1fr));
+    gap:12px;
+  }
+  .case-card{
+    background:var(--paper);
+    border:1.5px solid #cbb98d;
+    border-left:6px solid var(--mustard);
+    border-radius:8px;
+    padding:14px 14px 12px;
+    text-align:left;
+    cursor:pointer;
+    font-family:inherit;
+    transition: transform .12s ease, box-shadow .12s ease;
+    display:flex; flex-direction:column; gap:6px;
+  }
+  .case-card:hover{ transform:translateY(-2px); box-shadow:0 6px 14px rgba(0,0,0,0.18); }
+  .case-card:focus-visible{ outline:3px solid var(--teal); outline-offset:2px; }
+  .case-no{
+    font-family:'Special Elite', monospace;
+    font-size:11px; letter-spacing:1px; color:var(--red);
+  }
+  .case-title{ font-size:17px; font-weight:800; color:var(--ink); }
+  .case-blurb{ font-size:12.5px; color:#5b5140; line-height:1.4; }
+  .case-cta{ margin-top:4px; font-size:12.5px; font-weight:700; color:var(--teal-dark); }
+  .case-solved-tag{
+    font-size:10.5px; font-weight:700; color:var(--teal-dark);
+    background: rgba(62,124,123,0.14); border:1px solid var(--teal);
+    border-radius:20px; padding:2px 8px; align-self:flex-start;
+  }
+  .trail-card{
+    width:100%;
+    border-left:6px solid var(--red);
+    background: linear-gradient(135deg, var(--paper) 60%, rgba(178,58,72,0.06));
+  }
+  .trail-card .case-no{ color:var(--red); }
+  .trail-card .case-title{ font-size:18px; }
+  .trail-card .case-cta{ color:var(--red-dark); }
+
+  /* ---------- TRAIL MAP ---------- */
+  .trail-map-wrap{ margin-bottom:16px; }
+  .trail-map-wrap svg{ width:100%; height:auto; display:block; }
+  .trail-node-label{
+    font-family:'Roboto Mono', monospace; font-size:9px; fill:var(--ink-2); text-anchor:middle;
+  }
+  .trail-legend{
+    display:flex; gap:16px; justify-content:center; font-size:11px; color:#5b5140; margin-top:2px; flex-wrap:wrap;
+  }
+  .trail-legend span{ display:inline-flex; align-items:center; gap:4px; }
+  .trail-dot{ width:9px; height:9px; border-radius:50%; display:inline-block; }
+
+  /* ---------- TOP BAR DURING PLAY ---------- */
+  .playbar{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:14px; flex-wrap:wrap; gap:8px;
+  }
+  .back-btn{
+    background:none; border:none; font-family:inherit; font-weight:700;
+    color:var(--teal-dark); cursor:pointer; font-size:13.5px; padding:4px 0;
+  }
+  .back-btn:hover{ text-decoration:underline; }
+  .progress-pill{
+    font-family:'Roboto Mono', monospace; font-size:12.5px; font-weight:700;
+    background:var(--folder-dark); border-radius:20px; padding:4px 12px; color:var(--ink);
+  }
+  .streak-pill{
+    font-size:12.5px; font-weight:700; color:var(--red-dark);
+  }
+
+  /* ---------- QUESTION CARD ---------- */
+  .case-file{
+    background:var(--paper);
+    border:1.5px solid #cbb98d;
+    border-radius:8px;
+    padding:20px 18px 18px;
+    position:relative;
+    overflow:hidden;
+    min-height:220px;
+  }
+  .q-mode-label{
+    font-family:'Special Elite', monospace;
+    font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:var(--red);
+    margin:0 0 8px;
+  }
+  .q-prompt{
+    font-size:16.5px; font-weight:700; color:var(--ink); line-height:1.45; margin:0 0 16px;
+  }
+  .q-prompt .hl{
+    color:var(--red-dark);
+    background:rgba(178,58,72,0.10);
+    padding:0 3px; border-radius:3px;
+  }
+
+  .number-display{
+    font-family:'Roboto Mono', monospace;
+    font-size:clamp(22px,6vw,30px);
+    font-weight:700;
+    letter-spacing:1px;
+    color:var(--ink);
+    margin:6px 0 18px;
+    text-align:center;
+    word-break:break-all;
+  }
+  .digit-box{
+    display:inline-block;
+    padding:2px 3px;
+    border-radius:5px;
+    cursor:pointer;
+    transition: background .1s ease, transform .1s ease;
+  }
+  .digit-box:hover{ background:rgba(217,164,65,0.35); }
+  .digit-box:focus-visible{ outline:3px solid var(--teal); }
+  .digit-box.picked{ background:var(--mustard); color:#241a08; border-radius:6px; }
+  .comma-sep{ color:#8a7c5e; }
+  .num-sub{
+    font-family:'Roboto Mono', monospace; color:var(--ink-2); font-weight:700;
+  }
+  .num-highlight{
+    background:rgba(217,164,65,0.45);
+    border-radius:4px;
+    padding:0 2px;
+    border-bottom:2.5px solid var(--red);
+  }
+
+  .two-numbers{
+    display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin:10px 0 18px;
+  }
+  .num-card{
+    background:#fff; border:1.5px solid #cbb98d; border-radius:8px;
+    padding:10px 14px; text-align:center; min-width:150px;
+  }
+  .num-card .who{ font-size:11.5px; font-weight:700; color:var(--teal-dark); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;}
+  .num-card .val{ font-family:'Roboto Mono', monospace; font-size:19px; font-weight:700; color:var(--ink); }
+
+  .options-grid{
+    display:grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr));
+    gap:10px; margin-top:6px;
+  }
+  .opt-btn{
+    background:#fff; border:1.5px solid #cbb98d; border-radius:8px;
+    padding:12px 10px; font-family:inherit; font-size:14.5px; font-weight:700;
+    color:var(--ink); cursor:pointer; text-align:left;
+    transition: border-color .1s ease, background .1s ease;
+  }
+  .opt-btn:hover{ border-color:var(--mustard); background:#fffaf0; }
+  .opt-btn:focus-visible{ outline:3px solid var(--teal); }
+  .opt-btn.chosen{ border-color:var(--teal); background:rgba(62,124,123,0.12); }
+  .opt-btn.is-correct{ border-color:var(--teal); background:rgba(62,124,123,0.22); }
+  .opt-btn.is-wrong{ border-color:var(--red); background:rgba(178,58,72,0.14); }
+  .opt-btn[disabled]{ cursor:default; }
+  .opt-btn .chk{ display:inline-block; width:16px; }
+
+  .symbol-row{ display:flex; gap:12px; justify-content:center; margin-top:6px; }
+  .symbol-btn{
+    font-family:'Roboto Mono', monospace; font-size:26px; font-weight:700;
+    width:64px; height:56px; border-radius:8px; border:1.5px solid #cbb98d;
+    background:#fff; cursor:pointer; color:var(--ink);
+  }
+  .symbol-btn:hover{ border-color:var(--mustard); }
+  .symbol-btn:focus-visible{ outline:3px solid var(--teal); }
+
+  .tf-row{ display:flex; gap:10px; margin-top:6px; }
+  .tf-btn{
+    flex:1; font-family:inherit; font-weight:800; font-size:15px;
+    padding:12px; border-radius:8px; border:1.5px solid #cbb98d; background:#fff; cursor:pointer;
+  }
+  .tf-btn:hover{ border-color:var(--mustard); }
+
+  .order-row{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:6px; }
+  .order-tile{
+    position:relative;
+    font-family:'Roboto Mono', monospace; font-size:16px; font-weight:700;
+    padding:14px 12px; border-radius:8px; border:1.5px solid #cbb98d; background:#fff; cursor:pointer;
+    min-width:110px; text-align:center;
+  }
+  .order-tile .slot{
+    position:absolute; top:-9px; left:-9px; background:var(--mustard); color:#241a08;
+    width:24px; height:24px; border-radius:50%; font-size:12.5px; font-weight:800;
+    display:flex; align-items:center; justify-content:center; border:2px solid #fff;
+  }
+  .order-tile.locked{ background:#fff8e8; border-color:var(--mustard); }
+  .order-hint{ font-size:12px; color:#6b6150; text-align:center; margin-top:8px; }
+
+  .check-btn{
+    margin-top:18px;
+    background:var(--mustard); color:#241a08; border:none; border-radius:8px;
+    padding:11px 22px; font-family:inherit; font-weight:800; font-size:14.5px; cursor:pointer;
+    box-shadow: 0 3px 0 var(--mustard-dark);
+  }
+  .check-btn:hover{ filter:brightness(1.04); }
+  .check-btn:active{ transform:translateY(2px); box-shadow:none; }
+  .check-btn[disabled]{ opacity:0.5; cursor:default; box-shadow:none; }
+  .clear-link{
+    background:none;border:none;font-family:inherit;font-size:12.5px;font-weight:700;
+    color:var(--teal-dark); cursor:pointer; margin-left:12px;
+  }
+
+  .explain-box{
+    margin-top:16px; padding:12px 14px; border-radius:8px;
+    background:#fff; border:1.5px dashed #cbb98d; font-size:13.5px; line-height:1.5; color:#3a3324;
+  }
+  .next-btn{
+    margin-top:14px;
+    background:var(--teal); color:#fff; border:none; border-radius:8px;
+    padding:11px 22px; font-family:inherit; font-weight:800; font-size:14.5px; cursor:pointer;
+    box-shadow: 0 3px 0 var(--teal-dark);
+  }
+  .next-btn:hover{ filter:brightness(1.06); }
+  .next-btn:active{ transform:translateY(2px); box-shadow:none; }
+
+  .stamp{
+    position:absolute; top:18px; right:18px;
+    font-family:'Special Elite', monospace;
+    font-size:15px; font-weight:700; letter-spacing:1.5px;
+    padding:8px 14px; border-radius:6px;
+    border:3px solid currentColor;
+    text-transform:uppercase;
+    transform: rotate(-10deg) scale(0);
+    animation: stampIn .35s ease-out forwards;
+    pointer-events:none;
+  }
+  .stamp.ok{ color:var(--teal-dark); }
+  .stamp.no{ color:var(--red); }
+  @keyframes stampIn{
+    0%{ transform:rotate(-10deg) scale(2.2); opacity:0; }
+    60%{ transform:rotate(-10deg) scale(0.92); opacity:1; }
+    100%{ transform:rotate(-10deg) scale(1); opacity:1; }
+  }
+
+  /* ---------- SUMMARY ---------- */
+  .summary{
+    text-align:center; padding:16px 6px;
+  }
+  .summary .stamp-big{
+    display:inline-block;
+    font-family:'Special Elite', monospace;
+    font-size:26px; letter-spacing:2px; text-transform:uppercase;
+    border:4px solid var(--teal-dark); color:var(--teal-dark);
+    padding:10px 20px; border-radius:8px; transform:rotate(-6deg);
+    margin-bottom:14px;
+  }
+  .summary .rank{ font-size:19px; font-weight:800; color:var(--ink); margin:6px 0 4px; }
+  .summary .rank-note{ font-size:13.5px; color:#5b5140; margin-bottom:16px; }
+  .summary .stat-row{ display:flex; justify-content:center; gap:26px; margin:12px 0 20px; flex-wrap:wrap; }
+  .summary .stat{ text-align:center; }
+  .summary .stat .n{ font-size:24px; font-weight:800; color:var(--ink); font-family:'Roboto Mono', monospace; }
+  .summary .stat .l{ font-size:11px; letter-spacing:1px; text-transform:uppercase; color:#6b6150; }
+  .summary-btns{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+
+  .sr-only{
+    position:absolute; width:1px;height:1px; padding:0;margin:-1px;overflow:hidden;
+    clip:rect(0,0,0,0); white-space:nowrap; border:0;
+  }
+  @media (prefers-reduced-motion: reduce){
+    .stamp{ animation:none; transform:rotate(-10deg) scale(1); opacity:1; }
+    .case-card{ transition:none; }
+  }
+</style>
+</head>
+<body>
+<div class="agency">
+  <div class="masthead">
+    <div class="masthead-top">
+      <div>
+        <p class="eyebrow">Detective Agency · Est. 2026</p>
+        <h1 class="title">Number Division</h1>
+        <p class="subtitle">Every case is a place-value mystery. Pick a file, examine the evidence, crack the number.</p>
+      </div>
+      <div class="badge-counter">
+        <div class="num" id="badgeNum">0</div>
+        <div class="lbl">Cases<br>Closed</div>
+      </div>
+    </div>
+  </div>
+  <div id="app"></div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ================= CORE HELPERS ================= */
+  var PLACES = [
+    {name:'ones', short:'ones', value:1},
+    {name:'tens', short:'tens', value:10},
+    {name:'hundreds', short:'hundreds', value:100},
+    {name:'thousands', short:'thousands', value:1000},
+    {name:'ten thousands', short:'ten-thousands', value:10000},
+    {name:'hundred thousands', short:'hundred-thousands', value:100000},
+    {name:'millions', short:'millions', value:1000000},
+    {name:'ten millions', short:'ten-millions', value:10000000},
+    {name:'hundred millions', short:'hundred-millions', value:100000000}
+  ];
+  var RATIO_LABEL = {
+    '-3':'one-thousandth the value of', '-2':'one-hundredth the value of', '-1':'one-tenth the value of',
+    '0':'equal in value to', '1':'ten times the value of', '2':'one hundred times the value of', '3':'one thousand times the value of'
+  };
+
+  function randInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+  function choice(arr){ return arr[randInt(0,arr.length-1)]; }
+  function shuffle(arr){
+    var a = arr.slice();
+    for (var i=a.length-1;i>0;i--){ var j=randInt(0,i); var t=a[i]; a[i]=a[j]; a[j]=t; }
+    return a;
+  }
+  function fmt(n){ return n.toLocaleString('en-US'); }
+  function digitAt(num, placeValue){ return Math.floor(num/placeValue) % 10; }
+
+  // generates an n-digit whole number, first digit 1-9
+  function genDigits(n){
+    var d = [randInt(1,9)];
+    for (var i=1;i<n;i++) d.push(randInt(0,9));
+    return d;
+  }
+  function digitsToNum(d){ return parseInt(d.join(''),10); }
+
+  var ONES_W = ['','one','two','three','four','five','six','seven','eight','nine','ten',
+    'eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'];
+  var TENS_W = ['','','twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety'];
+  function threeDigitWords(n){
+    var s = '';
+    var h = Math.floor(n/100), rest = n % 100;
+    if (h>0) s += ONES_W[h] + ' hundred';
+    if (rest>0){
+      if (s) s += ' ';
+      if (rest<20) s += ONES_W[rest];
+      else { s += TENS_W[Math.floor(rest/10)]; if (rest%10>0) s += '-' + ONES_W[rest%10]; }
+    }
+    return s;
+  }
+  function numberToWords(n){
+    if (n===0) return 'zero';
+    var groups=[], x=n;
+    while (x>0){ groups.push(x%1000); x=Math.floor(x/1000); }
+    var scales=['',' thousand',' million',' billion'];
+    var parts=[];
+    for (var i=groups.length-1;i>=0;i--){ if (groups[i]>0) parts.push(threeDigitWords(groups[i])+scales[i]); }
+    return parts.join(', ');
+  }
+  function roundToPlace(n, placeValue){ return Math.round(n/placeValue)*placeValue; }
+
+  /* ================= STATE ================= */
+  var state = {
+    screen:'home', modeId:null, qIndex:0, total:8,
+    score:0, streak:0, current:null, answered:false,
+    orderPicks:[], tfPick:null, msPick:[], badges:0,
+    trailSeq:[], trailIdx:0, trailWrongTurns:0, trailCurrentMissed:false
+  };
+  var TRAIL_LENGTH = 10;
+
+  /* ================= QUESTION GENERATORS ================= */
+
+  function genSpotPlace(){
+    var n = randInt(4,7);
+    var digits = genDigits(n);
+    var num = digitsToNum(digits);
+    var placeIdx = randInt(0, n-1); // index into PLACES
+    return {
+      type:'click-digit', number:num,
+      targetPlaceIdx: placeIdx,
+      prompt: 'Click the digit in the <span class="hl">' + PLACES[placeIdx].short + '</span> place.',
+      explain: function(picked){
+        var correctDigit = digitAt(num, PLACES[placeIdx].value);
+        return 'In ' + fmt(num) + ', the digit in the ' + PLACES[placeIdx].short + ' place is ' + correctDigit + '.';
+      }
+    };
+  }
+
+  function genValueCompare(){
+    var sameNumber = Math.random() < 0.5;
+    var diff = choice([-2,-1,1,2]); // keep to guide's difficulty range
+    var lowIdx = randInt(0,4);
+    var hiIdx = lowIdx + Math.abs(diff);
+    if (hiIdx > 7) { hiIdx = 7; lowIdx = hiIdx - Math.abs(diff); }
+    var aIdx, bIdx;
+    if (diff > 0){ aIdx = hiIdx; bIdx = lowIdx; } else { aIdx = lowIdx; bIdx = hiIdx; }
+    var d = randInt(1,9);
+
+    var numA, numB, labelA, labelB;
+    if (sameNumber){
+      var n = Math.max(aIdx,bIdx)+2;
+      var digits = genDigits(n);
+      digits[n-1-aIdx] = d; digits[n-1-bIdx] = d;
+      numA = numB = digitsToNum(digits);
+      labelA = 'circled digit'; labelB = 'underlined digit';
+    } else {
+      var nA = aIdx+2, nB = bIdx+2;
+      var da = genDigits(nA); da[nA-1-aIdx] = d;
+      var db = genDigits(nB); db[nB-1-bIdx] = d;
+      numA = digitsToNum(da); numB = digitsToNum(db);
+      labelA = 'digit ' + d + ' in Number A'; labelB = 'digit ' + d + ' in Number B';
+    }
+
+    var correctDiff = aIdx - bIdx; // positive => A's place is bigger
+    var distractorPool = shuffle([-3,-2,-1,0,1,2,3].filter(function(v){ return v!==correctDiff; }));
+    var opts = [correctDiff].concat(distractorPool.slice(0,3));
+    opts = shuffle(opts);
+
+    return {
+      type:'value-compare', sameNumber:sameNumber, numA:numA, numB:numB, aIdx:aIdx, bIdx:bIdx, d:d,
+      prompt: sameNumber
+        ? 'In the number <span class="num-sub">' + fmt(numA) + '</span>, the digit ' + d + ' appears twice. Compare the value of the digit in the <span class="hl">' + PLACES[aIdx].short + '</span> place to the value of the digit in the <span class="hl">' + PLACES[bIdx].short + '</span> place.'
+        : 'Compare the value of the digit ' + d + ' in each number below.',
+      options: opts.map(function(v){ return {key:String(v), label:'Value is ' + RATIO_LABEL[String(v)]}; }),
+      correctKey: String(correctDiff),
+      explain: function(){
+        var valA = d*PLACES[aIdx].value, valB = d*PLACES[bIdx].value;
+        return 'The digit in the ' + PLACES[aIdx].short + ' place is worth ' + fmt(valA) + '. The digit in the ' + PLACES[bIdx].short + ' place is worth ' + fmt(valB) + '. So the first is ' + RATIO_LABEL[String(correctDiff)] + ' the second.';
+      }
+    };
+  }
+
+  function genOp10(){
+    var op = choice(['x10','d10','x100','d100']);
+    var base;
+    if (op==='d10') base = randInt(2,999)*10;
+    else if (op==='d100') base = randInt(2,99)*100;
+    else base = randInt(2,9999);
+    var correct, eqText;
+    if (op==='x10'){ correct = base*10; eqText = fmt(base)+' × 10 ='; }
+    else if (op==='d10'){ correct = base/10; eqText = fmt(base)+' ÷ 10 ='; }
+    else if (op==='x100'){ correct = base*100; eqText = fmt(base)+' × 100 ='; }
+    else { correct = base/100; eqText = fmt(base)+' ÷ 100 ='; }
+
+    var distractors = [];
+    if (op==='x10' || op==='x100'){
+      var factor = op==='x10' ? 10:100;
+      distractors.push(base*factor*10, Math.floor(base*factor/10)||base, base+factor);
+    } else {
+      var f2 = op==='d10'?10:100;
+      distractors.push(correct*10, correct/10, base);
+    }
+    var opts = [correct].concat(distractors).filter(function(v,i,a){ return a.indexOf(v)===i && v>=0; });
+    while(opts.length<4){ opts.push(correct + choice([-10,10,-100,100,-1000,1000])); opts = opts.filter(function(v,i,a){return a.indexOf(v)===i && v>=0;}); }
+    opts = shuffle(opts.slice(0,4));
+    if (opts.indexOf(correct)===-1) opts[0]=correct;
+
+    return {
+      type:'mcq-simple',
+      prompt:'Solve: <span class="num-sub" style="font-size:1.15em;">' + eqText + ' ___</span>',
+      options: opts.map(function(v){ return {key:String(v), label: fmt(v)}; }),
+      correctKey:String(correct),
+      explain: function(){
+        var opWord = op==='x10' ? 'Multiplying by 10 shifts every digit one place to the left.'
+          : op==='d10' ? 'Dividing by 10 shifts every digit one place to the right.'
+          : op==='x100' ? 'Multiplying by 100 shifts every digit two places to the left.'
+          : 'Dividing by 100 shifts every digit two places to the right.';
+        return opWord + ' ' + eqText + ' ' + fmt(correct) + '.';
+      }
+    };
+  }
+
+  function genExpandedOnce(){
+    var n = randInt(4,7);
+    var digits = genDigits(n);
+    // sometimes zero out a middle digit to test skipping zero terms
+    if (Math.random()<0.4 && n>=5){ digits[randInt(1,n-2)] = 0; }
+    var num = digitsToNum(digits);
+
+    function correctExpr(useParens){
+      var terms = [];
+      for (var i=0;i<n;i++){
+        var pv = PLACES[n-1-i].value, dg = digits[i];
+        if (dg===0) continue;
+        terms.push(useParens ? '(' + dg + ' × ' + fmt(pv) + ')' : fmt(dg*pv));
+      }
+      return terms.join(' + ');
+    }
+    var correctA = correctExpr(true);
+    var correctB = correctExpr(false);
+
+    // wrong option: shift one (guaranteed nonzero) digit's place value by one
+    var nonzeroIdxs = [];
+    for (var i=0;i<n-1;i++){ if (digits[i]!==0) nonzeroIdxs.push(i); }
+    if (nonzeroIdxs.length===0) nonzeroIdxs.push(0);
+    var shiftPos = choice(nonzeroIdxs);
+    function wrongExpr1(){
+      var terms=[];
+      for (var i=0;i<n;i++){
+        var placeIdx = n-1-i;
+        if (i===shiftPos) placeIdx = placeIdx-1<0?placeIdx:placeIdx-1;
+        var dg = digits[i];
+        if (dg===0) continue;
+        terms.push('(' + dg + ' × ' + fmt(PLACES[placeIdx].value) + ')');
+      }
+      return terms.join(' + ');
+    }
+    // wrong option: collapse the last three digits (hundreds/tens/ones) into one plain number (a common real trap)
+    function wrongExpr2(){
+      if (n<4) return null;
+      var terms=[];
+      for (var i=0;i<n-3;i++){
+        var pv = PLACES[n-1-i].value, dg=digits[i];
+        if (dg===0) continue;
+        terms.push(fmt(dg*pv));
+      }
+      var lastThree = '' + digits[n-3] + digits[n-2] + digits[n-1];
+      var stripped = lastThree.replace(/^0+/,'');
+      if (stripped) terms.push(stripped);
+      return terms.length ? terms.join(' + ') : null;
+    }
+
+    var w1 = wrongExpr1();
+    var w2 = wrongExpr2();
+    var candidates = [
+      {key:'A', label:correctA, ok:true},
+      {key:'B', label:correctB, ok:true},
+      {key:'C', label:w1, ok:false},
+      {key:'D', label:w2, ok:false}
+    ];
+    if (candidates.some(function(c){ return !c.label; })) return null;
+    var labels = candidates.map(function(c){ return c.label; });
+    var uniq = labels.filter(function(v,i,a){ return a.indexOf(v)===i; });
+    if (uniq.length !== labels.length) return null; // collision — caller retries
+
+    var opts = shuffle(candidates);
+    return {
+      type:'multiselect', number:num,
+      prompt:'The number <span class="num-sub" style="font-size:1.2em;">' + fmt(num) + '</span> is written in standard form. Select ALL expressions that correctly show it in expanded form.',
+      options: opts,
+      correctKeys: opts.filter(function(o){return o.ok;}).map(function(o){return o.key;}),
+      explain: function(){
+        return 'Expanded form: ' + correctA + ' — one correct way is to multiply each digit by its place value; another is to write those products as a sum: ' + correctB + '.';
+      }
+    };
+  }
+  function genExpanded(){
+    for (var attempt=0; attempt<20; attempt++){
+      var q = genExpandedOnce();
+      if (q) return q;
+    }
+    // extremely unlikely fallback
+    return genExpandedOnce() || { type:'multiselect', number:0, prompt:'', options:[], correctKeys:[], explain:function(){return '';} };
+  }
+
+  function genTrueFalse(){
+    var n = randInt(6,9);
+    var digits = genDigits(n);
+    var num = digitsToNum(digits);
+    var posIdx = randInt(0, n-1);
+    var actualDigit = digitAt(num, PLACES[posIdx].value);
+    var isTrue = Math.random() < 0.5;
+    var statedDigit = actualDigit, statedPlaceIdx = posIdx;
+    if (!isTrue){
+      if (Math.random()<0.5){
+        statedPlaceIdx = posIdx + choice([-1,1,-2,2]);
+        if (statedPlaceIdx<0 || statedPlaceIdx>8 || statedPlaceIdx===posIdx) statedPlaceIdx = (posIdx+1)%n;
+      } else {
+        do { statedDigit = randInt(0,9); } while (statedDigit===actualDigit);
+      }
+    }
+    var statedValue = statedDigit * PLACES[statedPlaceIdx].value;
+    return {
+      type:'true-false', number:num,
+      prompt:'In the number <span class="num-sub" style="font-size:1.15em;">' + fmt(num) + '</span>, is this statement True or False?<br><br>"The digit ' + digitAt(num, PLACES[posIdx].value) + ' has a value of (' + statedDigit + ' × ' + fmt(PLACES[statedPlaceIdx].value) + ')."',
+      correctAnswer: isTrue,
+      explain: function(){
+        return 'The digit in the ' + PLACES[posIdx].short + ' place is ' + actualDigit + ', so its real value is ' + actualDigit + ' × ' + fmt(PLACES[posIdx].value) + ' = ' + fmt(actualDigit*PLACES[posIdx].value) + '. ' + (isTrue ? 'That matches the statement.' : 'The statement claimed ' + fmt(statedValue) + ', which does not match.');
+      }
+    };
+  }
+
+  function genOrderCompare(){
+    if (Math.random() < 0.55){
+      // ordering 4 numbers least to greatest
+      var n = randInt(4,6);
+      var nums = [];
+      while (nums.length<4){
+        var v = digitsToNum(genDigits(n));
+        if (nums.indexOf(v)===-1) nums.push(v);
+      }
+      var sorted = nums.slice().sort(function(a,b){return a-b;});
+      return {
+        type:'order', numbers: shuffle(nums), correctOrder: sorted,
+        prompt:'Click the numbers in order from LEAST to GREATEST.',
+        explain: function(){ return 'From least to greatest: ' + sorted.map(fmt).join(' < ') + '.'; }
+      };
+    } else {
+      // compare two numbers with symbol
+      var nA = randInt(4,7), nB = randInt(4,7);
+      var a = digitsToNum(genDigits(nA)), b = digitsToNum(genDigits(nB));
+      while (a===b) b = digitsToNum(genDigits(nB));
+      var correctSym = a<b ? '<' : (a>b ? '>' : '=');
+      return {
+        type:'symbol', a:a, b:b, correctKey:correctSym,
+        prompt:'Which symbol correctly compares these two numbers?',
+        explain: function(){ return fmt(a) + ' ' + correctSym + ' ' + fmt(b) + '.'; }
+      };
+    }
+  }
+
+  function genRounding(){
+    var n = randInt(5,8);
+    var digits = genDigits(n);
+    var num = digitsToNum(digits);
+    var roundIdxOptions = [1,2,3,4,5].filter(function(i){ return i < n; });
+    var roundIdx = choice(roundIdxOptions.length ? roundIdxOptions : [1]);
+    var pv = PLACES[roundIdx].value;
+    var correct = roundToPlace(num, pv);
+    var down = Math.floor(num/pv)*pv;
+    var up = down + pv;
+    var opts = [correct, down, up, num].filter(function(v,i,a){ return a.indexOf(v)===i; });
+    while (opts.length<4){ opts.push(correct + pv*choice([-2,2,3])); opts = opts.filter(function(v,i,a){return a.indexOf(v)===i && v>=0;}); }
+    opts = shuffle(opts.slice(0,4));
+    if (opts.indexOf(correct)===-1) opts[0]=correct;
+    return {
+      type:'mcq-simple',
+      prompt:'Round <span class="num-sub" style="font-size:1.15em;">' + fmt(num) + '</span> to the nearest <span class="hl">' + PLACES[roundIdx].short.replace('-',' ') + '</span>.',
+      options: opts.map(function(v){ return {key:String(v), label:fmt(v)}; }),
+      correctKey:String(correct),
+      explain: function(){
+        return 'Look at the digit to the right of the ' + PLACES[roundIdx].short + ' place in ' + fmt(num) + '. ' + fmt(num) + ' rounds to ' + fmt(correct) + '.';
+      }
+    };
+  }
+
+  /* ================= MODE CONFIG ================= */
+  var MODES = [
+    { id:'spot', caseNo:'01', title:'Spot the Place', icon:'🔎',
+      blurb:'Click the exact digit hiding in a named place value.', gen: genSpotPlace },
+    { id:'value', caseNo:'02', title:'Value Detective', icon:'🕵️',
+      blurb:'Work out how many times greater one digit\u2019s value is than another\u2019s.', gen: genValueCompare },
+    { id:'op10', caseNo:'03', title:'The ×10 ÷10 Case', icon:'⚡',
+      blurb:'Quick-fire multiplying and dividing by 10 and 100.', gen: genOp10 },
+    { id:'expand', caseNo:'04', title:'Expanded Form Match', icon:'📂',
+      blurb:'Pick every expression that correctly expands the number.', gen: genExpanded },
+    { id:'tf', caseNo:'05', title:'True or False Files', icon:'✅',
+      blurb:'Decide if a claim about a digit\u2019s value holds up.', gen: genTrueFalse },
+    { id:'order', caseNo:'06', title:'Order Up!', icon:'📊',
+      blurb:'Compare and order numbers from least to greatest.', gen: genOrderCompare },
+    { id:'round', caseNo:'07', title:'Round Round-Up', icon:'🎯',
+      blurb:'Round big numbers to the place the case calls for.', gen: genRounding }
+  ];
+  var solvedCases = {};
+
+  /* ================= RENDER: HOME ================= */
+  function renderHome(){
+    var html = '<p class="home-intro">Seven case files. Every case pulls fresh numbers, so you can reopen a file as many times as you need to practice.</p>';
+    html += '<div class="case-grid">';
+    MODES.forEach(function(m){
+      html += '<button class="case-card" data-mode="'+m.id+'">' +
+        (solvedCases[m.id] ? '<span class="case-solved-tag">✓ Solved before</span>' : '') +
+        '<span class="case-no">CASE NO. '+m.caseNo+'</span>' +
+        '<span class="case-title">'+m.icon+' '+m.title+'</span>' +
+        '<span class="case-blurb">'+m.blurb+'</span>' +
+        '<span class="case-cta">Take the case →</span>' +
+        '</button>';
+    });
+    html += '</div>';
+    html += '<button class="case-card trail-card" id="trailCard" style="margin-top:14px;">' +
+      '<span class="case-no">CASE NO. 08 · THE BIG ONE</span>' +
+      '<span class="case-title">🗺️ The Trail — Follow the Numbers</span>' +
+      '<span class="case-blurb">A winding trail of '+TRAIL_LENGTH+' clues pulled from all seven files. Solve each one to move down the path to the finish.</span>' +
+      '<span class="case-cta">Start the trail →</span>' +
+      '</button>';
+    document.getElementById('app').innerHTML = html;
+    document.querySelectorAll('.case-card:not(.trail-card)').forEach(function(btn){
+      btn.addEventListener('click', function(){ startMode(btn.getAttribute('data-mode')); });
+    });
+    document.getElementById('trailCard').addEventListener('click', startTrail);
+  }
+
+  function startMode(modeId){
+    state.screen='play'; state.modeId=modeId; state.qIndex=0; state.score=0; state.streak=0;
+    nextQuestion();
+  }
+
+  function nextQuestion(){
+    state.answered=false; state.orderPicks=[]; state.tfPick=null; state.msPick=[];
+    var mode = MODES.filter(function(m){return m.id===state.modeId;})[0];
+    state.current = mode.gen();
+    renderPlay();
+  }
+
+  /* ================= RENDER: PLAY ================= */
+  function renderPlay(){
+    var mode = MODES.filter(function(m){return m.id===state.modeId;})[0];
+    var q = state.current;
+    var html = '';
+    html += '<div class="playbar">';
+    html += '<button class="back-btn" id="backBtn">← Case Files</button>';
+    html += '<span class="progress-pill">Clue '+(state.qIndex+1)+' of '+state.total+'</span>';
+    html += '<span class="streak-pill">🔥 Streak: '+state.streak+'</span>';
+    html += '</div>';
+
+    html += '<div class="case-file" id="caseFile">';
+    html += '<p class="q-mode-label">'+mode.icon+' Case No. '+mode.caseNo+' — '+mode.title+'</p>';
+    html += '<p class="q-prompt">'+q.prompt+'</p>';
+
+    html += buildInteractiveBody(q);
+    html += '</div>'; // case-file
+    document.getElementById('app').innerHTML = html;
+
+    document.getElementById('backBtn').addEventListener('click', function(){ state.screen='home'; renderHome(); });
+    wireInteractive(q, finishAnswer);
+  }
+
+  /* ================= SHARED: QUESTION BODY (used by case mode + trail mode) ================= */
+  function buildInteractiveBody(q){
+    var html = '';
+    if (q.type==='click-digit'){
+      html += renderDigitDisplay(q.number, null);
+    } else if (q.type==='value-compare'){
+      if (q.sameNumber){
+        html += renderDigitDisplayHighlight(q.numA, [q.aIdx, q.bIdx]);
+      } else {
+        html += '<div class="two-numbers">' +
+          '<div class="num-card"><div class="who">Number A</div><div class="val">'+numWithHighlight(q.numA,q.aIdx)+'</div></div>' +
+          '<div class="num-card"><div class="who">Number B</div><div class="val">'+numWithHighlight(q.numB,q.bIdx)+'</div></div>' +
+          '</div>';
+      }
+      html += '<div class="options-grid" id="optGrid">' + q.options.map(function(o){
+        return '<button class="opt-btn" data-key="'+o.key+'">'+o.label+'</button>';
+      }).join('') + '</div>';
+    } else if (q.type==='mcq-simple'){
+      html += '<div class="options-grid" id="optGrid">' + q.options.map(function(o){
+        return '<button class="opt-btn" data-key="'+o.key+'">'+o.label+'</button>';
+      }).join('') + '</div>';
+    } else if (q.type==='multiselect'){
+      html += '<div class="options-grid" id="optGrid">' + q.options.map(function(o){
+        return '<button class="opt-btn" data-key="'+o.key+'"><span class="chk">☐</span>'+o.label+'</button>';
+      }).join('') + '</div>';
+      html += '<button class="check-btn" id="checkBtn">Check My Answers</button>';
+    } else if (q.type==='true-false'){
+      html += '<div class="tf-row" id="tfRow">' +
+        '<button class="tf-btn" data-v="true">TRUE</button>' +
+        '<button class="tf-btn" data-v="false">FALSE</button>' +
+        '</div>';
+    } else if (q.type==='order'){
+      html += '<div class="order-row" id="orderRow">' + q.numbers.map(function(v){
+        return '<button class="order-tile" data-v="'+v+'">'+fmt(v)+'</button>';
+      }).join('') + '</div>';
+      html += '<p class="order-hint">Click smallest first, largest last. <button class="clear-link" id="clearOrder">Clear picks</button></p>';
+    } else if (q.type==='symbol'){
+      html += '<div class="two-numbers">' +
+        '<div class="num-card"><div class="val">'+fmt(q.a)+'</div></div>' +
+        '<div class="num-card"><div class="val">'+fmt(q.b)+'</div></div>' +
+        '</div>';
+      html += '<div class="symbol-row" id="symRow">' +
+        ['<','>','='].map(function(s){ return '<button class="symbol-btn" data-v="'+s+'">'+s+'</button>'; }).join('') +
+        '</div>';
+    }
+    return html;
+  }
+
+  function renderDigitDisplay(num, highlightIdxArr){
+    var formatted = fmt(num);
+    var raw = String(num);
+    var ptr = 0;
+    var out = '<div class="number-display">';
+    for (var i=0;i<formatted.length;i++){
+      var ch = formatted[i];
+      if (ch===','){ out += '<span class="comma-sep">,</span>'; }
+      else {
+        var placeIdx = raw.length-1-ptr;
+        out += '<span class="digit-box" tabindex="0" data-place="'+placeIdx+'" data-digit="'+ch+'">'+ch+'</span>';
+        ptr++;
+      }
+    }
+    out += '</div>';
+    return out;
+  }
+  function renderDigitDisplayHighlight(num, idxArr){
+    var formatted = fmt(num);
+    var raw = String(num);
+    var ptr = 0;
+    var out = '<div class="number-display">';
+    for (var i=0;i<formatted.length;i++){
+      var ch = formatted[i];
+      if (ch===','){ out += '<span class="comma-sep">,</span>'; }
+      else {
+        var placeIdx = raw.length-1-ptr;
+        var cls = idxArr.indexOf(placeIdx)>-1 ? 'digit-box num-highlight' : 'digit-box';
+        out += '<span class="'+cls+'" data-place="'+placeIdx+'">'+ch+'</span>';
+        ptr++;
+      }
+    }
+    out += '</div>';
+    return out;
+  }
+  function numWithHighlight(num, hlIdx){
+    var formatted = fmt(num);
+    var raw = String(num);
+    var ptr = 0;
+    var out = '';
+    for (var i=0;i<formatted.length;i++){
+      var ch = formatted[i];
+      if (ch===','){ out += ch; }
+      else {
+        var placeIdx = raw.length-1-ptr;
+        out += placeIdx===hlIdx ? '<span class="num-highlight">'+ch+'</span>' : ch;
+        ptr++;
+      }
+    }
+    return out;
+  }
+
+  /* ================= INTERACTION WIRING (shared by case mode + trail mode) ================= */
+  function wireInteractive(q, onAnswered){
+    if (q.type==='click-digit'){
+      document.querySelectorAll('.digit-box').forEach(function(el){
+        el.addEventListener('click', function(){
+          if (state.answered) return;
+          var placeIdx = parseInt(el.getAttribute('data-place'),10);
+          var correct = placeIdx === q.targetPlaceIdx;
+          document.querySelectorAll('.digit-box').forEach(function(d){ d.classList.remove('picked'); });
+          el.classList.add('picked');
+          onAnswered(correct, q.explain());
+        });
+      });
+    } else if (q.type==='value-compare' || q.type==='mcq-simple'){
+      document.querySelectorAll('#optGrid .opt-btn').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          if (state.answered) return;
+          var key = btn.getAttribute('data-key');
+          var correct = key === q.correctKey;
+          document.querySelectorAll('#optGrid .opt-btn').forEach(function(b){
+            b.disabled = true;
+            if (b.getAttribute('data-key')===q.correctKey) b.classList.add('is-correct');
+          });
+          if (!correct) btn.classList.add('is-wrong');
+          onAnswered(correct, q.explain());
+        });
+      });
+    } else if (q.type==='multiselect'){
+      var picked = [];
+      document.querySelectorAll('#optGrid .opt-btn').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          if (state.answered) return;
+          var key = btn.getAttribute('data-key');
+          var idx = picked.indexOf(key);
+          if (idx>-1){ picked.splice(idx,1); btn.classList.remove('chosen'); btn.querySelector('.chk').textContent='☐'; }
+          else { picked.push(key); btn.classList.add('chosen'); btn.querySelector('.chk').textContent='☑'; }
+        });
+      });
+      document.getElementById('checkBtn').addEventListener('click', function(){
+        if (state.answered) return;
+        var correctSet = q.correctKeys.slice().sort();
+        var pickedSet = picked.slice().sort();
+        var correct = JSON.stringify(correctSet)===JSON.stringify(pickedSet);
+        document.querySelectorAll('#optGrid .opt-btn').forEach(function(b){
+          b.disabled = true;
+          var k = b.getAttribute('data-key');
+          if (q.correctKeys.indexOf(k)>-1) b.classList.add('is-correct');
+          else if (picked.indexOf(k)>-1) b.classList.add('is-wrong');
+        });
+        onAnswered(correct, q.explain());
+      });
+    } else if (q.type==='true-false'){
+      document.querySelectorAll('#tfRow .tf-btn').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          if (state.answered) return;
+          var val = btn.getAttribute('data-v')==='true';
+          var correct = val === q.correctAnswer;
+          document.querySelectorAll('#tfRow .tf-btn').forEach(function(b){ b.disabled=true; });
+          btn.classList.add(correct ? 'is-correct':'is-wrong');
+          onAnswered(correct, q.explain());
+        });
+      });
+    } else if (q.type==='order'){
+      var picks = [];
+      document.querySelectorAll('#orderRow .order-tile').forEach(function(tile){
+        tile.addEventListener('click', function(){
+          if (state.answered) return;
+          var v = parseInt(tile.getAttribute('data-v'),10);
+          if (picks.indexOf(v)>-1) return;
+          picks.push(v);
+          var slot = document.createElement('span');
+          slot.className='slot'; slot.textContent = picks.length;
+          tile.appendChild(slot);
+          tile.classList.add('locked');
+          if (picks.length === q.numbers.length){
+            var correct = JSON.stringify(picks)===JSON.stringify(q.correctOrder);
+            onAnswered(correct, q.explain());
+          }
+        });
+      });
+      document.getElementById('clearOrder').addEventListener('click', function(){
+        if (state.answered) return;
+        picks = [];
+        document.querySelectorAll('#orderRow .order-tile').forEach(function(tile){
+          tile.classList.remove('locked');
+          var s = tile.querySelector('.slot'); if (s) s.remove();
+        });
+      });
+    } else if (q.type==='symbol'){
+      document.querySelectorAll('#symRow .symbol-btn').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          if (state.answered) return;
+          var v = btn.getAttribute('data-v');
+          var correct = v === q.correctKey;
+          document.querySelectorAll('#symRow .symbol-btn').forEach(function(b){ b.disabled=true; });
+          btn.classList.add(correct ? 'is-correct':'is-wrong');
+          onAnswered(correct, q.explain());
+        });
+      });
+    }
+  }
+
+  function finishAnswer(correct, explainText){
+    state.answered = true;
+    if (correct){ state.score++; state.streak++; } else { state.streak = 0; }
+
+    var cf = document.getElementById('caseFile');
+    var stamp = document.createElement('div');
+    stamp.className = 'stamp ' + (correct ? 'ok':'no');
+    stamp.textContent = correct ? 'Case Matches!' : 'Re-examine';
+    cf.appendChild(stamp);
+
+    var explainBox = document.createElement('div');
+    explainBox.className = 'explain-box';
+    explainBox.textContent = explainText;
+    cf.appendChild(explainBox);
+
+    var nextBtn = document.createElement('button');
+    nextBtn.className = 'next-btn';
+    nextBtn.textContent = (state.qIndex+1 < state.total) ? 'Next Clue →' : 'See Case Summary →';
+    nextBtn.addEventListener('click', function(){
+      state.qIndex++;
+      if (state.qIndex >= state.total){ renderSummary(); }
+      else { nextQuestion(); }
+    });
+    cf.appendChild(nextBtn);
+  }
+
+  /* ================= SUMMARY ================= */
+  function renderSummary(){
+    var mode = MODES.filter(function(m){return m.id===state.modeId;})[0];
+    var pct = Math.round((state.score/state.total)*100);
+    var rank, note;
+    if (pct===100){ rank='Ace Investigator'; note='Every clue matched. Case fully cracked!'; }
+    else if (pct>=90){ rank='Master Detective'; note='Sharp work — almost every clue matched.'; }
+    else if (pct>=75){ rank='Detective'; note='Solid case work. A couple of clues to revisit.'; }
+    else if (pct>=50){ rank='Junior Detective'; note='Good progress — reopen this file for more practice.'; }
+    else { rank='Rookie Detective'; note='Every detective starts here. Try this case again — new numbers, same skill.'; }
+
+    if (pct>=75) solvedCases[state.modeId] = true;
+    state.badges = Object.keys(solvedCases).length;
+    document.getElementById('badgeNum').textContent = state.badges;
+
+    var html = '<div class="summary">';
+    html += '<div class="stamp-big">Case Closed</div>';
+    html += '<p class="rank">'+rank+'</p>';
+    html += '<p class="rank-note">'+note+'</p>';
+    html += '<div class="stat-row">' +
+      '<div class="stat"><div class="n">'+state.score+'/'+state.total+'</div><div class="l">Clues Solved</div></div>' +
+      '<div class="stat"><div class="n">'+pct+'%</div><div class="l">Accuracy</div></div>' +
+      '</div>';
+    html += '<div class="summary-btns">' +
+      '<button class="check-btn" id="replayBtn">Reopen This Case</button>' +
+      '<button class="next-btn" id="homeBtn">Back to Case Files</button>' +
+      '</div>';
+    html += '</div>';
+    document.getElementById('app').innerHTML = html;
+    document.getElementById('replayBtn').addEventListener('click', function(){ startMode(mode.id); });
+    document.getElementById('homeBtn').addEventListener('click', function(){ state.screen='home'; renderHome(); });
+  }
+
+  /* ================= TRAIL MODE (Case No. 08) ================= */
+  function genTrailSequence(){
+    var ids = MODES.map(function(m){ return m.id; });
+    var seq = shuffle(ids); // all 7 skills, random order
+    while (seq.length < TRAIL_LENGTH){ seq.push(choice(ids)); }
+    return seq.slice(0, TRAIL_LENGTH);
+  }
+
+  function buildTrailMapSVG(n, currentIdx){
+    var W=760, H=170;
+    var xStep = (W-60)/(n-1);
+    var pts = [];
+    for (var i=0;i<n;i++){
+      pts.push({ x: 30+i*xStep, y: (i%2===0) ? 42 : 128 });
+    }
+    var pathAll = pts.map(function(p){ return p.x+','+p.y; }).join(' ');
+    var progressPts = pts.slice(0, currentIdx+1).map(function(p){ return p.x+','+p.y; }).join(' ');
+
+    var svg = '<div class="trail-map-wrap"><svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg">';
+    svg += '<polyline points="'+pathAll+'" fill="none" stroke="#cbb98d" stroke-width="3" stroke-dasharray="2 7" stroke-linecap="round"/>';
+    if (currentIdx>0) svg += '<polyline points="'+progressPts+'" fill="none" stroke="#3E7C7B" stroke-width="4" stroke-linecap="round"/>';
+    pts.forEach(function(p,i){
+      var st = i<currentIdx ? 'done' : (i===currentIdx ? 'current' : 'future');
+      var fill = st==='done' ? '#3E7C7B' : (st==='current' ? '#D9A441' : '#F5EFE0');
+      var stroke = st==='future' ? '#cbb98d' : '#16233A';
+      var r = st==='current' ? 15 : 12;
+      svg += '<circle cx="'+p.x+'" cy="'+p.y+'" r="'+r+'" fill="'+fill+'" stroke="'+stroke+'" stroke-width="2"/>';
+      var content = st==='done' ? '\u2713' : String(i+1);
+      var textColor = st==='future' ? '#a89568' : (st==='done' ? '#ffffff' : '#241a08');
+      svg += '<text x="'+p.x+'" y="'+(p.y+4)+'" text-anchor="middle" font-family="Baloo 2, sans-serif" font-weight="800" font-size="'+(st==='current'?13:11)+'" fill="'+textColor+'">'+content+'</text>';
+      if (i===0 || i===n-1){
+        var labelY = p.y<80 ? p.y-20 : p.y+26;
+        svg += '<text x="'+p.x+'" y="'+labelY+'" class="trail-node-label">'+(i===0?'START':'FINISH')+'</text>';
+      }
+    });
+    svg += '</svg></div>';
+    return svg;
+  }
+
+  function startTrail(){
+    state.screen='trail';
+    state.trailSeq = genTrailSequence();
+    state.trailIdx = 0;
+    state.trailWrongTurns = 0;
+    nextTrailNode();
+  }
+
+  function nextTrailNode(){
+    state.answered = false;
+    var modeId = state.trailSeq[state.trailIdx];
+    state._trailMode = MODES.filter(function(m){ return m.id===modeId; })[0];
+    state.current = state._trailMode.gen();
+    renderTrail();
+  }
+
+  function renderTrail(){
+    var mode = state._trailMode;
+    var q = state.current;
+    var html = '';
+    html += '<div class="playbar">';
+    html += '<button class="back-btn" id="backBtn">← Case Files</button>';
+    html += '<span class="progress-pill">Stop '+(state.trailIdx+1)+' of '+TRAIL_LENGTH+'</span>';
+    html += '<span class="streak-pill">🚧 Wrong turns: '+state.trailWrongTurns+'</span>';
+    html += '</div>';
+
+    html += buildTrailMapSVG(TRAIL_LENGTH, state.trailIdx);
+    html += '<p class="trail-legend">' +
+      '<span><span class="trail-dot" style="background:#3E7C7B;"></span>Solved</span>' +
+      '<span><span class="trail-dot" style="background:#D9A441;"></span>You are here</span>' +
+      '<span><span class="trail-dot" style="background:#F5EFE0;border:1px solid #cbb98d;"></span>Ahead</span>' +
+      '</p>';
+
+    html += '<div class="case-file" id="caseFile">';
+    html += '<p class="q-mode-label">'+mode.icon+' '+mode.title+'</p>';
+    html += '<p class="q-prompt">'+q.prompt+'</p>';
+    html += buildInteractiveBody(q);
+    html += '</div>';
+
+    document.getElementById('app').innerHTML = html;
+    document.getElementById('backBtn').addEventListener('click', function(){ state.screen='home'; renderHome(); });
+    wireInteractive(q, trailAnswered);
+  }
+
+  function trailAnswered(correct, explainText){
+    state.answered = true;
+    if (!correct) state.trailWrongTurns++;
+
+    var cf = document.getElementById('caseFile');
+    var stamp = document.createElement('div');
+    stamp.className = 'stamp ' + (correct ? 'ok':'no');
+    stamp.textContent = correct ? 'Right Way!' : 'Wrong Turn';
+    cf.appendChild(stamp);
+
+    var explainBox = document.createElement('div');
+    explainBox.className = 'explain-box';
+    explainBox.textContent = explainText;
+    cf.appendChild(explainBox);
+
+    var isLast = state.trailIdx+1 >= TRAIL_LENGTH;
+    var nextBtn = document.createElement('button');
+    nextBtn.className = 'next-btn';
+    nextBtn.textContent = isLast ? 'Reach the Finish →' : 'Continue the Trail →';
+    nextBtn.addEventListener('click', function(){
+      state.trailIdx++;
+      if (state.trailIdx >= TRAIL_LENGTH){ renderTrailFinale(); }
+      else { nextTrailNode(); }
+    });
+    cf.appendChild(nextBtn);
+  }
+
+  function renderTrailFinale(){
+    var wrong = state.trailWrongTurns;
+    var perfect = wrong===0;
+    solvedCases['trail'] = true;
+    state.badges = Object.keys(solvedCases).length;
+    document.getElementById('badgeNum').textContent = state.badges;
+
+    var rank, note;
+    if (perfect){ rank='Ace Investigator'; note='You followed the whole trail without a single wrong turn.'; }
+    else if (wrong<=2){ rank='Master Detective'; note='A couple of wrong turns, but you found the way through.'; }
+    else if (wrong<=5){ rank='Detective'; note='You made it to the end — walk the trail again to tighten it up.'; }
+    else { rank='Junior Detective'; note='You reached the finish. Every trail gets easier with another walk.'; }
+
+    var html = '<div class="summary">';
+    html += '<div class="stamp-big">Case Closed</div>';
+    html += '<p class="rank">'+rank+'</p>';
+    html += '<p class="rank-note">'+note+'</p>';
+    html += '<div class="stat-row">' +
+      '<div class="stat"><div class="n">'+TRAIL_LENGTH+'/'+TRAIL_LENGTH+'</div><div class="l">Stops Reached</div></div>' +
+      '<div class="stat"><div class="n">'+wrong+'</div><div class="l">Wrong Turns</div></div>' +
+      '</div>';
+    html += '<div class="summary-btns">' +
+      '<button class="check-btn" id="replayBtn">Walk the Trail Again</button>' +
+      '<button class="next-btn" id="homeBtn">Back to Case Files</button>' +
+      '</div>';
+    html += '</div>';
+    document.getElementById('app').innerHTML = html;
+    document.getElementById('replayBtn').addEventListener('click', startTrail);
+    document.getElementById('homeBtn').addEventListener('click', function(){ state.screen='home'; renderHome(); });
+  }
+
+  renderHome();
+})();
+</script>
+</body>
+</html>
