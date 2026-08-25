@@ -94,7 +94,7 @@ scripts/
   subset-fonts.sh                Regenerates assets/fonts/ (run by hand, not
                                   a build step — see assets/fonts/LICENSE.md)
 test-support/
-  load-game.js                   Loads a game page's inline script for tests.
+  load-game.js                   Requires a game page's own modules for tests.
                                   Outside test/ because `node --test` globs
                                   everything under it, and a helper is not a
                                   test
@@ -121,6 +121,10 @@ assets/
     numeration-types.js           The math game's place-value question types
                                   and their digit renderers, registered via
                                   DetectiveGame.registerType
+    numeration-questions.js       Numbers Division: generators + MODES
+    words-questions.js            Words Division: passages, pools, generators
+                                  + MODES. Both export the config start()
+                                  takes; the page calls start()
 games/
   math/numeration-detective-agency.html
   ela/words-division.html
@@ -141,9 +145,17 @@ games/
    `_headers`). The page also needs a `<div id="app">` for the engine to
    render into, and an element with `id="badgeNum"` for the closed-case
    counter. Copying an existing game page gets all of this right.
-3. In the page's own inline script, define your question generators and a
-   `MODES` array (`{id, caseNo, title, icon, blurb, gen}` per case), then
-   call:
+3. Put the game's content — its question generators and a `MODES` array
+   (`{id, caseNo, title, icon, blurb, gen}` per case) — in its own module
+   under `assets/js/`, not inline in the page. Two reasons: `/assets/*` is
+   served `immutable` and cached for a year against its `?v=` token, where
+   the page's HTML expires in 300s, and the content is the overwhelming
+   majority of a game's bytes; and a module can be `require()`d by the
+   tests directly. Copy the export footer from an existing questions
+   module so it works in both the browser and node.
+
+   The module *returns* the config rather than starting the game, so that
+   requiring it has no side effects. The page then calls:
 
    ```js
    DetectiveGame.start({
@@ -178,7 +190,16 @@ games/
    content each time, use `onCaseStart` to reshuffle them and keep
    `questionsPerCase` at or below your smallest pool — that's what stops a
    case repeating an item. The ELA game does both.
-4. Add one entry to the `GAMES_DATA` array inside `index.html`'s own
+4. Link that module after the engine (and after any type module), and
+   start the game from the global it exports:
+
+   ```html
+   <script src="../../assets/js/game-engine.js?v=6"></script>
+   <script src="../../assets/js/my-questions.js?v=1"></script>
+   <script>DetectiveGame.start(MY_QUESTIONS);</script>
+   ```
+
+5. Add one entry to the `GAMES_DATA` array inside `index.html`'s own
    `<script>` (near the top, above `render()`) — the homepage rebuilds
    itself from that array automatically.
 

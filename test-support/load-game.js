@@ -2,18 +2,13 @@
 /*
   Loading a game page for tests, two ways.
 
-  Game content — the question generators, the MODES array, the item pools —
-  lives in an inline <script> in each page under games/. That's deliberate (see
-  README), but it means tests can't just require() it. These helpers pull that
-  script out and run it, so the generators can be exercised directly.
-
   This sits outside test/ on purpose: `node --test` treats every .js file under
   a test directory as a test file, so in there this ran as a zero-test file and
   reported itself as a passing test -- inflating the count, and turning any
   import-time throw into a phantom failure against a file with no tests in it.
 
-  loadModes()  runs the page script with a stubbed DetectiveGame and returns the
-               config it passed to start(). No DOM, no dependencies.
+  loadModes()  requires the page's own modules and returns the config its
+               question module exports. No DOM, no dependencies.
   openPage()   builds a real DOM with jsdom, inlining the <script src> tags the
                page links so nothing has to be fetched. Returns null when jsdom
                isn't installed, so the dependency-free tests still run alone.
@@ -21,9 +16,10 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
 
 const ROOT = path.join(__dirname, '..');
+const ASSET_JS = path.join(ROOT, 'assets', 'js');
+const ENGINE = path.join('assets', 'js', 'game-engine.js');
 
 const GAMES = {
   math: { page: 'games/math/numeration-detective-agency.html' },
@@ -31,89 +27,86 @@ const GAMES = {
 };
 
 const SCRIPT_SRC = /<script src="([^"]+)"><\/script>/g;
-const ENGINE = path.join('assets', 'js', 'game-engine.js');
 
-// Which type modules a page loads is read from the page, never listed here. A
-// hardcoded list goes on passing after the page stops loading a module, so
-// "every question names a registered type" would keep asserting against types
-// the real page no longer has -- the suite agreeing with itself rather than
-// with what ships. The ?v= cache-buster isn't part of the filename.
-function typeModulesOf(pageRelPath) {
+/*
+  Which modules a page loads is read from the page, never listed here. A
+  hardcoded list goes on passing after the page stops loading a module, so
+  "every question names a registered type" would keep asserting against types
+  the real page no longer has -- the suite agreeing with itself rather than with
+  what ships. The ?v= cache-buster isn't part of the filename.
+*/
+function pageModules(pageRelPath) {
   const html = fs.readFileSync(path.join(ROOT, pageRelPath), 'utf8');
   const pageDir = path.dirname(path.join(ROOT, pageRelPath));
   return [...html.matchAll(SCRIPT_SRC)]
-    .map((m) => path.relative(ROOT, path.resolve(pageDir, m[1].split('?')[0])))
-    .filter((rel) => rel !== ENGINE);
-}
-
-// The <script src=...> tags carry attributes; the page's own script doesn't.
-// So this only ever matches the inline one.
-const INLINE_SCRIPT = /<script>([\s\S]*?)<\/script>/g;
-
-function inlineScriptOf(pageRelPath) {
-  const html = fs.readFileSync(path.join(ROOT, pageRelPath), 'utf8');
-  const blocks = [...html.matchAll(INLINE_SCRIPT)].map((m) => m[1]);
-  if (!blocks.length) throw new Error(`no inline <script> found in ${pageRelPath}`);
-  return blocks[blocks.length - 1];
-}
-
-// A stand-in for the engine that records what the page asks of it instead of
-// rendering anything. The helpers it exposes must behave like the real ones —
-// they're the same implementations, required straight from the engine.
-function stubEngine() {
-  const real = require(path.join(ROOT, 'assets/js/game-engine.js'));
-  const registered = new Set();
-  const captured = { config: null };
-  return {
-    captured,
-    registered,
-    api: {
-      randInt: real.randInt,
-      choice: real.choice,
-      shuffle: real.shuffle,
-      fmt: real.fmt,
-      registerType: (name) => registered.add(name),
-      hasType: (name) => registered.has(name),
-      start: (config) => { captured.config = config; },
-    },
-  };
+    .map((m) => path.relative(ROOT, path.resolve(pageDir, m[1].split('?')[0])));
 }
 
 /*
-  Run a game's page script headlessly and return what it passed to start(),
-  plus the set of question types available to it (the engine's own built-ins
-  plus anything its type modules register).
+  Drop cached copies of the site's modules so each game gets its own engine.
+  Type modules register onto the engine instance they import, and node caches
+  that instance process-wide -- so without this, loading the math page would
+  leave its place-value types registered while the ELA assertions ran, and
+  "every question names a registered type" would pass for a type that game's
+  page does not actually load.
+*/
+function resetSiteModules() {
+  for (const key of Object.keys(require.cache)) {
+    if (key.startsWith(ASSET_JS)) delete require.cache[key];
+  }
+}
+
+/*
+  Require a game's modules the way its page loads them, and return the config
+  its question module exports, plus a view of which question types the engine
+  ends up knowing.
 */
 function loadModes(gameKey) {
   const game = GAMES[gameKey];
   if (!game) throw new Error(`unknown game: ${gameKey}`);
 
-  const { captured, registered, api } = stubEngine();
-  const real = require(path.join(ROOT, 'assets/js/game-engine.js'));
-  for (const name of ['mcq-simple', 'multiselect', 'true-false']) {
-    if (real.hasType(name)) registered.add(name);
+  const modules = pageModules(game.page);
+  if (!modules.includes(ENGINE)) {
+    throw new Error(`${game.page} does not load ${ENGINE}`);
   }
 
-  const sandbox = {
-    DetectiveGame: api,
-    Math, JSON, parseInt, parseFloat, String, Number, Array, Object, Date, RegExp, console,
-    // Page scripts don't touch the DOM at definition time, but a stray lookup
-    // should return nothing rather than throw and hide the real failure.
-    document: { getElementById: () => null, querySelector: () => null, querySelectorAll: () => [] },
+  resetSiteModules();
+  const engine = require(path.join(ROOT, ENGINE));
+
+  let config = null;
+  let configModule = null;
+  for (const rel of modules) {
+    if (rel === ENGINE) continue;
+    const exported = require(path.join(ROOT, rel));
+    // The question module is the one exporting a modes array; type modules
+    // register themselves on the engine and export nothing of interest.
+    if (exported && Array.isArray(exported.modes)) {
+      if (config) {
+        throw new Error(`${game.page} loads two question modules: ${configModule} and ${rel}`);
+      }
+      config = exported;
+      configModule = rel;
+    }
+  }
+  if (!config) {
+    throw new Error(
+      `${game.page} loads no question module -- nothing it links exports a modes array`
+    );
+  }
+
+  return {
+    ...config,
+    // Asks the real engine rather than a list built alongside it, so this
+    // cannot drift from what the engine would actually render.
+    availableTypes: { has: (name) => engine.hasType(name) },
+    page: game.page,
+    modules,
+    questionModule: configModule,
   };
-  const ctx = vm.createContext(sandbox);
-
-  for (const mod of typeModulesOf(game.page)) {
-    vm.runInContext(fs.readFileSync(path.join(ROOT, mod), 'utf8'), ctx, { filename: mod });
-  }
-  vm.runInContext(inlineScriptOf(game.page), ctx, { filename: game.page });
-
-  if (!captured.config) throw new Error(`${game.page} never called DetectiveGame.start()`);
-  return { ...captured.config, availableTypes: registered, page: game.page };
 }
 
 /*
-  Build a real DOM for a game page. Returns null if jsdom isn't installed —
+  Build a real DOM for a game page. Returns null if jsdom isn't installed --
   callers should skip rather than fail, so `node --test` works on a fresh clone
   with no npm install.
 */
@@ -158,4 +151,7 @@ function press(win, el, key) {
 
 const stripTags = (html) => String(html).replace(/<[^>]*>/g, '');
 
-module.exports = { GAMES, loadModes, openPage, haveJsdom, click, press, stripTags, ROOT };
+module.exports = {
+  GAMES, loadModes, openPage, haveJsdom, click, press, stripTags,
+  pageModules, ROOT, ENGINE,
+};
