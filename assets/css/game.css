@@ -240,8 +240,11 @@ h1.title{
 .opt-btn:hover{ border-color:var(--mustard); background:#fffaf0; }
 .opt-btn:focus-visible{ outline:3px solid var(--teal); }
 .opt-btn.chosen{ border-color:var(--teal); background:rgba(62,124,123,0.12); }
-.opt-btn.is-correct{ border-color:var(--teal); background:rgba(62,124,123,0.22); }
-.opt-btn.is-wrong{ border-color:var(--red); background:rgba(178,58,72,0.14); }
+/* Answer feedback. Every answerable control, not just .opt-btn — the engine
+   adds these to .tf-btn and .symbol-btn too, and those selectors were missing,
+   so True/False and </>/= cases graded silently with no colour at all. */
+.opt-btn.is-correct, .tf-btn.is-correct, .symbol-btn.is-correct{ border-color:var(--teal); background:rgba(62,124,123,0.22); }
+.opt-btn.is-wrong, .tf-btn.is-wrong, .symbol-btn.is-wrong{ border-color:var(--red); background:rgba(178,58,72,0.14); }
 .opt-btn[disabled]{ cursor:default; }
 .opt-btn .chk{ display:inline-block; width:16px; }
 

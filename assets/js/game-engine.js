@@ -268,8 +268,13 @@ var DetectiveGame = (function(){
           if (state.answered) return;
           var val = btn.getAttribute('data-v')==='true';
           var correct = val === q.correctAnswer;
-          document.querySelectorAll('#tfRow .tf-btn').forEach(function(b){ b.disabled=true; });
-          btn.classList.add(correct ? 'is-correct':'is-wrong');
+          // Mark the right answer whatever was clicked, so a wrong guess still
+          // shows what the answer was (same as the mcq-simple branch above).
+          document.querySelectorAll('#tfRow .tf-btn').forEach(function(b){
+            b.disabled = true;
+            if ((b.getAttribute('data-v')==='true') === q.correctAnswer) b.classList.add('is-correct');
+          });
+          if (!correct) btn.classList.add('is-wrong');
           onAnswered(correct, q.explain());
         });
       });
@@ -305,8 +310,11 @@ var DetectiveGame = (function(){
           if (state.answered) return;
           var v = btn.getAttribute('data-v');
           var correct = v === q.correctKey;
-          document.querySelectorAll('#symRow .symbol-btn').forEach(function(b){ b.disabled=true; });
-          btn.classList.add(correct ? 'is-correct':'is-wrong');
+          document.querySelectorAll('#symRow .symbol-btn').forEach(function(b){
+            b.disabled = true;
+            if (b.getAttribute('data-v')===q.correctKey) b.classList.add('is-correct');
+          });
+          if (!correct) btn.classList.add('is-wrong');
           onAnswered(correct, q.explain());
         });
       });
