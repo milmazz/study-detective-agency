@@ -61,7 +61,9 @@ h1.title{
   margin:6px 0 0;
   font-size:14.5px;
   color:#C9D2E2;
-  max-width:46ch;
+  /* em, not ch — see the note on .site-subtitle in index.html. 46ch x 0.583em
+     is the width this had with Baloo 2 loaded, minus the reflow on swap. */
+  max-width:26.8em;
 }
 .badge-counter{
   flex-shrink:0;
@@ -135,7 +137,7 @@ h1.title{
 .trail-map-wrap{ margin-bottom:16px; }
 .trail-map-wrap svg{ width:100%; height:auto; display:block; }
 .trail-node-label{
-  font-family:'Roboto Mono', monospace; font-size:9px; fill:var(--ink-2); text-anchor:middle;
+  font-family:var(--mono); font-size:9px; fill:var(--ink-2); text-anchor:middle;
 }
 .trail-legend{
   display:flex; gap:16px; justify-content:center; font-size:11px; color:#5b5140; margin-top:2px; flex-wrap:wrap;
@@ -154,7 +156,7 @@ h1.title{
 }
 .back-btn:hover{ text-decoration:underline; }
 .progress-pill{
-  font-family:'Roboto Mono', monospace; font-size:12.5px; font-weight:700;
+  font-family:var(--mono); font-size:12.5px; font-weight:700;
   background:var(--folder-dark); border-radius:20px; padding:4px 12px; color:var(--ink);
 }
 .streak-pill{
@@ -186,7 +188,7 @@ h1.title{
 }
 
 .number-display{
-  font-family:'Roboto Mono', monospace;
+  font-family:var(--mono);
   font-size:clamp(22px,6vw,30px);
   font-weight:700;
   letter-spacing:1px;
@@ -205,9 +207,22 @@ h1.title{
 .digit-box:hover{ background:rgba(217,164,65,0.35); }
 .digit-box:focus-visible{ outline:3px solid var(--teal); }
 .digit-box.picked{ background:var(--mustard); color:#241a08; border-radius:6px; }
+
+/*
+  Bigger digits, and real padding around them, on small screens. The clamp
+  floor of 22px plus 3px of side padding gives a ~19px-wide target at a 360px
+  viewport — under the 24px WCAG 2.5.8 minimum, with adjacent boxes abutting.
+  "Click the digit in the ten-thousands place" is the ONLY interaction in Case
+  No. 01, performed by a 9-year-old on a phone, so it has to be hittable.
+  .number-display already sets word-break, so wrapping to a second line is safe.
+*/
+@media (max-width:480px){
+  .number-display{ font-size:26px; letter-spacing:0; line-height:1.9; }
+  .digit-box{ padding:6px 8px; margin:0 1px; }
+}
 .comma-sep{ color:#8a7c5e; }
 .num-sub{
-  font-family:'Roboto Mono', monospace; color:var(--ink-2); font-weight:700;
+  font-family:var(--mono); color:var(--ink-2); font-weight:700;
 }
 .num-highlight{
   background:rgba(217,164,65,0.45);
@@ -224,7 +239,7 @@ h1.title{
   padding:10px 14px; text-align:center; min-width:150px;
 }
 .num-card .who{ font-size:11.5px; font-weight:700; color:var(--teal-dark); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;}
-.num-card .val{ font-family:'Roboto Mono', monospace; font-size:19px; font-weight:700; color:var(--ink); }
+.num-card .val{ font-family:var(--mono); font-size:19px; font-weight:700; color:var(--ink); }
 
 .options-grid{
   display:grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr));
@@ -269,7 +284,7 @@ h1.title{
   position:absolute; top:-10px; right:-10px;
   width:26px; height:26px; padding:0; border-radius:50%;
   background:#fff; border:1.5px solid #cbb98d; color:#9d8e75;
-  font-family:'Roboto Mono', monospace; font-size:13px; font-weight:800; line-height:1;
+  font-family:var(--mono); font-size:13px; font-weight:800; line-height:1;
   display:flex; align-items:center; justify-content:center;
   cursor:pointer; opacity:1;
 }
@@ -289,7 +304,7 @@ h1.title{
 
 .symbol-row{ display:flex; gap:12px; justify-content:center; margin-top:6px; }
 .symbol-btn{
-  font-family:'Roboto Mono', monospace; font-size:26px; font-weight:700;
+  font-family:var(--mono); font-size:26px; font-weight:700;
   width:64px; height:56px; border-radius:8px; border:1.5px solid #cbb98d;
   background:#fff; cursor:pointer; color:var(--ink);
 }
@@ -306,7 +321,7 @@ h1.title{
 .order-row{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:6px; }
 .order-tile{
   position:relative;
-  font-family:'Roboto Mono', monospace; font-size:16px; font-weight:700;
+  font-family:var(--mono); font-size:16px; font-weight:700;
   padding:14px 12px; border-radius:8px; border:1.5px solid #cbb98d; background:#fff; cursor:pointer;
   min-width:110px; text-align:center;
 }
@@ -380,7 +395,7 @@ h1.title{
 .summary .rank-note{ font-size:13.5px; color:#5b5140; margin-bottom:16px; }
 .summary .stat-row{ display:flex; justify-content:center; gap:26px; margin:12px 0 20px; flex-wrap:wrap; }
 .summary .stat{ text-align:center; }
-.summary .stat .n{ font-size:24px; font-weight:800; color:var(--ink); font-family:'Roboto Mono', monospace; }
+.summary .stat .n{ font-size:24px; font-weight:800; color:var(--ink); font-family:var(--mono); }
 .summary .stat .l{ font-size:11px; letter-spacing:1px; text-transform:uppercase; color:#6b6150; }
 .summary-btns{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
 

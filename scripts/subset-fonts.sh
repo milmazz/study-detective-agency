@@ -8,7 +8,10 @@
 # Google's "latin" subsets carry ~215-230 glyphs each. This site is English
 # 4th-grade content, so most of that is dead weight: subsetting to ASCII +
 # Latin-1 (accents, for any Spanish that shows up) + the handful of typographic
-# marks actually used cuts the three files from 119 KB to 83 KB.
+# marks actually used cuts these two from 86 KB to 58 KB.
+#
+# Monospace is deliberately absent: it's a system stack (--mono in base.css),
+# not a webfont.
 #
 # Fonts are served immutable with no ?v= cache-buster, so if you change what
 # these files CONTAIN you must also change their FILENAME, and update both
@@ -34,7 +37,7 @@ OUT="$(dirname "$0")/../assets/fonts"
 # three faces ever contained them, so they already fall back to a system font.
 UNICODES="U+0020-007E,U+00A0,U+00A1,U+00B7,U+00BF,U+00D7,U+00F7,U+00C0-00FF,U+2013,U+2014,U+2018,U+2019,U+201C,U+201D,U+2026"
 
-for pair in "baloo2:baloo2-latin1" "roboto-mono:roboto-mono-latin1" "special-elite:special-elite-latin1"; do
+for pair in "baloo2:baloo2-latin1" "special-elite:special-elite-latin1"; do
   src="${pair%%:*}"; dst="${pair#*:}"
   "$PYFTSUBSET" "$SRC/$src.woff2" \
     --unicodes="$UNICODES" \

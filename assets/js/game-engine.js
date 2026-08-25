@@ -475,31 +475,63 @@ var DetectiveGame = (function(){
     return seq.slice(0, TRAIL_LENGTH);
   }
 
+  /*
+    The map is one wide zigzag scaled to its container with width:100%. On a
+    phone that means a scale factor around 0.39, which rendered the node numbers
+    at ~4px and START/FINISH at ~3.5px — a decorative squiggle with unreadable
+    labels. Narrow screens get the same zigzag folded into two rows instead, so
+    the viewBox is about half as wide and everything lands roughly twice the
+    size. The radii and font sizes below scale with the layout to match.
+
+    Chosen at render time rather than by a media query, because the geometry
+    lives here. The trail re-renders at every stop, so rotating mid-question
+    keeps the previous layout until the next clue — fine for a progress map.
+  */
   function buildTrailMapSVG(n, currentIdx){
-    var W=760, H=170;
-    var xStep = (W-60)/(n-1);
+    var narrow = (typeof window !== 'undefined') && window.innerWidth <= 560;
+    var perRow = narrow ? Math.ceil(n/2) : n;
+    var rows = Math.ceil(n/perRow);
+    var W = narrow ? 400 : 760;
+    var rowH = 170;
+    var H = rowH * rows;
+    var xStep = (W-60)/(perRow-1);
     var pts = [];
     for (var i=0;i<n;i++){
-      pts.push({ x: 30+i*xStep, y: (i%2===0) ? 42 : 128 });
+      var row = Math.floor(i/perRow);
+      var col = i % perRow;
+      // Serpentine: odd rows run right-to-left, so the path stays continuous
+      // where one row hands over to the next.
+      if (row % 2 === 1) col = perRow-1-col;
+      // Zigzag phase follows the COLUMN, not the running index. Keying it to the
+      // index left each new row starting on the opposite phase, which stretched
+      // the row-to-row link into a long vertical drop.
+      pts.push({ x: 30+col*xStep, y: row*rowH + ((col%2===0) ? 42 : 128) });
     }
+    // The two-row layout uses bigger labels sitting further from their node, so
+    // START would render above y=0 and get clipped. Give the viewBox headroom
+    // rather than moving the labels back in toward the circles.
+    var padTop = narrow ? 14 : 0;
+    var vbH = H + (narrow ? 20 : 0);
     var pathAll = pts.map(function(p){ return p.x+','+p.y; }).join(' ');
     var progressPts = pts.slice(0, currentIdx+1).map(function(p){ return p.x+','+p.y; }).join(' ');
 
-    var svg = '<div class="trail-map-wrap"><svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg">';
+    var svg = '<div class="trail-map-wrap"><svg viewBox="0 '+(-padTop)+' '+W+' '+vbH+'" xmlns="http://www.w3.org/2000/svg">';
     svg += '<polyline points="'+pathAll+'" fill="none" stroke="#cbb98d" stroke-width="3" stroke-dasharray="2 7" stroke-linecap="round"/>';
     if (currentIdx>0) svg += '<polyline points="'+progressPts+'" fill="none" stroke="#3E7C7B" stroke-width="4" stroke-linecap="round"/>';
     pts.forEach(function(p,i){
       var st = i<currentIdx ? 'done' : (i===currentIdx ? 'current' : 'future');
       var fill = st==='done' ? '#3E7C7B' : (st==='current' ? '#D9A441' : '#F5EFE0');
       var stroke = st==='future' ? '#cbb98d' : '#16233A';
-      var r = st==='current' ? 15 : 12;
+      var r = (st==='current' ? 15 : 12) * (narrow ? 1.5 : 1);
       svg += '<circle cx="'+p.x+'" cy="'+p.y+'" r="'+r+'" fill="'+fill+'" stroke="'+stroke+'" stroke-width="2"/>';
       var content = st==='done' ? '✓' : String(i+1);
       var textColor = st==='future' ? '#a89568' : (st==='done' ? '#ffffff' : '#241a08');
-      svg += '<text x="'+p.x+'" y="'+(p.y+4)+'" text-anchor="middle" font-family="Baloo 2, sans-serif" font-weight="800" font-size="'+(st==='current'?13:11)+'" fill="'+textColor+'">'+content+'</text>';
+      svg += '<text x="'+p.x+'" y="'+(p.y+4)+'" text-anchor="middle" font-family="Baloo 2, sans-serif" font-weight="800" font-size="'+Math.round((st==='current'?13:11)*(narrow?1.6:1))+'" fill="'+textColor+'">'+content+'</text>';
       if (i===0 || i===n-1){
-        var labelY = p.y<80 ? p.y-20 : p.y+26;
-        svg += '<text x="'+p.x+'" y="'+labelY+'" class="trail-node-label">'+(i===0?'START':'FINISH')+'</text>';
+        var off = narrow ? 32 : 20;
+        var labelY = (p.y % rowH) < 80 ? p.y-off : p.y+off+6;
+        svg += '<text x="'+p.x+'" y="'+labelY+'" class="trail-node-label"'
+          + (narrow ? ' style="font-size:17px;"' : '') + '>'+(i===0?'START':'FINISH')+'</text>';
       }
     });
     svg += '</svg></div>';

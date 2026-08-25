@@ -26,7 +26,7 @@
      until base.css has downloaded AND parsed. Path must match the url()
      in base.css exactly, or it is fetched twice. -->
 <link rel="preload" as="font" type="font/woff2" href="assets/fonts/baloo2-latin1.woff2" crossorigin>
-<link rel="stylesheet" href="assets/css/base.css?v=3">
+<link rel="stylesheet" href="assets/css/base.css?v=4">
 <style>
 /*
   Homepage-only styles, inlined to avoid a render-blocking request
@@ -63,7 +63,11 @@ h1.site-title{
   text-align:center; margin:0;
 }
 .site-subtitle{
-  text-align:center; color:#D9CFC0; font-size:15px; margin:8px auto 0; max-width:44ch; line-height:1.5;
+  /* 25.7em, not 44ch: 1ch is the width of the current font's "0", so a ch-based
+     max-width re-resolves when the webfont swaps in and the line rewraps, which
+     shifts the masthead height and everything under it. 44ch x 0.583em (Baloo 2's
+     zero advance) is the same width the design has today, now font-independent. */
+  text-align:center; color:#D9CFC0; font-size:15px; margin:8px auto 0; max-width:25.7em; line-height:1.5;
 }
 
 /* ---------- SECTIONS ---------- */
