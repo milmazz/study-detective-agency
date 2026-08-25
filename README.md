@@ -1,7 +1,9 @@
 # The Study Detective Agency
 
+**Live at [studydetectiveagency.com](https://studydetectiveagency.com/)**
+
 A small, static website of browser-based study games for 4th grade, themed
-as detective "case files." Built to give my daughter another way to
+as detective "case files." Built to give my kid another way to
 practice — no build step, no backend, no accounts, just HTML/CSS/JS.
 
 Live divisions:
@@ -25,6 +27,23 @@ site is deployed on Cloudflare with clean URLs (`/games/math/foo`, no
 script's docstring). Responses are also sent with no-cache headers, so
 edits always show up on refresh.
 
+## Testing
+
+The site itself needs no build tools, but the test suite runs on Node
+(`test/*.test.js`, using Node's built-in test runner — no dependencies to
+install). This repo pins Node 24 via [mise](https://mise.jdx.dev) in
+`mise.toml`; with mise installed, `cd` into the repo and it picks up the
+right version automatically.
+
+```bash
+node --test
+```
+
+Coverage is intentionally narrow: the pure helpers `DetectiveGame` exposes
+(`randInt`/`choice`/`shuffle`/`fmt`) for question generators to reuse. The
+rendering/DOM-wiring half of the engine isn't unit tested — verify that by
+hand in a browser via `scripts/dev-server.py`.
+
 ## Deployment
 
 Hosted on Cloudflare (Workers with static assets), deployed automatically
@@ -46,6 +65,8 @@ index.html                       Homepage — the game catalog (GAMES_DATA/
                                   base.css stays linked since it's shared
 scripts/
   dev-server.py                  Local dev server (see "Running it locally")
+test/
+  game-engine.test.js            node --test coverage (see "Testing")
 assets/
   css/
     base.css                     Shared tokens (colors, reset) + per-subject theme

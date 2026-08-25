@@ -15,7 +15,7 @@
   DetectiveGame also exposes randInt/choice/shuffle/fmt so a page's own
   generators can reuse them instead of redefining them.
 */
-window.DetectiveGame = (function(){
+var DetectiveGame = (function(){
   "use strict";
 
   /* ================= CORE HELPERS ================= */
@@ -550,3 +550,8 @@ window.DetectiveGame = (function(){
     start: start
   };
 })();
+
+// No-op in the browser; lets `node --test` require() this file directly
+// without a bundler. See test/game-engine.test.js.
+if (typeof window !== 'undefined') { window.DetectiveGame = DetectiveGame; }
+if (typeof module !== 'undefined' && module.exports) { module.exports = DetectiveGame; }
