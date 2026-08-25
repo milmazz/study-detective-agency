@@ -1,0 +1,16 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Reads mise.toml so CI runs the exact Node version this repo
+      # pins locally — one place declares it, not two.
+      - uses: jdx/mise-action@v2
+      - run: node --test

@@ -15,25 +15,22 @@ Live divisions:
 
 ## Running it locally
 
-No build tools required. From the project root:
+The deployed site itself needs no build step, but local tooling (the dev
+server, the test suite) runs on Node. This repo pins Node 24 via
+[mise](https://mise.jdx.dev) in `mise.toml`; with mise installed, `cd`
+into the repo and it picks up the right version automatically.
 
 ```bash
-python3 scripts/dev-server.py
+node scripts/dev-server.js
 ```
 
-Then open `http://localhost:8000/`. This isn't plain `http.server` — the
-site is deployed on Cloudflare with clean URLs (`/games/math/foo`, no
-`.html`), so this script mimics that resolution locally too (see the
-script's docstring). Responses are also sent with no-cache headers, so
-edits always show up on refresh.
+Then open `http://localhost:8000/`. This isn't a generic static file
+server — the site is deployed on Cloudflare with clean URLs
+(`/games/math/foo`, no `.html`), so this script mimics that resolution
+locally too (see the script's docstring). Responses are also sent with
+no-cache headers, so edits always show up on refresh.
 
 ## Testing
-
-The site itself needs no build tools, but the test suite runs on Node
-(`test/*.test.js`, using Node's built-in test runner — no dependencies to
-install). This repo pins Node 24 via [mise](https://mise.jdx.dev) in
-`mise.toml`; with mise installed, `cd` into the repo and it picks up the
-right version automatically.
 
 ```bash
 node --test
@@ -42,7 +39,8 @@ node --test
 Coverage is intentionally narrow: the pure helpers `DetectiveGame` exposes
 (`randInt`/`choice`/`shuffle`/`fmt`) for question generators to reuse. The
 rendering/DOM-wiring half of the engine isn't unit tested — verify that by
-hand in a browser via `scripts/dev-server.py`.
+hand in a browser via `scripts/dev-server.js`. CI
+(`.github/workflows/test.yml`) runs this on every push and pull request.
 
 ## Deployment
 
@@ -53,8 +51,8 @@ part of the site itself:
 - `wrangler.jsonc` — deploy config (asset directory, clean-URL handling)
 - `_headers` — Cache-Control rules Cloudflare applies per path
 - `.assetsignore` — repo/tooling files excluded from what gets deployed
-  (this repo's `.git`, `README.md`, etc.) — `scripts/dev-server.py` reads
-  the same file so local dev matches
+  (this repo's `.git`, `README.md`, `scripts/`, `test/`, etc.) —
+  `scripts/dev-server.js` reads the same file so local dev matches
 
 ## Project structure
 
@@ -64,7 +62,7 @@ index.html                       Homepage — the game catalog (GAMES_DATA/
                                   inline (fewer render-blocking requests);
                                   base.css stays linked since it's shared
 scripts/
-  dev-server.py                  Local dev server (see "Running it locally")
+  dev-server.js                  Local dev server (see "Running it locally")
 test/
   game-engine.test.js            node --test coverage (see "Testing")
 assets/
