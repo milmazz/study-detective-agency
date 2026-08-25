@@ -3,6 +3,7 @@
 # that aren't part of the actual site.
 # https://developers.cloudflare.com/workers/static-assets/#ignoring-assets
 .git
+.github
 .gitignore
 .wrangler
 mise.toml

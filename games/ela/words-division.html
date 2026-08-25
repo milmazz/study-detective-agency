@@ -12,7 +12,7 @@
      and parse before the browser would otherwise discover it. -->
 <link rel="preload" as="font" type="font/woff2" href="../../assets/fonts/baloo2-latin1.woff2" crossorigin>
 <link rel="stylesheet" href="../../assets/css/base.css?v=1">
-<link rel="stylesheet" href="../../assets/css/game.css?v=1">
+<link rel="stylesheet" href="../../assets/css/game.css?v=2">
 <link rel="stylesheet" href="../../assets/css/ela.css?v=1">
 </head>
 <body>
@@ -34,7 +34,7 @@
   <div id="app"></div>
 </div>
 
-<script src="../../assets/js/game-engine.js?v=1"></script>
+<script src="../../assets/js/game-engine.js?v=2"></script>
 <script>
 (function(){
   "use strict";
@@ -165,10 +165,44 @@
       explain:'Italics are often used to show what a character is thinking silently, rather than saying out loud.' }
   ];
 
+  /* ================= ITEM DRAWING ================= */
+  /*
+    Draw without replacement. These generators used choice(), which samples WITH
+    replacement, from pools of 5-8 across 8 clues -- so every single generated
+    case repeated a passage and about three in four repeated one back-to-back.
+    A kid answering the same passage twice in a row answers the second one from
+    memory rather than by reading it.
+
+    Each mode keeps its own bag and reshuffles when it runs dry, so the bag also
+    carries across a replay and across trail stops.
+  */
+  function drawer(pool){
+    var bag = [];
+    function draw(){
+      if (!bag.length) bag = shuffle(pool);
+      return bag.pop();
+    }
+    draw.reset = function(){ bag = shuffle(pool); };
+    return draw;
+  }
+  var draws = {
+    purpose: drawer(PURPOSE_ITEMS),
+    message: drawer(MESSAGE_ITEMS),
+    figlang: drawer(FIGLANG_ITEMS),
+    format:  drawer(FORMAT_ITEMS)
+  };
+  // Refill every bag when a case starts. Draining alone wasn't enough: a bag
+  // that carried over could run dry mid-case and refill with items the kid had
+  // already seen in that same case. With a fresh bag and questionsPerCase at or
+  // below the smallest pool, a case cannot repeat an item at all.
+  function resetDraws(){
+    Object.keys(draws).forEach(function(k){ draws[k].reset(); });
+  }
+
   /* ================= QUESTION GENERATORS ================= */
 
   function genPurpose(){
-    var item = choice(PURPOSE_ITEMS);
+    var item = draws.purpose();
     var opts = shuffle([
       {key:'persuade', label:'To persuade the reader'},
       {key:'inform', label:'To inform the reader with facts'},
@@ -184,18 +218,20 @@
   }
 
   function genMessage(){
-    var item = choice(MESSAGE_ITEMS);
+    var item = draws.message();
     return {
       type:'mcq-simple',
       prompt: '<div class="passage-box">' + item.text + '</div><span class="q-line">Which statement best captures the central message of this passage?</span>',
-      options: item.options,
+      // Shuffled like every other generator here. Unshuffled, a repeated item
+      // came back in the same order and could be answered from position memory.
+      options: shuffle(item.options),
       correctKey: item.correctKey,
       explain: function(){ return item.explain; }
     };
   }
 
   function genFigLang(){
-    var item = choice(FIGLANG_ITEMS);
+    var item = draws.figlang();
     var opts = buildOptionsFromPool(FIGLANG_POOL, item.correct, 5);
     return {
       type:'mcq-simple',
@@ -207,7 +243,7 @@
   }
 
   function genFormat(){
-    var item = choice(FORMAT_ITEMS);
+    var item = draws.format();
     var opts = buildOptionsFromPool(FORMAT_POOL, item.correct, 4);
     var hlContent = '<span class="format-target ' + (item.hlClass||'') + '">' + item.hl + '</span>';
     return {
@@ -232,7 +268,13 @@
   DetectiveGame.start({
     modes: MODES,
     homeIntro: 'Four case files. Every case pulls a fresh passage or example, so you can reopen a file as many times as you need to practice.',
-    trailAllFilesWord: 'four'
+    trailAllFilesWord: 'four',
+    // Five, not the default eight. The smallest item pool here has 5 entries,
+    // so this is the longest a case can run and still show every passage at
+    // most once. The math game keeps 8 because its generators build fresh
+    // numbers each time rather than drawing from a fixed pool.
+    questionsPerCase: 5,
+    onCaseStart: resetDraws
   });
 })();
 </script>

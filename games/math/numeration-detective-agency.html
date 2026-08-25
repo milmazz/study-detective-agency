@@ -12,7 +12,7 @@
      and parse before the browser would otherwise discover it. -->
 <link rel="preload" as="font" type="font/woff2" href="../../assets/fonts/baloo2-latin1.woff2" crossorigin>
 <link rel="stylesheet" href="../../assets/css/base.css?v=1">
-<link rel="stylesheet" href="../../assets/css/game.css?v=1">
+<link rel="stylesheet" href="../../assets/css/game.css?v=2">
 </head>
 <body>
 <div class="agency">
@@ -33,7 +33,10 @@
   <div id="app"></div>
 </div>
 
-<script src="../../assets/js/game-engine.js?v=1"></script>
+<script src="../../assets/js/game-engine.js?v=2"></script>
+<!-- Place-value question types. Must load after the engine and before the
+     page script below, which calls start(). -->
+<script src="../../assets/js/numeration-types.js?v=1"></script>
 <script>
 (function(){
   "use strict";
@@ -88,7 +91,12 @@
 
   function genValueCompare(){
     var sameNumber = Math.random() < 0.5;
-    var diff = choice([-2,-1,1,2]); // keep to guide's difficulty range
+    // The distractor pool offers "equal in value to" (0) and "one thousand times"
+    // (+/-3), so those have to be reachable answers -- otherwise a kid learns to
+    // strike them on sight and beats the question without doing the place-value
+    // reasoning. 0 only works across two numbers: within one number the prompt
+    // says the digit appears twice, which needs two different places.
+    var diff = sameNumber ? choice([-3,-2,-1,1,2,3]) : choice([-3,-2,-1,0,1,2,3]);
     var lowIdx = randInt(0,4);
     var hiIdx = lowIdx + Math.abs(diff);
     if (hiIdx > 7) { hiIdx = 7; lowIdx = hiIdx - Math.abs(diff); }
@@ -248,7 +256,8 @@
       options: opts,
       correctKeys: opts.filter(function(o){return o.ok;}).map(function(o){return o.key;}),
       explain: function(){
-        return 'Expanded form: ' + correctA + ' — one correct way is to multiply each digit by its place value; another is to write those products as a sum: ' + correctB + '.';
+        return 'Expanded form: ' + correctA + ' — one correct way is to multiply each digit by its place value; another is to write those products as a sum: ' + correctB + '. '
+          + 'Watch out for an option that adds up to the right number but bundles several digits together, like ending in "+ ' + fmt(num % 1000) + '" — expanded form needs every digit multiplied by its own place value, one at a time.';
       }
     };
   }
@@ -317,7 +326,12 @@
       // compare two numbers with symbol
       var nA = randInt(4,7), nB = randInt(4,7);
       var a = digitsToNum(genDigits(nA)), b = digitsToNum(genDigits(nB));
-      while (a===b) b = digitsToNum(genDigits(nB));
+      // Two random numbers are essentially never equal, so resampling on a===b
+      // meant '=' was correct in 0 of 45,299 measured questions while the button
+      // was always on screen -- the game never once taught that two numbers can
+      // be equal. Make it come up deliberately about one time in eight.
+      if (Math.random() < 0.125) b = a;
+      else while (a===b) b = digitsToNum(genDigits(nB));
       var correctSym = a<b ? '<' : (a>b ? '>' : '=');
       return {
         type:'symbol', a:a, b:b, correctKey:correctSym,

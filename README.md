@@ -82,7 +82,10 @@ assets/
                                   fonts/LICENSE.md
   js/
     game-engine.js                Shared game engine (home/play/trail screens,
-                                  every question-type renderer, click-wiring)
+                                  click-wiring, and the three subject-neutral
+                                  question types)
+    numeration-types.js           The math game's place-value question types,
+                                  registered via DetectiveGame.registerType
 games/
   math/numeration-detective-agency.html
   ela/words-division.html
@@ -102,9 +105,41 @@ games/
    counter. Copying an existing game page gets all of this right.
 3. In the page's own inline script, define your question generators and a
    `MODES` array (`{id, caseNo, title, icon, blurb, gen}` per case), then
-   call `DetectiveGame.start({ modes: MODES, homeIntro: '...',
-   trailAllFilesWord: '...' })`. `DetectiveGame` also exposes `randInt`,
-   `choice`, `shuffle`, and `fmt` for generators to reuse.
+   call:
+
+   ```js
+   DetectiveGame.start({
+     modes: MODES,
+     homeIntro: '...',
+     trailAllFilesWord: '...',
+     questionsPerCase: 8,      // optional, defaults to 8
+     onCaseStart: fn           // optional, fires when a case or the trail starts
+   });
+   ```
+
+   `DetectiveGame` also exposes `randInt`, `choice`, `shuffle`, and `fmt`
+   for generators to reuse.
+
+   Each generator returns a question object whose `type` names a registered
+   renderer. Three ship with the engine because they aren't tied to a
+   subject: `mcq-simple`, `multiselect` and `true-false`. Anything else is
+   registered by the page that needs it —
+
+   ```js
+   DetectiveGame.registerType('my-type', {
+     build: function(q, ui){ return ui.options(q.options); },
+     wire:  function(q, onAnswered, ui){ /* ... */ }
+   });
+   ```
+
+   — before `start()` runs. `assets/js/numeration-types.js` is the worked
+   example: it registers the four place-value widgets the math game uses, so
+   an ELA or history game never loads renderers built for numbers.
+
+   If your cases draw from fixed item pools rather than generating fresh
+   content each time, use `onCaseStart` to reshuffle them and keep
+   `questionsPerCase` at or below your smallest pool — that's what stops a
+   case repeating an item. The ELA game does both.
 4. Add one entry to the `GAMES_DATA` array inside `index.html`'s own
    `<script>` (near the top, above `render()`) — the homepage rebuilds
    itself from that array automatically.

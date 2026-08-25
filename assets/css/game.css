@@ -230,8 +230,14 @@ h1.title{
   display:grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr));
   gap:10px; margin-top:6px;
 }
+/* .opt-wrap exists so the strike toggle can be a SIBLING of the option button
+   rather than a child: <button> may not contain interactive content, and while
+   it was nested the option's accessible name absorbed the toggle's label. It's
+   the grid item now, and the positioning context for the toggle. */
+.opt-wrap{ position:relative; display:flex; }
+.opt-wrap .opt-btn{ flex:1; }
+
 .opt-btn{
-  position:relative;
   background:#fff; border:1.5px solid #cbb98d; border-radius:8px;
   padding:12px 10px; font-family:inherit; font-size:14.5px; font-weight:700;
   color:var(--ink); cursor:pointer; text-align:left;
@@ -248,20 +254,38 @@ h1.title{
 .opt-btn[disabled]{ cursor:default; }
 .opt-btn .chk{ display:inline-block; width:16px; }
 
+/* Shown when a question type has no renderer, or a generator threw. Both used
+   to leave the kid on a prompt with no controls and no way forward. */
+.load-error{
+  background:rgba(178,58,72,0.08); border:1.5px dashed var(--red);
+  border-radius:8px; padding:14px 16px; margin:10px 0 0;
+  color:var(--ink); font-weight:600; font-size:14.5px;
+}
+
 /* process-of-elimination toggle: mark an option as wrong without answering it */
 .opt-btn.struck{ opacity:0.55; }
 .opt-btn.struck .opt-label{ text-decoration:line-through; }
 .opt-strike{
-  position:absolute; top:-9px; right:-9px;
-  width:22px; height:22px; border-radius:50%;
-  background:#fff; border:1.5px solid #cbb98d; color:#8a7c66;
-  font-family:'Roboto Mono', monospace; font-size:12px; font-weight:800; line-height:1;
+  position:absolute; top:-10px; right:-10px;
+  width:26px; height:26px; padding:0; border-radius:50%;
+  background:#fff; border:1.5px solid #cbb98d; color:#9d8e75;
+  font-family:'Roboto Mono', monospace; font-size:13px; font-weight:800; line-height:1;
   display:flex; align-items:center; justify-content:center;
   cursor:pointer; opacity:1;
 }
-.opt-strike:hover{ border-color:var(--red); color:var(--red); }
+/* Touch pointers get a bigger target. At 22px, overhanging the option's corner,
+   a kid aiming for the answer hit the toggle instead -- and since the toggle
+   swallowed the tap, the answer silently didn't register. WCAG 2.5.8 wants 24px
+   minimum; this is comfortably past it for a 9-year-old on a phone. */
+@media (hover:none){
+  .opt-strike{ width:36px; height:36px; top:-14px; right:-14px; font-size:16px; }
+}
+.opt-strike[disabled]{ cursor:default; opacity:0.45; }
+.opt-strike:hover:not([disabled]){ border-color:var(--red); color:var(--red); }
 .opt-strike:focus-visible{ outline:3px solid var(--teal); outline-offset:1px; }
-.opt-btn.struck .opt-strike{ background:var(--red); border-color:var(--red-dark); color:#fff; }
+/* Keyed off aria-pressed, not a descendant selector: the toggle is a sibling of
+   the option now, so .opt-btn.struck .opt-strike no longer matches anything. */
+.opt-strike[aria-pressed="true"]{ background:var(--red); border-color:var(--red-dark); color:#fff; }
 
 .symbol-row{ display:flex; gap:12px; justify-content:center; margin-top:6px; }
 .symbol-btn{
