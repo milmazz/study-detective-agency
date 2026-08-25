@@ -37,7 +37,7 @@ npm install   # once, for the DOM tests
 node --test
 ```
 
-Three suites:
+Four suites:
 
 - **`test/game-engine.test.js`** — the pure helpers `DetectiveGame` exposes
   (`randInt`/`choice`/`shuffle`/`fmt`) for question generators to reuse.
@@ -53,12 +53,18 @@ Three suites:
   process-of-elimination toggle, keyboard operation, and the degraded paths
   (unknown question type, a generator that throws, a page missing
   `#badgeNum`).
+- **`test/question-modules.test.js`** — the wiring rather than the
+  content: that each page loads exactly one question module, that the
+  module sits under `/assets/` where the year-long cache actually
+  applies, that every script tag carries a `?v=`, that the page starts
+  from a global its module assigns, and that requiring a module has no
+  side effects.
 
 `jsdom` is the repo's only dependency and is dev-only — **nothing here
 ships**, and `.assetsignore` keeps `package.json`, the lockfile and
 `node_modules` out of what gets deployed. `test/dom.test.js` skips itself
 when jsdom is missing, so `node --test` still works on a fresh clone with
-no install; you just get the other two suites. CI installs it so the DOM
+no install; you just get the other three suites. CI installs it so the DOM
 half always runs.
 
 Layout and visual appearance still aren't covered — check those by hand in
@@ -82,6 +88,15 @@ token lives in the HTML, which expires in 300s, so visitors pick up both
 within five minutes. Fonts are exempt (they version by filename) because a
 preload `href` has to match the `url()` in `base.css` byte-for-byte.
 
+CI enforces this on every pull request: `scripts/check-asset-versions.js`
+diffs the branch against its merge base and fails when a changed asset is
+still linked by the token it had before. It reads which assets are
+versioned from the pages themselves, so an asset no page links with a `?v=`
+opts out by construction — that's how fonts are exempt without being named
+anywhere. Run it by hand with `node scripts/check-asset-versions.js main
+HEAD`. It's a CI step rather than a test because a shallow clone has no
+history to compare against and would fail for the wrong reason.
+
 ## Project structure
 
 ```
@@ -91,10 +106,12 @@ index.html                       Homepage — the game catalog (GAMES_DATA/
                                   base.css stays linked since it's shared
 scripts/
   dev-server.js                  Local dev server (see "Running it locally")
+  check-asset-versions.js        Fails CI when an asset changed but its ?v=
+                                  token did not (see "Deployment")
   subset-fonts.sh                Regenerates assets/fonts/ (run by hand, not
                                   a build step — see assets/fonts/LICENSE.md)
 test-support/
-  load-game.js                   Loads a game page's inline script for tests.
+  load-game.js                   Requires a game page's own modules for tests.
                                   Outside test/ because `node --test` globs
                                   everything under it, and a helper is not a
                                   test
@@ -102,6 +119,7 @@ test/
   game-engine.test.js            Pure helpers
   generators.test.js             Property tests over every question generator
   dom.test.js                    Rendering + wiring, via jsdom (see "Testing")
+  question-modules.test.js       How each page wires up its modules
 assets/
   css/
     base.css                     Shared tokens (colors, reset) + per-subject
@@ -121,6 +139,10 @@ assets/
     numeration-types.js           The math game's place-value question types
                                   and their digit renderers, registered via
                                   DetectiveGame.registerType
+    numeration-questions.js       Numbers Division: generators + MODES
+    words-questions.js            Words Division: passages, pools, generators
+                                  + MODES. Both export the config start()
+                                  takes; the page calls start()
 games/
   math/numeration-detective-agency.html
   ela/words-division.html
@@ -141,9 +163,17 @@ games/
    `_headers`). The page also needs a `<div id="app">` for the engine to
    render into, and an element with `id="badgeNum"` for the closed-case
    counter. Copying an existing game page gets all of this right.
-3. In the page's own inline script, define your question generators and a
-   `MODES` array (`{id, caseNo, title, icon, blurb, gen}` per case), then
-   call:
+3. Put the game's content — its question generators and a `MODES` array
+   (`{id, caseNo, title, icon, blurb, gen}` per case) — in its own module
+   under `assets/js/`, not inline in the page. Two reasons: `/assets/*` is
+   served `immutable` and cached for a year against its `?v=` token, where
+   the page's HTML expires in 300s, and the content is the overwhelming
+   majority of a game's bytes; and a module can be `require()`d by the
+   tests directly. Copy the export footer from an existing questions
+   module so it works in both the browser and node.
+
+   The module *returns* the config rather than starting the game, so that
+   requiring it has no side effects. The page then calls:
 
    ```js
    DetectiveGame.start({
@@ -178,7 +208,16 @@ games/
    content each time, use `onCaseStart` to reshuffle them and keep
    `questionsPerCase` at or below your smallest pool — that's what stops a
    case repeating an item. The ELA game does both.
-4. Add one entry to the `GAMES_DATA` array inside `index.html`'s own
+4. Link that module after the engine (and after any type module), and
+   start the game from the global it exports:
+
+   ```html
+   <script src="../../assets/js/game-engine.js?v=6"></script>
+   <script src="../../assets/js/my-questions.js?v=1"></script>
+   <script>DetectiveGame.start(MY_QUESTIONS);</script>
+   ```
+
+5. Add one entry to the `GAMES_DATA` array inside `index.html`'s own
    `<script>` (near the top, above `render()`) — the homepage rebuilds
    itself from that array automatically.
 

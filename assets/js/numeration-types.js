@@ -13,7 +13,14 @@
 (function(){
   "use strict";
 
-  var fmt = DetectiveGame.fmt;
+  // Browser: the engine is already a global. Node: pull it in, so the tests can
+  // require() this file and register against the real engine rather than a stub.
+  var DG = (typeof DetectiveGame !== 'undefined') ? DetectiveGame
+         : (typeof require === 'function') ? require('./game-engine.js')
+         : null;
+  if (!DG) throw new Error('numeration-types.js: load game-engine.js first');
+
+  var fmt = DG.fmt;
 
   /*
     Rendering a number as place-addressable digits. These used to live in the
@@ -78,7 +85,7 @@
   }
 
   // Click the digit sitting in a named place.
-  DetectiveGame.registerType('click-digit', {
+  DG.registerType('click-digit', {
     build: function(q){ return digitDisplay(q.number); },
     wire: function(q, onAnswered, ui){
       document.querySelectorAll('.digit-box').forEach(function(el){
@@ -109,7 +116,7 @@
   });
 
   // How many times bigger is one digit's value than another's?
-  DetectiveGame.registerType('value-compare', {
+  DG.registerType('value-compare', {
     build: function(q, ui){
       var head = q.sameNumber
         ? digitDisplayHighlight(q.numA, [q.aIdx, q.bIdx])
@@ -133,7 +140,7 @@
   });
 
   // Put whole numbers in order, least to greatest.
-  DetectiveGame.registerType('order', {
+  DG.registerType('order', {
     build: function(q, ui){
       return '<div class="order-row" id="orderRow">' + q.numbers.map(function(v){
         return '<button class="order-tile" data-v="'+v+'">'+ui.fmt(v)+'</button>';
@@ -179,7 +186,7 @@
   });
 
   // Which of < > = compares these two numbers?
-  DetectiveGame.registerType('symbol', {
+  DG.registerType('symbol', {
     build: function(q, ui){
       return '<div class="two-numbers">' +
         '<div class="num-card"><div class="val">'+ui.fmt(q.a)+'</div></div>' +
