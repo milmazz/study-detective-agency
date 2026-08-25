@@ -1,0 +1,15 @@
+{
+  // Tells `wrangler deploy` to publish this repo as a static-assets-only
+  // Worker — no custom script/logic, it just serves the files as-is
+  // (equivalent to what Cloudflare Pages does). `_headers` in the repo
+  // root is picked up automatically from this directory.
+  "name": "study-detective-agency",
+  "compatibility_date": "2026-08-24",
+  "assets": {
+    "directory": "./",
+    // Every link in this site is written with the .html extension, so
+    // serve requests exactly as asked instead of redirecting .html <->
+    // extension-less URLs (the default "auto-trailing-slash" behavior).
+    "html_handling": "none"
+  }
+}

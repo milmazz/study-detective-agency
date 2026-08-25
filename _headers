@@ -1,0 +1,21 @@
+# Cache-Control rules for Cloudflare Pages.
+# https://developers.cloudflare.com/pages/configuration/headers/
+#
+# HTML pages stay short-lived so edits (new cases, copy fixes) show up
+# quickly. CSS/JS/data get a longer cache since Cloudflare Pages purges
+# its own edge cache on every deploy anyway — this max-age mainly
+# controls how long a returning VISITOR'S browser reuses its local copy.
+# Bump these once the asset structure settles down, or move to
+# content-hashed filenames for indefinite (immutable) caching.
+
+/
+  Cache-Control: public, max-age=300, must-revalidate
+
+/index.html
+  Cache-Control: public, max-age=300, must-revalidate
+
+/games/*
+  Cache-Control: public, max-age=300, must-revalidate
+
+/assets/*
+  Cache-Control: public, max-age=86400
