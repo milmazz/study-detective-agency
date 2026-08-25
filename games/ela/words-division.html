@@ -5,12 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Words Division — Detective Agency</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🕵️</text></svg>">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Baloo+2:wght@500;600;700;800&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../../assets/css/base.css">
-<link rel="stylesheet" href="../../assets/css/game.css">
-<link rel="stylesheet" href="../../assets/css/ela.css">
+<!-- Fonts are self-hosted and declared in base.css. This used to be a
+     render-blocking <link> to fonts.googleapis.com — a whole extra origin
+     (DNS + TCP + TLS) before the first pixel, which is what the homepage
+     already avoided. Baloo 2 is preloaded because base.css has to download
+     and parse before the browser would otherwise discover it. -->
+<link rel="preload" as="font" type="font/woff2" href="../../assets/fonts/baloo2-latin.woff2" crossorigin>
+<link rel="stylesheet" href="../../assets/css/base.css?v=1">
+<link rel="stylesheet" href="../../assets/css/game.css?v=1">
+<link rel="stylesheet" href="../../assets/css/ela.css?v=1">
 </head>
 <body>
 <div class="agency">
@@ -31,7 +34,7 @@
   <div id="app"></div>
 </div>
 
-<script src="../../assets/js/game-engine.js"></script>
+<script src="../../assets/js/game-engine.js?v=1"></script>
 <script>
 (function(){
   "use strict";

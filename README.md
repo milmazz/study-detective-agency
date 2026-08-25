@@ -54,6 +54,12 @@ part of the site itself:
   (this repo's `.git`, `README.md`, `scripts/`, `test/`, etc.) —
   `scripts/dev-server.js` reads the same file so local dev matches
 
+Assets are cached for a year as `immutable`, so **every CSS/JS URL carries a
+hand-bumped `?v=N`**. Bump it in the same commit as the asset change: the
+token lives in the HTML, which expires in 300s, so visitors pick up both
+within five minutes. Fonts are exempt (they version by filename) because a
+preload `href` has to match the `url()` in `base.css` byte-for-byte.
+
 ## Project structure
 
 ```
@@ -67,10 +73,13 @@ test/
   game-engine.test.js            node --test coverage (see "Testing")
 assets/
   css/
-    base.css                     Shared tokens (colors, reset) + per-subject theme
+    base.css                     Shared tokens (colors, reset) + per-subject
+                                  theme, and the @font-face blocks
     game.css                     Shared game shell (masthead, cards, question
                                   types, summary) used by every game page
     ela.css                      ELA-only question styles (reading passages)
+  fonts/                         Self-hosted woff2 + their licenses; see
+                                  fonts/LICENSE.md
   js/
     game-engine.js                Shared game engine (home/play/trail screens,
                                   every question-type renderer, click-wiring)
@@ -85,7 +94,12 @@ games/
 2. Link `../../assets/css/base.css`, `../../assets/css/game.css`, and
    `../../assets/js/game-engine.js` in its `<head>`/before its own script,
    and set `data-theme="math" | "ela" | "social-studies"` on the `<html>`
-   tag to pick up that subject's accent color.
+   tag to pick up that subject's accent color. Copy the `?v=N` on those
+   URLs from an existing page — assets are served `immutable`, so that
+   token is the only thing that busts a returning visitor's cache (see
+   `_headers`). The page also needs a `<div id="app">` for the engine to
+   render into, and an element with `id="badgeNum"` for the closed-case
+   counter. Copying an existing game page gets all of this right.
 3. In the page's own inline script, define your question generators and a
    `MODES` array (`{id, caseNo, title, icon, blurb, gen}` per case), then
    call `DetectiveGame.start({ modes: MODES, homeIntro: '...',
