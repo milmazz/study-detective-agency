@@ -6,9 +6,11 @@
   "name": "study-detective-agency",
   "compatibility_date": "2026-08-24",
   "assets": {
-    "directory": "./"
-    // html_handling defaults to "auto-trailing-slash": /foo.html redirects
-    // to /foo, and / still serves index.html. Every internal link in this
+    "directory": "./",
+    // Clean URLs: /foo.html redirects to /foo, and / still serves
+    // index.html. This is already the default, spelled out here so it's
+    // not relying on an unstated default. Every internal link in this
     // site is written extension-less to match, so nothing ever redirects.
+    "html_handling": "auto-trailing-slash"
   }
 }
