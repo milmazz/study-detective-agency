@@ -109,6 +109,14 @@
     }
 
     var correctDiff = aIdx - bIdx; // positive => A's place is bigger
+
+    // Every option has to name BOTH sides of the comparison. A bare
+    // "Value is one-tenth the value of" is a fragment with no object, and in
+    // the two-number variant nothing established which number was the subject
+    // — so the inverse option (always in the set) read as equally correct.
+    var subjA = sameNumber ? 'the ' + PLACES[aIdx].short + ' digit' : "Number A's digit";
+    var subjB = sameNumber ? 'the ' + PLACES[bIdx].short + ' digit' : "Number B's digit";
+    function cap(t){ return t.charAt(0).toUpperCase() + t.slice(1); }
     var distractorPool = shuffle([-3,-2,-1,0,1,2,3].filter(function(v){ return v!==correctDiff; }));
     var opts = [correctDiff].concat(distractorPool.slice(0,3));
     opts = shuffle(opts);
@@ -117,12 +125,12 @@
       type:'value-compare', sameNumber:sameNumber, numA:numA, numB:numB, aIdx:aIdx, bIdx:bIdx, d:d,
       prompt: sameNumber
         ? 'In the number <span class="num-sub">' + fmt(numA) + '</span>, the digit ' + d + ' appears twice. Compare the value of the digit in the <span class="hl">' + PLACES[aIdx].short + '</span> place to the value of the digit in the <span class="hl">' + PLACES[bIdx].short + '</span> place.'
-        : 'Compare the value of the digit ' + d + ' in each number below.',
-      options: opts.map(function(v){ return {key:String(v), label:'Value is ' + RATIO_LABEL[String(v)]}; }),
+        : 'Compare the value of the digit ' + d + ' in <span class="hl">Number A</span> to its value in <span class="hl">Number B</span>.',
+      options: opts.map(function(v){ return {key:String(v), label: cap(subjA) + ' is ' + RATIO_LABEL[String(v)] + ' ' + subjB}; }),
       correctKey: String(correctDiff),
       explain: function(){
         var valA = d*PLACES[aIdx].value, valB = d*PLACES[bIdx].value;
-        return 'The digit in the ' + PLACES[aIdx].short + ' place is worth ' + fmt(valA) + '. The digit in the ' + PLACES[bIdx].short + ' place is worth ' + fmt(valB) + '. So the first is ' + RATIO_LABEL[String(correctDiff)] + ' the second.';
+        return cap(subjA) + ' is worth ' + fmt(valA) + '. ' + cap(subjB) + ' is worth ' + fmt(valB) + '. So ' + subjA + ' is ' + RATIO_LABEL[String(correctDiff)] + ' ' + subjB + '.';
       }
     };
   }
@@ -254,14 +262,21 @@
     var n = randInt(6,9);
     var digits = genDigits(n);
     var num = digitsToNum(digits);
-    var posIdx = randInt(0, n-1);
+    // Only ask about a NON-ZERO digit. "The digit in the tens place has a
+    // value of (0 x 100)" is 0 = 0 whichever place the statement names, so
+    // the "move the place" branch below can't actually make it false.
+    var nonZero = [];
+    for (var i=0;i<n;i++) if (digitAt(num, PLACES[i].value) !== 0) nonZero.push(i);
+    var posIdx = choice(nonZero); // genDigits() forces a non-zero leading digit, so never empty
     var actualDigit = digitAt(num, PLACES[posIdx].value);
     var isTrue = Math.random() < 0.5;
     var statedDigit = actualDigit, statedPlaceIdx = posIdx;
     if (!isTrue){
       if (Math.random()<0.5){
         statedPlaceIdx = posIdx + choice([-1,1,-2,2]);
-        if (statedPlaceIdx<0 || statedPlaceIdx>8 || statedPlaceIdx===posIdx) statedPlaceIdx = (posIdx+1)%n;
+        // Stay inside the places this number actually has (n-1, not 8), so
+        // the statement never names a place value bigger than the number.
+        if (statedPlaceIdx<0 || statedPlaceIdx>n-1 || statedPlaceIdx===posIdx) statedPlaceIdx = (posIdx+1)%n;
       } else {
         do { statedDigit = randInt(0,9); } while (statedDigit===actualDigit);
       }
@@ -269,7 +284,10 @@
     var statedValue = statedDigit * PLACES[statedPlaceIdx].value;
     return {
       type:'true-false', number:num,
-      prompt:'In the number <span class="num-sub" style="font-size:1.15em;">' + fmt(num) + '</span>, is this statement True or False?<br><br>"The digit ' + digitAt(num, PLACES[posIdx].value) + ' has a value of (' + statedDigit + ' × ' + fmt(PLACES[statedPlaceIdx].value) + ')."',
+      // The statement names the PLACE, not the digit's value. "The digit 8
+      // has a value of..." is true of the OTHER 8 whenever a number repeats
+      // that digit, which made the false branch above produce true claims.
+      prompt:'In the number <span class="num-sub" style="font-size:1.15em;">' + fmt(num) + '</span>, is this statement True or False?<br><br>"The digit in the <span class="hl">' + PLACES[posIdx].short + '</span> place has a value of (' + statedDigit + ' × ' + fmt(PLACES[statedPlaceIdx].value) + ')."',
       correctAnswer: isTrue,
       explain: function(){
         return 'The digit in the ' + PLACES[posIdx].short + ' place is ' + actualDigit + ', so its real value is ' + actualDigit + ' × ' + fmt(PLACES[posIdx].value) + ' = ' + fmt(actualDigit*PLACES[posIdx].value) + '. ' + (isTrue ? 'That matches the statement.' : 'The statement claimed ' + fmt(statedValue) + ', which does not match.');
