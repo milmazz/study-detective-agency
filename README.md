@@ -97,7 +97,9 @@ games/
 2. Link `../../assets/css/base.css`, `../../assets/css/game.css`, and
    `../../assets/js/game-engine.js` in its `<head>`/before its own script,
    and set `data-theme="math" | "ela" | "social-studies"` on the `<html>`
-   tag to pick up that subject's accent color. Copy the `?v=N` on those
+   tag to pick up that subject's accent color. If your subject has its own
+   stylesheet — ELA has `ela.css` for reading passages — link that too,
+   after `game.css`. Copy the `?v=N` on those
    URLs from an existing page — assets are served `immutable`, so that
    token is the only thing that busts a returning visitor's cache (see
    `_headers`). The page also needs a `<div id="app">` for the engine to

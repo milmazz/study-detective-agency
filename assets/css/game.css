@@ -384,6 +384,19 @@ h1.title{
 .summary .stat .l{ font-size:11px; letter-spacing:1px; text-transform:uppercase; color:#6b6150; }
 .summary-btns{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
 
+/* The stamp is absolutely positioned in the case file's top-right corner while
+   the case label sits top-left. On a phone with a long prompt — the ELA passage
+   boxes are the worst case — it could land on top of the text. Below 560px it
+   drops into the flow instead, above the prompt, where it can't overlap. */
+@media (max-width:560px){
+  .stamp{
+    position:static; display:inline-block; margin:0 0 10px;
+    /* transform is left alone: stampIn fills forwards to rotate(-10deg), and
+       the reduced-motion rule below sets the same angle, so anything set here
+       would be overridden anyway. */
+  }
+}
+
 @media (prefers-reduced-motion: reduce){
   .stamp{ animation:none; transform:rotate(-10deg) scale(1); opacity:1; }
   .case-card{ transition:none; }

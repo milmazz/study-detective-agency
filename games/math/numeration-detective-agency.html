@@ -11,8 +11,8 @@
      already avoided. Baloo 2 is preloaded because base.css has to download
      and parse before the browser would otherwise discover it. -->
 <link rel="preload" as="font" type="font/woff2" href="../../assets/fonts/baloo2-latin1.woff2" crossorigin>
-<link rel="stylesheet" href="../../assets/css/base.css?v=1">
-<link rel="stylesheet" href="../../assets/css/game.css?v=2">
+<link rel="stylesheet" href="../../assets/css/base.css?v=2">
+<link rel="stylesheet" href="../../assets/css/game.css?v=3">
 </head>
 <body>
 <div class="agency">
@@ -30,10 +30,16 @@
       </div>
     </div>
   </div>
-  <div id="app"></div>
+  <noscript>
+    <p class="load-error">This case file needs JavaScript switched on — the
+    questions are generated fresh in your browser each time you open it.</p>
+  </noscript>
+  <!-- The engine renders every screen in here. It doubles as the main
+       landmark so a screen reader can skip straight to the question. -->
+  <main id="app"></main>
 </div>
 
-<script src="../../assets/js/game-engine.js?v=2"></script>
+<script src="../../assets/js/game-engine.js?v=3"></script>
 <!-- Place-value question types. Must load after the engine and before the
      page script below, which calls start(). -->
 <script src="../../assets/js/numeration-types.js?v=1"></script>
@@ -82,7 +88,7 @@
       type:'click-digit', number:num,
       targetPlaceIdx: placeIdx,
       prompt: 'Click the digit in the <span class="hl">' + PLACES[placeIdx].short + '</span> place.',
-      explain: function(picked){
+      explain: function(){
         var correctDigit = digitAt(num, PLACES[placeIdx].value);
         return 'In ' + fmt(num) + ', the digit in the ' + PLACES[placeIdx].short + ' place is ' + correctDigit + '.';
       }
@@ -99,24 +105,25 @@
     var diff = sameNumber ? choice([-3,-2,-1,1,2,3]) : choice([-3,-2,-1,0,1,2,3]);
     var lowIdx = randInt(0,4);
     var hiIdx = lowIdx + Math.abs(diff);
-    if (hiIdx > 7) { hiIdx = 7; lowIdx = hiIdx - Math.abs(diff); }
+    // Unreachable while lowIdx tops out at 4 and |diff| at 3, but it is the
+    // bound that keeps PLACES[hiIdx] in range if either is ever widened.
+    var TOP = PLACES.length - 2;
+    if (hiIdx > TOP) { hiIdx = TOP; lowIdx = hiIdx - Math.abs(diff); }
     var aIdx, bIdx;
     if (diff > 0){ aIdx = hiIdx; bIdx = lowIdx; } else { aIdx = lowIdx; bIdx = hiIdx; }
     var d = randInt(1,9);
 
-    var numA, numB, labelA, labelB;
+    var numA, numB;
     if (sameNumber){
       var n = Math.max(aIdx,bIdx)+2;
       var digits = genDigits(n);
       digits[n-1-aIdx] = d; digits[n-1-bIdx] = d;
       numA = numB = digitsToNum(digits);
-      labelA = 'circled digit'; labelB = 'underlined digit';
     } else {
       var nA = aIdx+2, nB = bIdx+2;
       var da = genDigits(nA); da[nA-1-aIdx] = d;
       var db = genDigits(nB); db[nB-1-bIdx] = d;
       numA = digitsToNum(da); numB = digitsToNum(db);
-      labelA = 'digit ' + d + ' in Number A'; labelB = 'digit ' + d + ' in Number B';
     }
 
     var correctDiff = aIdx - bIdx; // positive => A's place is bigger
@@ -163,13 +170,18 @@
       var factor = op==='x10' ? 10:100;
       distractors.push(base*factor*10, Math.floor(base*factor/10)||base, base+factor);
     } else {
-      var f2 = op==='d10'?10:100;
-      distractors.push(correct*10, correct/10, base);
+      var f2 = op==='d10' ? 10 : 100;
+      // Multiplied instead of divided, and didn't operate at all -- the two real
+      // misconceptions. The old third option was correct/10, fractional for
+      // every division question (45% of all options here): off-topic for a
+      // whole-number unit and eliminable at a glance. Note correct*10 would
+      // equal base for the /10 case anyway, so it was never a fourth option.
+      // The loop below fills the last slot with a whole-number place slip.
+      distractors.push(base*f2, base);
     }
     var opts = [correct].concat(distractors).filter(function(v,i,a){ return a.indexOf(v)===i && v>=0; });
     while(opts.length<4){ opts.push(correct + choice([-10,10,-100,100,-1000,1000])); opts = opts.filter(function(v,i,a){return a.indexOf(v)===i && v>=0;}); }
     opts = shuffle(opts.slice(0,4));
-    if (opts.indexOf(correct)===-1) opts[0]=correct;
 
     return {
       type:'mcq-simple',
@@ -266,8 +278,12 @@
       var q = genExpandedOnce();
       if (q) return q;
     }
-    // extremely unlikely fallback
-    return genExpandedOnce() || { type:'multiselect', number:0, prompt:'', options:[], correctKeys:[], explain:function(){return '';} };
+    // 0 of 50,000 measured generations needed even a second attempt, so getting
+    // here means something upstream changed. Throw rather than fall back to an
+    // empty multiselect: the engine compares [] to [] and scores that CORRECT,
+    // so the kid would be awarded the point for clicking Check on a blank
+    // question. The engine catches this and degrades to one skippable clue.
+    throw new Error('genExpanded: no valid question after 20 attempts');
   }
 
   function genTrueFalse(){
@@ -354,7 +370,6 @@
     var opts = [correct, down, up, num].filter(function(v,i,a){ return a.indexOf(v)===i; });
     while (opts.length<4){ opts.push(correct + pv*choice([-2,2,3])); opts = opts.filter(function(v,i,a){return a.indexOf(v)===i && v>=0;}); }
     opts = shuffle(opts.slice(0,4));
-    if (opts.indexOf(correct)===-1) opts[0]=correct;
     return {
       type:'mcq-simple',
       prompt:'Round <span class="num-sub" style="font-size:1.15em;">' + fmt(num) + '</span> to the nearest <span class="hl">' + PLACES[roundIdx].short.replace('-',' ') + '</span>.',

@@ -20,15 +20,27 @@
 # Fonts under /assets/fonts/ deliberately carry NO ?v= (their preload href must
 # match base.css's url() exactly). They are immutable by filename instead —
 # see assets/fonts/LICENSE.md.
+#
+# nosniff and Referrer-Policy are free and worth having. A full CSP is not: the
+# homepage and both game pages rely on inline <script> and <style> (a deliberate
+# render-blocking fix, see 42edcb2), so a CSP would need 'unsafe-inline' for
+# scripts and lose most of its value. There is also no injection path to defend
+# — no user input is stored or reflected, and every innerHTML interpolation takes
+# generated numbers or page-authored literals.
 
+# There is deliberately no /index.html rule: html_handling redirects that URL
+# to / before headers apply, so it could never match. Nothing links to it
+# either — every internal link on the site is written extension-less.
 /
   Cache-Control: public, max-age=300, must-revalidate
-
-/index.html
-  Cache-Control: public, max-age=300, must-revalidate
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
 
 /games/*
   Cache-Control: public, max-age=300, must-revalidate
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
 
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
+  X-Content-Type-Options: nosniff

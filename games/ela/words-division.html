@@ -11,8 +11,8 @@
      already avoided. Baloo 2 is preloaded because base.css has to download
      and parse before the browser would otherwise discover it. -->
 <link rel="preload" as="font" type="font/woff2" href="../../assets/fonts/baloo2-latin1.woff2" crossorigin>
-<link rel="stylesheet" href="../../assets/css/base.css?v=1">
-<link rel="stylesheet" href="../../assets/css/game.css?v=2">
+<link rel="stylesheet" href="../../assets/css/base.css?v=2">
+<link rel="stylesheet" href="../../assets/css/game.css?v=3">
 <link rel="stylesheet" href="../../assets/css/ela.css?v=1">
 </head>
 <body>
@@ -31,10 +31,16 @@
       </div>
     </div>
   </div>
-  <div id="app"></div>
+  <noscript>
+    <p class="load-error">This case file needs JavaScript switched on — the
+    questions are generated fresh in your browser each time you open it.</p>
+  </noscript>
+  <!-- The engine renders every screen in here. It doubles as the main
+       landmark so a screen reader can skip straight to the question. -->
+  <main id="app"></main>
 </div>
 
-<script src="../../assets/js/game-engine.js?v=2"></script>
+<script src="../../assets/js/game-engine.js?v=3"></script>
 <script>
 (function(){
   "use strict";
@@ -45,6 +51,11 @@
   function buildOptionsFromPool(pool, correctKey, count){
     count = count || 4;
     var correct = pool.filter(function(o){ return o.key===correctKey; })[0];
+    // The likeliest typo when adding content. Without this the engine reads
+    // .key off undefined and the page dies with a stack trace that doesn't say
+    // which key is missing; the engine turns this into one skippable clue and
+    // names the culprit in the console.
+    if (!correct) throw new Error('buildOptionsFromPool: no option with key "' + correctKey + '" in the pool');
     var rest = shuffle(pool.filter(function(o){ return o.key!==correctKey; }));
     var picked = [correct].concat(rest.slice(0, Math.min(count-1, rest.length)));
     return shuffle(picked);
@@ -154,9 +165,9 @@
     { before:'Coach blew the whistle and yelled, "', hl:'STOP RIGHT THERE!', after:'"', hlClass:'fmt-caps', correct:'shout',
       explain:'Writing words in ALL CAPS often shows that a character is shouting or speaking very loudly.' },
     { before:'The most important rule of the science lab is this: ', hl:'never touch the chemicals without gloves', after:'.', hlClass:'fmt-bold', correct:'emphasis',
-      explain:'Bold text draws the reader\u2019s eye to the single most important idea in the sentence.' },
+      explain:'Bold text draws the reader\u2019s eye to the single most important idea in the sentence. Bold can also flag a vocabulary word \u2014 the difference is whether the sentence goes on to define it. This one states a rule instead.' },
     { before:'A ', hl:'habitat', after:' is the natural home or environment where a plant or animal lives.', hlClass:'fmt-bold', correct:'vocab',
-      explain:'Bolding a word right before it\u2019s defined is a common way authors flag an important vocabulary term.' },
+      explain:'Bolding a word right before it\u2019s defined is a common way authors flag an important vocabulary term. The giveaway is the sentence shape: \u201cA <b>habitat</b> is\u2026\u201d is a definition, not just emphasis.' },
     { before:'After Marco spilled juice all over his homework, his sister said, "Nice job, ', hl:'\u2018genius\u2019', after:'."', hlClass:'', correct:'sarcasm',
       explain:'Marco clearly didn\u2019t do a nice job \u2014 putting "genius" in quotes signals sarcasm, where the word means the opposite of what it says.' },
     { before:'Have you read ', hl:'Because of Winn-Dixie', after:'? It\u2019s one of my favorite books.', hlClass:'fmt-italic', correct:'title',

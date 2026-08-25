@@ -45,10 +45,9 @@ var DetectiveGame = (function(){
 
   /* ================= STATE ================= */
   var state = {
-    screen:'home', modeId:null, qIndex:0, total:8,
-    score:0, streak:0, current:null, answered:false,
-    orderPicks:[], tfPick:null, msPick:[], badges:0,
-    trailSeq:[], trailIdx:0, trailWrongTurns:0, trailCurrentMissed:false
+    modeId:null, qIndex:0, total:8,
+    score:0, streak:0, current:null, answered:false, badges:0,
+    trailSeq:[], trailIdx:0, trailWrongTurns:0
   };
   var TRAIL_LENGTH = 10;
   var solvedCases = {};
@@ -129,14 +128,14 @@ var DetectiveGame = (function(){
   }
 
   function startMode(modeId){
-    state.screen='play'; state.modeId=modeId; state.qIndex=0; state.score=0; state.streak=0;
+    state.modeId=modeId; state.qIndex=0; state.score=0; state.streak=0;
     state.total = QUESTIONS_PER_CASE;
     if (ON_CASE_START) ON_CASE_START();
     nextQuestion();
   }
 
   function nextQuestion(){
-    state.answered=false; state.orderPicks=[]; state.tfPick=null; state.msPick=[];
+    state.answered=false;
     var mode = MODES.filter(function(m){return m.id===state.modeId;})[0];
     state.current = generate(mode);
     renderPlay();
@@ -161,7 +160,7 @@ var DetectiveGame = (function(){
     html += '</div>'; // case-file
     document.getElementById('app').innerHTML = html;
 
-    document.getElementById('backBtn').addEventListener('click', function(){ state.screen='home'; renderHome(); });
+    document.getElementById('backBtn').addEventListener('click', function(){ renderHome(); });
     wireInteractive(q, finishAnswer);
     focusScreen('.q-mode-label');
   }
@@ -305,7 +304,7 @@ var DetectiveGame = (function(){
   }
 
 
-  function renderDigitDisplay(num, highlightIdxArr){
+  function renderDigitDisplay(num){
     var formatted = fmt(num);
     var raw = String(num);
     var ptr = 0;
@@ -463,7 +462,7 @@ var DetectiveGame = (function(){
     html += '</div>';
     document.getElementById('app').innerHTML = html;
     document.getElementById('replayBtn').addEventListener('click', function(){ startMode(mode.id); });
-    document.getElementById('homeBtn').addEventListener('click', function(){ state.screen='home'; renderHome(); });
+    document.getElementById('homeBtn').addEventListener('click', function(){ renderHome(); });
     focusScreen('.stamp-big');
   }
 
@@ -507,7 +506,6 @@ var DetectiveGame = (function(){
   }
 
   function startTrail(){
-    state.screen='trail';
     if (ON_CASE_START) ON_CASE_START();
     state.trailSeq = genTrailSequence();
     state.trailIdx = 0;
@@ -547,7 +545,7 @@ var DetectiveGame = (function(){
     html += '</div>';
 
     document.getElementById('app').innerHTML = html;
-    document.getElementById('backBtn').addEventListener('click', function(){ state.screen='home'; renderHome(); });
+    document.getElementById('backBtn').addEventListener('click', function(){ renderHome(); });
     wireInteractive(q, trailAnswered);
     focusScreen('.q-mode-label');
   }
@@ -595,7 +593,7 @@ var DetectiveGame = (function(){
     html += '</div>';
     document.getElementById('app').innerHTML = html;
     document.getElementById('replayBtn').addEventListener('click', startTrail);
-    document.getElementById('homeBtn').addEventListener('click', function(){ state.screen='home'; renderHome(); });
+    document.getElementById('homeBtn').addEventListener('click', function(){ renderHome(); });
     focusScreen('.stamp-big');
   }
 

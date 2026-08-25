@@ -10,6 +10,7 @@
  *   /games/math/foo         -> serves games/math/foo.html directly (200)
  *   /games/math/foo.html    -> 307 redirect to /games/math/foo, matching
  *                              production's own canonicalization
+ *   /games/math/foo/        -> 307 redirect to /games/math/foo (same)
  *   /index.html             -> 307 redirect to /
  *
  * Responses are sent with no-cache headers — unlike production's
@@ -39,14 +40,30 @@ const MIME_TYPES = {
   '.txt': 'text/plain; charset=utf-8',
 };
 
+// Cloudflare reads .assetsignore with gitignore semantics. This only supports
+// the literal-path subset the file actually uses today -- no globs, no
+// negations, no anchoring. That's enough to keep local dev matching production,
+// but it would silently diverge if a pattern were added, so warn instead.
+const UNSUPPORTED_PATTERN = /[*?[\]!]/;
+
 function loadAssetsignore() {
   const file = path.join(ROOT, '.assetsignore');
   if (!fs.existsSync(file)) return [];
-  return fs
+  const entries = fs
     .readFileSync(file, 'utf8')
     .split('\n')
     .map((line) => line.trim().replace(/^\/+|\/+$/g, ''))
     .filter((line) => line && !line.startsWith('#'));
+
+  const unsupported = entries.filter((e) => UNSUPPORTED_PATTERN.test(e));
+  if (unsupported.length) {
+    console.warn(
+      `dev-server: .assetsignore uses patterns this server matches literally, so\n` +
+      `  local dev will NOT match what Cloudflare serves: ${unsupported.join(', ')}\n` +
+      `  Teach isIgnored() the syntax, or keep .assetsignore to literal paths.`
+    );
+  }
+  return entries;
 }
 
 const IGNORED = loadAssetsignore();
@@ -57,8 +74,11 @@ function isIgnored(urlPath) {
 }
 
 // Resolve a URL path to a file under ROOT, refusing to escape it via `..`.
+// Takes an ALREADY-DECODED path: the caller decodes once, from url.pathname.
+// Decoding again here made `%252e` collapse to `.`, so a path production would
+// 404 could resolve locally -- and double-decoding is how traversal bugs start.
 function resolveSafe(urlPath) {
-  const resolved = path.normalize(path.join(ROOT, decodeURIComponent(urlPath)));
+  const resolved = path.normalize(path.join(ROOT, urlPath));
   if (resolved !== ROOT && !resolved.startsWith(ROOT + path.sep)) return null;
   return resolved;
 }
@@ -114,6 +134,17 @@ const server = http.createServer((req, res) => {
   if (urlPath === '/' || urlPath.endsWith('/')) {
     const indexPath = resolveSafe(urlPath + 'index.html');
     if (indexPath && isFile(indexPath)) return serveFile(res, indexPath);
+
+    // A trailing slash on a clean URL. `html_handling: auto-trailing-slash`
+    // resolves both forms, redirecting to the slash-less one -- and a trailing
+    // slash is exactly what you get from pasting a URL or from autocomplete.
+    // This used to 404 while production served a 307.
+    const withoutSlash = urlPath.slice(0, -1);
+    const htmlCandidate = withoutSlash && resolveSafe(withoutSlash + '.html');
+    if (htmlCandidate && isFile(htmlCandidate)) {
+      res.writeHead(307, { Location: withoutSlash + url.search });
+      return res.end();
+    }
     return notFound(res);
   }
 

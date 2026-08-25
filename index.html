@@ -26,7 +26,7 @@
      until base.css has downloaded AND parsed. Path must match the url()
      in base.css exactly, or it is fetched twice. -->
 <link rel="preload" as="font" type="font/woff2" href="assets/fonts/baloo2-latin1.woff2" crossorigin>
-<link rel="stylesheet" href="assets/css/base.css?v=1">
+<link rel="stylesheet" href="assets/css/base.css?v=2">
 <style>
 /*
   Homepage-only styles, inlined to avoid a render-blocking request
@@ -75,7 +75,6 @@ h1.site-title{
   font-family:'Special Elite', monospace; font-size:16px; color:var(--paper);
   letter-spacing:1px; margin:0; text-transform:uppercase;
 }
-.section-desc{ font-size:13px; color:#B9AF9C; margin:0; }
 
 /* ---------- RECENT STRIP ---------- */
 .recent-grid{
@@ -139,10 +138,13 @@ h1.site-title{
 }
 
 footer{
-  text-align:center; color:#8a7c66; font-size:12px; margin-top:40px;
+  /* #8a7c66 measured 3.90:1 on the page ground at 12px; AA needs 4.5:1. */
+  text-align:center; color:#9d8e75; font-size:12px; margin-top:40px;
 }
 
 @media (prefers-reduced-motion: reduce){ .game-card{ transition:none; } }
+.nojs{ background:rgba(178,58,72,0.10); border:1.5px dashed #B23A48; border-radius:8px;
+  padding:14px 16px; color:var(--paper); font-weight:600; }
 </style>
 
 </head>
@@ -156,7 +158,14 @@ footer{
   </div>
 </div>
 
-<div class="wrap">
+<noscript>
+  <div class="wrap">
+    <p class="nojs">This catalog is built in your browser, so it needs
+    JavaScript switched on to list the case files.</p>
+  </div>
+</noscript>
+
+<main class="wrap">
   <div class="section" id="recentSection">
     <div class="section-head">
       <h2>🆕 Newly Added Cases</h2>
@@ -167,7 +176,7 @@ footer{
   <div class="section" id="categorySections"></div>
 
   <footer>Open a case file to play. New divisions and cases get added over time.</footer>
-</div>
+</main>
 
 <script>
 (function(){
