@@ -13,9 +13,73 @@
 (function(){
   "use strict";
 
+  var fmt = DetectiveGame.fmt;
+
+  /*
+    Rendering a number as place-addressable digits. These used to live in the
+    engine and reach the types through ui.digits/digitsHighlight/
+    numWithHighlight, which meant every game that loaded the engine carried
+    them -- but data-place only means something to a game about place value.
+    The engine's `ui` is subject-neutral now; these belong here, with their
+    only callers.
+  */
+  function digitDisplay(num){
+    var formatted = fmt(num);
+    var raw = String(num);
+    var ptr = 0;
+    var out = '<div class="number-display">';
+    for (var i=0;i<formatted.length;i++){
+      var ch = formatted[i];
+      if (ch===','){ out += '<span class="comma-sep">,</span>'; }
+      else {
+        var placeIdx = raw.length-1-ptr;
+        // role=button because these ARE operable -- see the click-digit type in
+        // numeration-types.js, which wires Enter/Space alongside the click.
+        out += '<span class="digit-box" role="button" tabindex="0" data-place="'+placeIdx+'" data-digit="'+ch+'">'+ch+'</span>';
+        ptr++;
+      }
+    }
+    out += '</div>';
+    return out;
+  }
+  function digitDisplayHighlight(num, idxArr){
+    var formatted = fmt(num);
+    var raw = String(num);
+    var ptr = 0;
+    var out = '<div class="number-display">';
+    for (var i=0;i<formatted.length;i++){
+      var ch = formatted[i];
+      if (ch===','){ out += '<span class="comma-sep">,</span>'; }
+      else {
+        var placeIdx = raw.length-1-ptr;
+        var cls = idxArr.indexOf(placeIdx)>-1 ? 'digit-box num-highlight' : 'digit-box';
+        out += '<span class="'+cls+'" data-place="'+placeIdx+'">'+ch+'</span>';
+        ptr++;
+      }
+    }
+    out += '</div>';
+    return out;
+  }
+  function numWithHighlight(num, hlIdx){
+    var formatted = fmt(num);
+    var raw = String(num);
+    var ptr = 0;
+    var out = '';
+    for (var i=0;i<formatted.length;i++){
+      var ch = formatted[i];
+      if (ch===','){ out += ch; }
+      else {
+        var placeIdx = raw.length-1-ptr;
+        out += placeIdx===hlIdx ? '<span class="num-highlight">'+ch+'</span>' : ch;
+        ptr++;
+      }
+    }
+    return out;
+  }
+
   // Click the digit sitting in a named place.
   DetectiveGame.registerType('click-digit', {
-    build: function(q, ui){ return ui.digits(q.number); },
+    build: function(q){ return digitDisplay(q.number); },
     wire: function(q, onAnswered, ui){
       document.querySelectorAll('.digit-box').forEach(function(el){
         function pick(){
@@ -48,10 +112,10 @@
   DetectiveGame.registerType('value-compare', {
     build: function(q, ui){
       var head = q.sameNumber
-        ? ui.digitsHighlight(q.numA, [q.aIdx, q.bIdx])
+        ? digitDisplayHighlight(q.numA, [q.aIdx, q.bIdx])
         : '<div class="two-numbers">' +
-            '<div class="num-card"><div class="who">Number A</div><div class="val">'+ui.numWithHighlight(q.numA,q.aIdx)+'</div></div>' +
-            '<div class="num-card"><div class="who">Number B</div><div class="val">'+ui.numWithHighlight(q.numB,q.bIdx)+'</div></div>' +
+            '<div class="num-card"><div class="who">Number A</div><div class="val">'+numWithHighlight(q.numA,q.aIdx)+'</div></div>' +
+            '<div class="num-card"><div class="who">Number B</div><div class="val">'+numWithHighlight(q.numB,q.bIdx)+'</div></div>' +
           '</div>';
       return head + ui.options(q.options);
     },
@@ -79,6 +143,7 @@
     },
     wire: function(q, onAnswered, ui){
       var picks = [];
+      var clear = document.getElementById('clearOrder');
       document.querySelectorAll('#orderRow .order-tile').forEach(function(tile){
         tile.addEventListener('click', function(){
           if (ui.answered()) return;
@@ -91,11 +156,17 @@
           tile.appendChild(slot);
           tile.classList.add('locked');
           if (picks.length === q.numbers.length){
+            // The question is graded now. Nothing else switched these off, so
+            // the tiles and Clear picks stayed active-looking and keyboard-
+            // reachable on a resolved question. ui.answered() already stopped
+            // them doing anything; this stops them claiming they would.
+            document.querySelectorAll('#orderRow .order-tile').forEach(function(t){ t.disabled = true; });
+            clear.disabled = true;
             onAnswered(JSON.stringify(picks)===JSON.stringify(q.correctOrder), q.explain());
           }
         });
       });
-      document.getElementById('clearOrder').addEventListener('click', function(){
+      clear.addEventListener('click', function(){
         if (ui.answered()) return;
         picks = [];
         document.querySelectorAll('#orderRow .order-tile').forEach(function(tile){

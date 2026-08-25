@@ -34,9 +34,13 @@ sources. After running it, check that the `unicode-range` declarations in
 
 ## Renaming is mandatory when the contents change
 
-These are served `immutable` for a year with **no `?v=` cache-buster**, because
-a page's preload `href` has to match `base.css`'s `url()` byte-for-byte or the
-browser fetches the file twice. So they version by *filename*: if you change
-what a file contains, rename it and update `../css/base.css` plus the preload
-`href` in all three pages. Overwriting in place would strand returning visitors
-on the old file for up to a year.
+These are served `immutable` for a year with **no `?v=` cache-buster**. A token
+would work — a preload `href` only has to match `base.css`'s `url()` exactly, or
+the browser fetches the file twice, and the same `?v=N` in both would still
+match. The reason not to is that it puts one number in four files that must
+never drift, where a filename can only be right or obviously wrong.
+
+So they version by *filename*: if you change what a file contains, rename it and
+update `../css/base.css` plus the preload `href` in all three pages.
+Overwriting in place would strand returning visitors on the old file for up to a
+year.

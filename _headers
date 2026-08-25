@@ -17,9 +17,16 @@
 # no else branch); add an engine helper and the page throws and #app stays
 # blank. Both are silent — no error, nothing in the console.
 #
-# Fonts under /assets/fonts/ deliberately carry NO ?v= (their preload href must
-# match base.css's url() exactly). They are immutable by filename instead —
-# see assets/fonts/LICENSE.md.
+# Two exceptions, both immutable by FILENAME instead of by token:
+#
+# Fonts under /assets/fonts/ carry no ?v= because a preload href and base.css's
+# url() have to name the same thing in two files — see assets/fonts/LICENSE.md.
+# The filename encodes the subset, so changing what a font contains renames it.
+#
+# /assets/img/og-image.jpg carries no ?v= because a token would not help: the
+# og:image and twitter:image URLs are consumed by social scrapers, which cache
+# by URL and ignore Cache-Control entirely. Replacing the share card means a new
+# filename, updated in both meta tags in index.html — nothing else picks it up.
 #
 # nosniff and Referrer-Policy are free and worth having. A full CSP is not: the
 # homepage and both game pages rely on inline <script> and <style> (a deliberate

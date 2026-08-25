@@ -175,8 +175,13 @@ var DetectiveGame = (function(){
     renderers that only make sense for numbers.
 
     A type is { build(q, ui) -> html, wire(q, onAnswered, ui) }. `ui` is the
-    small set of engine helpers a renderer legitimately needs; a registered type
-    should not reach past it into engine internals.
+    small set of engine helpers a renderer legitimately needs, and it is
+    subject-neutral the whole way through: fmt, the options grid, the answer
+    reveal, and whether the question has been graded. The place-value digit
+    renderers used to sit here too, reachable as ui.digits/digitsHighlight/
+    numWithHighlight -- 55 lines of data-place semantics that mean nothing
+    outside a numeration game, shipped to every game that loads the engine.
+    They live with the types that use them now.
   */
   // Null prototype, not {}: TYPES['constructor'] on a plain object returns
   // Object, which is truthy, so a lookup sails past the "no renderer" guard and
@@ -224,9 +229,6 @@ var DetectiveGame = (function(){
     fmt: fmt,
     options: renderOptions,
     reveal: revealOptions,
-    digits: function(num){ return renderDigitDisplay(num); },
-    digitsHighlight: function(num, idxArr){ return renderDigitDisplayHighlight(num, idxArr); },
-    numWithHighlight: function(num, idx){ return numWithHighlight(num, idx); },
     answered: function(){ return state.answered; }
   };
 
@@ -262,7 +264,8 @@ var DetectiveGame = (function(){
           else { picked.push(key); btn.classList.add('chosen'); btn.querySelector('.chk').innerHTML='&#9745;'; }
         });
       });
-      document.getElementById('checkBtn').addEventListener('click', function(){
+      var check = document.getElementById('checkBtn');
+      check.addEventListener('click', function(){
         if (ui.answered()) return;
         var correct = JSON.stringify(q.correctKeys.slice().sort())===JSON.stringify(picked.slice().sort());
         document.querySelectorAll('#optGrid .opt-btn').forEach(function(b){
@@ -271,6 +274,11 @@ var DetectiveGame = (function(){
           if (q.correctKeys.indexOf(k)>-1) b.classList.add('is-correct');
           else if (picked.indexOf(k)>-1) b.classList.add('is-wrong');
         });
+        // The options go disabled but this didn't, so a graded question still
+        // offered an active-looking "Check My Answers". ui.answered() already
+        // stopped it double-scoring; this is about not lying with the button.
+        // (.check-btn[disabled] has had a style waiting for it in game.css.)
+        check.disabled = true;
         onAnswered(correct, q.explain());
       });
     }
@@ -306,61 +314,6 @@ var DetectiveGame = (function(){
     console.error('DetectiveGame: no question type registered for "' + q.type + '".');
     return '<p class="load-error">This clue could not be loaded.</p>' +
       '<button class="next-btn" id="skipBtn">Skip this clue &#8594;</button>';
-  }
-
-
-  function renderDigitDisplay(num){
-    var formatted = fmt(num);
-    var raw = String(num);
-    var ptr = 0;
-    var out = '<div class="number-display">';
-    for (var i=0;i<formatted.length;i++){
-      var ch = formatted[i];
-      if (ch===','){ out += '<span class="comma-sep">,</span>'; }
-      else {
-        var placeIdx = raw.length-1-ptr;
-        // role=button because these ARE operable -- see the click-digit type in
-        // numeration-types.js, which wires Enter/Space alongside the click.
-        out += '<span class="digit-box" role="button" tabindex="0" data-place="'+placeIdx+'" data-digit="'+ch+'">'+ch+'</span>';
-        ptr++;
-      }
-    }
-    out += '</div>';
-    return out;
-  }
-  function renderDigitDisplayHighlight(num, idxArr){
-    var formatted = fmt(num);
-    var raw = String(num);
-    var ptr = 0;
-    var out = '<div class="number-display">';
-    for (var i=0;i<formatted.length;i++){
-      var ch = formatted[i];
-      if (ch===','){ out += '<span class="comma-sep">,</span>'; }
-      else {
-        var placeIdx = raw.length-1-ptr;
-        var cls = idxArr.indexOf(placeIdx)>-1 ? 'digit-box num-highlight' : 'digit-box';
-        out += '<span class="'+cls+'" data-place="'+placeIdx+'">'+ch+'</span>';
-        ptr++;
-      }
-    }
-    out += '</div>';
-    return out;
-  }
-  function numWithHighlight(num, hlIdx){
-    var formatted = fmt(num);
-    var raw = String(num);
-    var ptr = 0;
-    var out = '';
-    for (var i=0;i<formatted.length;i++){
-      var ch = formatted[i];
-      if (ch===','){ out += ch; }
-      else {
-        var placeIdx = raw.length-1-ptr;
-        out += placeIdx===hlIdx ? '<span class="num-highlight">'+ch+'</span>' : ch;
-        ptr++;
-      }
-    }
-    return out;
   }
 
   /* ================= INTERACTION WIRING (shared by case mode + trail mode) ================= */

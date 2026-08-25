@@ -106,8 +106,11 @@ assets/
   css/
     base.css                     Shared tokens (colors, reset) + per-subject
                                   theme, and the @font-face blocks
-    game.css                     Shared game shell (masthead, cards, question
-                                  types, summary) used by every game page
+    game.css                     Shared game shell (masthead, cards, summary,
+                                  and the subject-neutral question types)
+                                  used by every game page
+    numeration.css               Math-only question styles (digit boxes,
+                                  Number A/B cards, order tiles, </>/=)
     ela.css                      ELA-only question styles (reading passages)
   fonts/                         Self-hosted woff2 + their licenses; see
                                   fonts/LICENSE.md
@@ -115,8 +118,9 @@ assets/
     game-engine.js                Shared game engine (home/play/trail screens,
                                   click-wiring, and the three subject-neutral
                                   question types)
-    numeration-types.js           The math game's place-value question types,
-                                  registered via DetectiveGame.registerType
+    numeration-types.js           The math game's place-value question types
+                                  and their digit renderers, registered via
+                                  DetectiveGame.registerType
 games/
   math/numeration-detective-agency.html
   ela/words-division.html
@@ -129,7 +133,8 @@ games/
    `../../assets/js/game-engine.js` in its `<head>`/before its own script,
    and set `data-theme="math" | "ela" | "social-studies"` on the `<html>`
    tag to pick up that subject's accent color. If your subject has its own
-   stylesheet — ELA has `ela.css` for reading passages — link that too,
+   stylesheet — ELA has `ela.css` for reading passages, math has
+   `numeration.css` for its place-value widgets — link that too,
    after `game.css`. Copy the `?v=N` on those
    URLs from an existing page — assets are served `immutable`, so that
    token is the only thing that busts a returning visitor's cache (see

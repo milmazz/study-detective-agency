@@ -18,12 +18,17 @@ const { loadModes, stripTags } = require('../test-support/load-game.js');
 // Enough draws to catch a fault that shows up in a fraction of a percent.
 // genTrueFalse's bug hit 4.29% of its questions; the digit-zero half of it,
 // 2.16%. A few hundred draws would have missed the shape entirely.
+//
+// Per MODE, not per game. This used to be a game-wide budget divided by the
+// mode count, so each of the seven math generators actually got 2,858 draws
+// while the comment claimed tens of thousands -- enough for a 4% fault, but a
+// 0.1% one had only a ~94% chance of showing up at all, and a 0.01% one ~25%.
 const DRAWS = 20000;
 
 function eachQuestion(game, fn) {
   const cfg = loadModes(game);
   for (const mode of cfg.modes) {
-    for (let i = 0; i < Math.ceil(DRAWS / cfg.modes.length); i++) {
+    for (let i = 0; i < DRAWS; i++) {
       fn(mode.gen(), mode, cfg);
     }
   }
@@ -276,6 +281,35 @@ test('ela: a case never shows the same item twice', () => {
       for (let i = 0; i < perCase; i++) seen.push(stripTags(mode.gen().prompt));
       assert.equal(new Set(seen).size, seen.length,
         `${mode.id}: a ${perCase}-clue case repeated an item`);
+    }
+  }
+});
+
+test('ela: a trail never shows the same item back to back', () => {
+  // A case gets a fresh bag and is capped at the smallest pool, so it can't
+  // repeat at all. A trail can: 10 stops over 4 modes means a mode can be drawn
+  // more often than its pool holds, and MESSAGE_ITEMS holds 5. Measured at
+  // 0.49% of trails. What is ruled out is showing the same passage twice in a
+  // row, which is the version a kid answers from position memory.
+  const cfg = loadModes('ela');
+  const TRAIL_LENGTH = 10;
+  const ids = cfg.modes.map((m) => m.id);
+  const genOf = new Map(cfg.modes.map((m) => [m.id, m.gen]));
+
+  // Back-to-back arose in ~0.11% of trails before the fix, so a few thousand
+  // rounds would let it slip through a run every so often. This makes missing
+  // it a ~1-in-50,000 event rather than a ~1-in-25 one.
+  for (let trail = 0; trail < 10000; trail++) {
+    if (cfg.onCaseStart) cfg.onCaseStart();
+    // Mirrors the engine's genTrailSequence: every mode once, then random.
+    const seq = [...ids];
+    while (seq.length < TRAIL_LENGTH) seq.push(ids[Math.floor(Math.random() * ids.length)]);
+
+    let prev = null;
+    for (const id of seq.slice(0, TRAIL_LENGTH)) {
+      const prompt = id + '|' + stripTags(genOf.get(id)().prompt);
+      assert.notEqual(prompt, prev, `${id}: a trail showed the same item twice in a row`);
+      prev = prompt;
     }
   }
 });

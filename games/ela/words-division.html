@@ -12,7 +12,7 @@
      and parse before the browser would otherwise discover it. -->
 <link rel="preload" as="font" type="font/woff2" href="../../assets/fonts/baloo2-latin1.woff2" crossorigin>
 <link rel="stylesheet" href="../../assets/css/base.css?v=4">
-<link rel="stylesheet" href="../../assets/css/game.css?v=5">
+<link rel="stylesheet" href="../../assets/css/game.css?v=7">
 <link rel="stylesheet" href="../../assets/css/ela.css?v=1">
 </head>
 <body>
@@ -40,7 +40,7 @@
   <main id="app"></main>
 </div>
 
-<script src="../../assets/js/game-engine.js?v=5"></script>
+<script src="../../assets/js/game-engine.js?v=6"></script>
 <script>
 (function(){
   "use strict";
@@ -189,9 +189,21 @@
   */
   function drawer(pool){
     var bag = [];
+    var last = null;
     function draw(){
-      if (!bag.length) bag = shuffle(pool);
-      return bag.pop();
+      if (!bag.length){
+        bag = shuffle(pool);
+        // A refill can deal the item just shown straight back off the top. In
+        // a case that never happens (the bag is reset and outlasts the case),
+        // but a trail draws 10 stops across 4 modes, so one mode can be drawn
+        // more times than its pool holds. Swap it away from the top so a
+        // repeat is at least never back-to-back.
+        if (pool.length > 1 && bag[bag.length-1] === last){
+          var t = bag[bag.length-1]; bag[bag.length-1] = bag[0]; bag[0] = t;
+        }
+      }
+      last = bag.pop();
+      return last;
     }
     draw.reset = function(){ bag = shuffle(pool); };
     return draw;
@@ -206,6 +218,12 @@
   // that carried over could run dry mid-case and refill with items the kid had
   // already seen in that same case. With a fresh bag and questionsPerCase at or
   // below the smallest pool, a case cannot repeat an item at all.
+  //
+  // That guarantee is per CASE, not global. A trail is 10 stops shared out over
+  // 4 modes, so a mode can come up more often than its pool has entries --
+  // MESSAGE_ITEMS holds 5, and drawing it 6 times has to reuse one. Measured at
+  // 0.49% of trails over 50,000; back-to-back is ruled out in drawer() above.
+  // Closing it entirely would mean either more passages or a shorter trail.
   function resetDraws(){
     Object.keys(draws).forEach(function(k){ draws[k].reset(); });
   }

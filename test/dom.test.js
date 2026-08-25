@@ -268,6 +268,38 @@ test('digit boxes stop being operable once the answer lands', { skip }, () => {
   }
 });
 
+/* ================= a graded question stops offering to be answered ================= */
+
+test('the Check button goes dead once a multiselect is graded', { skip }, () => {
+  // The options were disabled on grading and this wasn't, so a resolved
+  // question still showed an active-looking "Check My Answers".
+  const found = reachQuestion('math', '#checkBtn');
+  assert.ok(found, 'expected to reach a multiselect question');
+  const { win, doc } = found;
+
+  click(win, doc.querySelector('#optGrid .opt-btn'));
+  click(win, doc.querySelector('#checkBtn'));
+  assert.ok(doc.querySelector('.stamp'), 'the question should be graded');
+  assert.ok(doc.querySelector('#checkBtn').disabled,
+    'Check My Answers should be disabled once the answer is in');
+});
+
+test('order tiles go dead once the sequence is graded', { skip }, () => {
+  const found = reachQuestion('math', '#orderRow .order-tile');
+  assert.ok(found, 'expected to reach an ordering question');
+  const { win, doc } = found;
+
+  const tiles = [...doc.querySelectorAll('#orderRow .order-tile')];
+  for (const tile of tiles) click(win, tile);
+  assert.ok(doc.querySelector('.stamp'), 'the question should be graded');
+
+  for (const tile of doc.querySelectorAll('#orderRow .order-tile')) {
+    assert.ok(tile.disabled, 'a graded order tile should be disabled');
+  }
+  assert.ok(doc.querySelector('#clearOrder').disabled,
+    'Clear picks should be disabled once the answer is in');
+});
+
 /* ================= degraded paths ================= */
 
 test('a question type with no renderer says so and offers a way out', { skip }, () => {
