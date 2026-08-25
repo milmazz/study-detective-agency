@@ -37,7 +37,7 @@ npm install   # once, for the DOM tests
 node --test
 ```
 
-Three suites:
+Four suites:
 
 - **`test/game-engine.test.js`** — the pure helpers `DetectiveGame` exposes
   (`randInt`/`choice`/`shuffle`/`fmt`) for question generators to reuse.
@@ -53,12 +53,18 @@ Three suites:
   process-of-elimination toggle, keyboard operation, and the degraded paths
   (unknown question type, a generator that throws, a page missing
   `#badgeNum`).
+- **`test/question-modules.test.js`** — the wiring rather than the
+  content: that each page loads exactly one question module, that the
+  module sits under `/assets/` where the year-long cache actually
+  applies, that every script tag carries a `?v=`, that the page starts
+  from a global its module assigns, and that requiring a module has no
+  side effects.
 
 `jsdom` is the repo's only dependency and is dev-only — **nothing here
 ships**, and `.assetsignore` keeps `package.json`, the lockfile and
 `node_modules` out of what gets deployed. `test/dom.test.js` skips itself
 when jsdom is missing, so `node --test` still works on a fresh clone with
-no install; you just get the other two suites. CI installs it so the DOM
+no install; you just get the other three suites. CI installs it so the DOM
 half always runs.
 
 Layout and visual appearance still aren't covered — check those by hand in
@@ -102,6 +108,7 @@ test/
   game-engine.test.js            Pure helpers
   generators.test.js             Property tests over every question generator
   dom.test.js                    Rendering + wiring, via jsdom (see "Testing")
+  question-modules.test.js       How each page wires up its modules
 assets/
   css/
     base.css                     Shared tokens (colors, reset) + per-subject

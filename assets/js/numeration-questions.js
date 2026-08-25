@@ -14,7 +14,9 @@
   Exports the config object DetectiveGame.start() takes. The page calls start();
   this file deliberately does not, so requiring it has no side effects.
 
-  Load AFTER game-engine.js, and before numeration-types.js registers its types.
+  Load AFTER game-engine.js. Order relative to numeration-types.js does not
+  matter -- the generators only name types, which the engine resolves at render
+  time -- but both must be in place before start() runs.
 */
 var NUMERATION_QUESTIONS = (function(){
   "use strict";
