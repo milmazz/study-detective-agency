@@ -47,6 +47,16 @@
   unicode-range:U+0020-007E, U+00A0-00A1, U+00B7, U+00BF, U+00C0-00FF, U+00D7, U+00F7, U+2013-2014, U+2018-2019, U+201C-201D, U+2026;
 }
 
+/*
+  Screen transitions move focus to the top of whatever just rendered, so a
+  keyboard user doesn't restart at the top of the document for every clue (see
+  focusScreen() in game-engine.js). Those targets are tabindex="-1" — reachable
+  only from script, never by tabbing — so the browser's focus ring on them
+  signals nothing a user can act on and reads as a rendering bug: a full-width
+  blue box around a heading. Interactive controls are untouched and keep theirs.
+*/
+[tabindex="-1"]:focus{ outline:none; }
+
 :root{
   --ink:#2B2018;
   --ink-2:#3A2C1F;

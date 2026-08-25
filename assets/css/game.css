@@ -390,10 +390,15 @@ h1.title{
    drops into the flow instead, above the prompt, where it can't overlap. */
 @media (max-width:560px){
   .stamp{
-    position:static; display:inline-block; margin:0 0 10px;
-    /* transform is left alone: stampIn fills forwards to rotate(-10deg), and
+    /* Centred rather than left-aligned: it lands in the flow between the
+       options and the explanation, and at -10deg a left-aligned stamp hangs
+       back into the card's padding and reads like it slipped. Centring keeps
+       the rotation clear of both edges and looks deliberate.
+       transform is left alone — stampIn fills forwards to rotate(-10deg) and
        the reduced-motion rule below sets the same angle, so anything set here
        would be overridden anyway. */
+    position:static; display:block; width:fit-content;
+    margin:2px auto 12px;
   }
 }
 
