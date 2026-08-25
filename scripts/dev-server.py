@@ -19,7 +19,6 @@ Usage: python3 scripts/dev-server.py [port]   (default port 8000)
 """
 import http.server
 import os
-import socketserver
 import sys
 from urllib.parse import urlsplit
 
@@ -91,12 +90,24 @@ class CleanUrlHandler(http.server.SimpleHTTPRequestHandler):
         super().end_headers()
 
 
-class ReusableTCPServer(socketserver.TCPServer):
-    allow_reuse_address = True
+# A browser loads a page's CSS/JS/images as several requests at once
+# and cancels others (favicons, aborted navigations); the plain
+# single-threaded server in the stdlib serves those serially and
+# prints a full traceback for every cancelled one. ThreadingHTTPServer
+# handles them concurrently, and handle_error() below silences the
+# ones that are just "the browser closed the connection," not a bug.
+class DevServer(http.server.ThreadingHTTPServer):
+    def handle_error(self, request, client_address):
+        exc_type = sys.exc_info()[0]
+        if exc_type and issubclass(
+            exc_type, (BrokenPipeError, ConnectionResetError, ConnectionAbortedError)
+        ):
+            return
+        super().handle_error(request, client_address)
 
 
 if __name__ == '__main__':
-    with ReusableTCPServer(('', PORT), CleanUrlHandler) as httpd:
+    with DevServer(('', PORT), CleanUrlHandler) as httpd:
         print(f"Serving {ROOT}")
         print(f"http://localhost:{PORT}/  (clean URLs, no caching)")
         try:

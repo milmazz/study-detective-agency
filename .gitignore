@@ -1,2 +1,5 @@
 # Local wrangler dev cache/state — not part of the site.
 .wrangler/
+
+# Python bytecode cache from running scripts/dev-server.py
+__pycache__/
