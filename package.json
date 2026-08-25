@@ -1,0 +1,24 @@
+{
+  "name": "study-detective-agency",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Browser-based 4th grade study games, themed as detective case files.",
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test",
+    "dev": "node scripts/dev-server.js"
+  },
+  "//": [
+    "This file exists ONLY for the test suite. The site itself still has no",
+    "build step and no runtime dependencies -- it deploys straight from the",
+    "repo as static files, and .assetsignore keeps this file, the lockfile and",
+    "node_modules out of what gets served.",
+    "",
+    "jsdom is needed by test/dom.test.js. That file skips itself when jsdom is",
+    "missing, so a fresh clone can run `node --test` with no install at all and",
+    "still get the generator and helper suites."
+  ],
+  "devDependencies": {
+    "jsdom": "^30.0.1"
+  }
+}

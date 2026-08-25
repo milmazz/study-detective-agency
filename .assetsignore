@@ -3,6 +3,7 @@
 # that aren't part of the actual site.
 # https://developers.cloudflare.com/workers/static-assets/#ignoring-assets
 .git
+.github
 .gitignore
 .wrangler
 mise.toml
@@ -11,3 +12,8 @@ README.md
 LICENSE
 scripts
 test
+test-support
+# npm surface: exists only for the test suite, never served.
+package.json
+package-lock.json
+node_modules

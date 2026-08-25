@@ -3,14 +3,29 @@
   trail screens, every question-type renderer and click-wiring, and the
   summary screen. Used by every game page under games/<subject>/.
 
+  The page must provide two elements the engine writes into:
+
+    <div id="app">              required -- every screen renders here
+    ...id="badgeNum"...         optional -- closed-case counter
+
   A page defines its own data + question generators + a MODES array
   (each entry: {id, caseNo, title, icon, blurb, gen}), then calls:
 
     DetectiveGame.start({
       modes: MODES,
       homeIntro: 'Seven case files. Every case pulls fresh numbers...',
-      trailAllFilesWord: 'seven'
+      trailAllFilesWord: 'seven',
+      questionsPerCase: 8,         // optional, defaults to 8
+      onCaseStart: fn              // optional, fires when a case or trail starts
     });
+
+  Built-in question types are the subject-neutral three: 'mcq-simple',
+  'multiselect' and 'true-false'. A page needing its own renders it via
+
+    DetectiveGame.registerType(name, { build(q, ui), wire(q, onAnswered, ui) })
+
+  before calling start() -- see assets/js/numeration-types.js for the
+  place-value widgets the math game registers this way.
 
   DetectiveGame also exposes randInt/choice/shuffle/fmt so a page's own
   generators can reuse them instead of redefining them.
@@ -30,10 +45,9 @@ var DetectiveGame = (function(){
 
   /* ================= STATE ================= */
   var state = {
-    screen:'home', modeId:null, qIndex:0, total:8,
-    score:0, streak:0, current:null, answered:false,
-    orderPicks:[], tfPick:null, msPick:[], badges:0,
-    trailSeq:[], trailIdx:0, trailWrongTurns:0, trailCurrentMissed:false
+    modeId:null, qIndex:0, total:8,
+    score:0, streak:0, current:null, answered:false, badges:0,
+    trailSeq:[], trailIdx:0, trailWrongTurns:0
   };
   var TRAIL_LENGTH = 10;
   var solvedCases = {};
@@ -41,6 +55,48 @@ var DetectiveGame = (function(){
   var MODES = [];
   var HOME_INTRO = '';
   var TRAIL_ALL_WORD = '';
+  // Clues per case. Was hard-coded at 8, which is why the ELA game -- with item
+  // pools of 5-8 -- repeated a passage in every single case it generated.
+  var QUESTIONS_PER_CASE = 8;
+  // Optional. Called when a case or the trail starts, so a page that draws from
+  // fixed item pools can reshuffle them. Without it a pool carried across cases
+  // and a mid-case refill could re-deal something the kid had already seen in
+  // that same case.
+  var ON_CASE_START = null;
+
+  // The closed-case counter is optional page furniture. It used to be written
+  // before the summary was rendered, so a page missing #badgeNum threw here and
+  // left the kid on the last question with no summary and no way forward.
+  function setBadgeCount(){
+    state.badges = Object.keys(solvedCases).length;
+    var el = document.getElementById('badgeNum');
+    if (el) el.textContent = state.badges;
+  }
+
+  // Move focus to the top of whatever just rendered. Screens replace #app
+  // wholesale, so the previously focused element no longer exists.
+  var firstRender = true;
+  function focusScreen(sel){
+    if (firstRender){ firstRender = false; return; } // don't steal focus on load
+    var el = document.querySelector(sel);
+    if (!el) return;
+    el.setAttribute('tabindex','-1');
+    el.focus();
+  }
+
+  // A generator throwing used to take the whole page down: a bare console trace
+  // and a frozen #app. Now one bad clue degrades to a skippable one.
+  function generate(mode){
+    try {
+      var q = mode.gen();
+      if (!q || !q.type) throw new Error('generator returned no question object');
+      return q;
+    } catch (err){
+      console.error('DetectiveGame: generator for mode "' + mode.id + '" failed:', err);
+      return { type:'__failed__', prompt:'This clue could not be generated.',
+               explain:function(){ return 'Something went wrong building this clue.'; } };
+    }
+  }
 
   /* ================= RENDER: HOME ================= */
   function renderHome(){
@@ -68,17 +124,20 @@ var DetectiveGame = (function(){
       btn.addEventListener('click', function(){ startMode(btn.getAttribute('data-mode')); });
     });
     document.getElementById('trailCard').addEventListener('click', startTrail);
+    focusScreen('.home-intro');
   }
 
   function startMode(modeId){
-    state.screen='play'; state.modeId=modeId; state.qIndex=0; state.score=0; state.streak=0;
+    state.modeId=modeId; state.qIndex=0; state.score=0; state.streak=0;
+    state.total = QUESTIONS_PER_CASE;
+    if (ON_CASE_START) ON_CASE_START();
     nextQuestion();
   }
 
   function nextQuestion(){
-    state.answered=false; state.orderPicks=[]; state.tfPick=null; state.msPick=[];
+    state.answered=false;
     var mode = MODES.filter(function(m){return m.id===state.modeId;})[0];
-    state.current = mode.gen();
+    state.current = generate(mode);
     renderPlay();
   }
 
@@ -101,263 +160,235 @@ var DetectiveGame = (function(){
     html += '</div>'; // case-file
     document.getElementById('app').innerHTML = html;
 
-    document.getElementById('backBtn').addEventListener('click', function(){ state.screen='home'; renderHome(); });
+    document.getElementById('backBtn').addEventListener('click', function(){ renderHome(); });
     wireInteractive(q, finishAnswer);
+    focusScreen('.q-mode-label');
   }
 
-  /* ================= SHARED: QUESTION BODY (used by case mode + trail mode) ================= */
-  // A small "mark as wrong" toggle overlaid on an .opt-btn, for process of
-  // elimination. Purely a scratch mark — see wireStrikeToggles().
-  function strikeBadge(){
-    return '<span class="opt-strike" role="button" tabindex="0" aria-pressed="false" aria-label="Mark as wrong">✕</span>';
+  /* ================= QUESTION TYPES ================= */
+  /*
+    Question types are a registry, not a hard-coded if/else chain. The engine
+    ships only the three that aren't tied to a subject (mcq-simple, multiselect,
+    true-false); anything subject-specific is registered by the page that needs
+    it -- see assets/js/numeration-types.js, which adds the place-value widgets
+    the math game uses. That stops a future ELA or history game from carrying
+    renderers that only make sense for numbers.
+
+    A type is { build(q, ui) -> html, wire(q, onAnswered, ui) }. `ui` is the
+    small set of engine helpers a renderer legitimately needs, and it is
+    subject-neutral the whole way through: fmt, the options grid, the answer
+    reveal, and whether the question has been graded. The place-value digit
+    renderers used to sit here too, reachable as ui.digits/digitsHighlight/
+    numWithHighlight -- 55 lines of data-place semantics that mean nothing
+    outside a numeration game, shipped to every game that loads the engine.
+    They live with the types that use them now.
+  */
+  // Null prototype, not {}: TYPES['constructor'] on a plain object returns
+  // Object, which is truthy, so a lookup sails past the "no renderer" guard and
+  // then throws on t.build -- landing on exactly the dead end that guard exists
+  // to prevent, instead of the skippable clue.
+  var TYPES = Object.create(null);
+  function registerType(name, def){ TYPES[name] = def; }
+  function hasType(name){ return Object.prototype.hasOwnProperty.call(TYPES, name); }
+
+  // Strip tags and quotes so option text is safe to put in an aria-label.
+  function textOf(html){
+    return String(html).replace(/<[^>]*>/g,'').replace(/"/g,'&quot;').trim();
   }
 
-  function buildInteractiveBody(q){
-    var html = '';
-    if (q.type==='click-digit'){
-      html += renderDigitDisplay(q.number, null);
-    } else if (q.type==='value-compare'){
-      if (q.sameNumber){
-        html += renderDigitDisplayHighlight(q.numA, [q.aIdx, q.bIdx]);
-      } else {
-        html += '<div class="two-numbers">' +
-          '<div class="num-card"><div class="who">Number A</div><div class="val">'+numWithHighlight(q.numA,q.aIdx)+'</div></div>' +
-          '<div class="num-card"><div class="who">Number B</div><div class="val">'+numWithHighlight(q.numB,q.bIdx)+'</div></div>' +
-          '</div>';
-      }
-      html += '<div class="options-grid" id="optGrid">' + q.options.map(function(o){
-        return '<button class="opt-btn" data-key="'+o.key+'">'+strikeBadge()+'<span class="opt-label">'+o.label+'</span></button>';
-      }).join('') + '</div>';
-    } else if (q.type==='mcq-simple'){
-      html += '<div class="options-grid" id="optGrid">' + q.options.map(function(o){
-        return '<button class="opt-btn" data-key="'+o.key+'">'+strikeBadge()+'<span class="opt-label">'+o.label+'</span></button>';
-      }).join('') + '</div>';
-    } else if (q.type==='multiselect'){
-      html += '<div class="options-grid" id="optGrid">' + q.options.map(function(o){
-        return '<button class="opt-btn" data-key="'+o.key+'">'+strikeBadge()+'<span class="chk">☐</span><span class="opt-label">'+o.label+'</span></button>';
-      }).join('') + '</div>';
-      html += '<button class="check-btn" id="checkBtn">Check My Answers</button>';
-    } else if (q.type==='true-false'){
-      html += '<div class="tf-row" id="tfRow">' +
-        '<button class="tf-btn" data-v="true">TRUE</button>' +
-        '<button class="tf-btn" data-v="false">FALSE</button>' +
-        '</div>';
-    } else if (q.type==='order'){
-      html += '<div class="order-row" id="orderRow">' + q.numbers.map(function(v){
-        return '<button class="order-tile" data-v="'+v+'">'+fmt(v)+'</button>';
-      }).join('') + '</div>';
-      html += '<p class="order-hint">Click smallest first, largest last. <button class="clear-link" id="clearOrder">Clear picks</button></p>';
-    } else if (q.type==='symbol'){
-      html += '<div class="two-numbers">' +
-        '<div class="num-card"><div class="val">'+fmt(q.a)+'</div></div>' +
-        '<div class="num-card"><div class="val">'+fmt(q.b)+'</div></div>' +
-        '</div>';
-      html += '<div class="symbol-row" id="symRow">' +
-        ['<','>','='].map(function(s){ return '<button class="symbol-btn" data-v="'+s+'">'+s+'</button>'; }).join('') +
-        '</div>';
-    }
-    return html;
+  // The options grid. The strike toggle is a SIBLING of the option button, never
+  // a child: <button> may not contain interactive content, and while it was
+  // nested the option's accessible name absorbed the toggle's label -- screen
+  // readers announced "Mark as wrong, Value is ten times the value of".
+  function renderOptions(opts, cfg){
+    cfg = cfg || {};
+    return '<div class="options-grid" id="optGrid">' + opts.map(function(o){
+      return '<div class="opt-wrap">' +
+        '<button class="opt-btn" data-key="'+o.key+'">' +
+          (cfg.checkbox ? '<span class="chk">&#9744;</span>' : '') +
+          '<span class="opt-label">'+o.label+'</span>' +
+        '</button>' +
+        '<button type="button" class="opt-strike" aria-pressed="false" ' +
+          'aria-label="Rule out: '+textOf(o.label)+'">&#10005;</button>' +
+      '</div>';
+    }).join('') + '</div>';
   }
 
-  function renderDigitDisplay(num, highlightIdxArr){
-    var formatted = fmt(num);
-    var raw = String(num);
-    var ptr = 0;
-    var out = '<div class="number-display">';
-    for (var i=0;i<formatted.length;i++){
-      var ch = formatted[i];
-      if (ch===','){ out += '<span class="comma-sep">,</span>'; }
-      else {
-        var placeIdx = raw.length-1-ptr;
-        out += '<span class="digit-box" tabindex="0" data-place="'+placeIdx+'" data-digit="'+ch+'">'+ch+'</span>';
-        ptr++;
-      }
-    }
-    out += '</div>';
-    return out;
-  }
-  function renderDigitDisplayHighlight(num, idxArr){
-    var formatted = fmt(num);
-    var raw = String(num);
-    var ptr = 0;
-    var out = '<div class="number-display">';
-    for (var i=0;i<formatted.length;i++){
-      var ch = formatted[i];
-      if (ch===','){ out += '<span class="comma-sep">,</span>'; }
-      else {
-        var placeIdx = raw.length-1-ptr;
-        var cls = idxArr.indexOf(placeIdx)>-1 ? 'digit-box num-highlight' : 'digit-box';
-        out += '<span class="'+cls+'" data-place="'+placeIdx+'">'+ch+'</span>';
-        ptr++;
-      }
-    }
-    out += '</div>';
-    return out;
-  }
-  function numWithHighlight(num, hlIdx){
-    var formatted = fmt(num);
-    var raw = String(num);
-    var ptr = 0;
-    var out = '';
-    for (var i=0;i<formatted.length;i++){
-      var ch = formatted[i];
-      if (ch===','){ out += ch; }
-      else {
-        var placeIdx = raw.length-1-ptr;
-        out += placeIdx===hlIdx ? '<span class="num-highlight">'+ch+'</span>' : ch;
-        ptr++;
-      }
-    }
-    return out;
+  // Lock the controls and mark the right answer, whatever was clicked. Shared so
+  // every type reveals the answer the same way -- true-false and symbol used to
+  // mark only the button the kid pressed, so a wrong guess never showed what the
+  // answer actually was.
+  function revealOptions(sel, isCorrect){
+    document.querySelectorAll(sel).forEach(function(b){
+      b.disabled = true;
+      if (isCorrect(b)) b.classList.add('is-correct');
+    });
   }
 
-  /* ================= INTERACTION WIRING (shared by case mode + trail mode) ================= */
-  function wireInteractive(q, onAnswered){
-    if (q.type==='click-digit'){
-      document.querySelectorAll('.digit-box').forEach(function(el){
-        el.addEventListener('click', function(){
-          if (state.answered) return;
-          var placeIdx = parseInt(el.getAttribute('data-place'),10);
-          var correct = placeIdx === q.targetPlaceIdx;
-          document.querySelectorAll('.digit-box').forEach(function(d){ d.classList.remove('picked'); });
-          el.classList.add('picked');
-          onAnswered(correct, q.explain());
-        });
-      });
-    } else if (q.type==='value-compare' || q.type==='mcq-simple'){
+  var ui = {
+    fmt: fmt,
+    options: renderOptions,
+    reveal: revealOptions,
+    answered: function(){ return state.answered; }
+  };
+
+  /* ---- built-in, subject-neutral types ---- */
+  registerType('mcq-simple', {
+    build: function(q, ui){ return ui.options(q.options); },
+    wire: function(q, onAnswered, ui){
       document.querySelectorAll('#optGrid .opt-btn').forEach(function(btn){
         btn.addEventListener('click', function(){
-          if (state.answered) return;
-          var key = btn.getAttribute('data-key');
-          var correct = key === q.correctKey;
-          document.querySelectorAll('#optGrid .opt-btn').forEach(function(b){
-            b.disabled = true;
-            if (b.getAttribute('data-key')===q.correctKey) b.classList.add('is-correct');
-          });
+          if (ui.answered()) return;
+          var correct = btn.getAttribute('data-key') === q.correctKey;
+          ui.reveal('#optGrid .opt-btn', function(b){ return b.getAttribute('data-key')===q.correctKey; });
           if (!correct) btn.classList.add('is-wrong');
           onAnswered(correct, q.explain());
         });
       });
-    } else if (q.type==='multiselect'){
+    }
+  });
+
+  registerType('multiselect', {
+    build: function(q, ui){
+      return ui.options(q.options, {checkbox:true}) +
+        '<button class="check-btn" id="checkBtn">Check My Answers</button>';
+    },
+    wire: function(q, onAnswered, ui){
       var picked = [];
       document.querySelectorAll('#optGrid .opt-btn').forEach(function(btn){
         btn.addEventListener('click', function(){
-          if (state.answered) return;
+          if (ui.answered()) return;
           var key = btn.getAttribute('data-key');
-          var idx = picked.indexOf(key);
-          if (idx>-1){ picked.splice(idx,1); btn.classList.remove('chosen'); btn.querySelector('.chk').textContent='☐'; }
-          else { picked.push(key); btn.classList.add('chosen'); btn.querySelector('.chk').textContent='☑'; }
+          var i = picked.indexOf(key);
+          if (i>-1){ picked.splice(i,1); btn.classList.remove('chosen'); btn.querySelector('.chk').innerHTML='&#9744;'; }
+          else { picked.push(key); btn.classList.add('chosen'); btn.querySelector('.chk').innerHTML='&#9745;'; }
         });
       });
-      document.getElementById('checkBtn').addEventListener('click', function(){
-        if (state.answered) return;
-        var correctSet = q.correctKeys.slice().sort();
-        var pickedSet = picked.slice().sort();
-        var correct = JSON.stringify(correctSet)===JSON.stringify(pickedSet);
+      var check = document.getElementById('checkBtn');
+      check.addEventListener('click', function(){
+        if (ui.answered()) return;
+        var correct = JSON.stringify(q.correctKeys.slice().sort())===JSON.stringify(picked.slice().sort());
         document.querySelectorAll('#optGrid .opt-btn').forEach(function(b){
           b.disabled = true;
           var k = b.getAttribute('data-key');
           if (q.correctKeys.indexOf(k)>-1) b.classList.add('is-correct');
           else if (picked.indexOf(k)>-1) b.classList.add('is-wrong');
         });
+        // The options go disabled but this didn't, so a graded question still
+        // offered an active-looking "Check My Answers". ui.answered() already
+        // stopped it double-scoring; this is about not lying with the button.
+        // (.check-btn[disabled] has had a style waiting for it in game.css.)
+        check.disabled = true;
         onAnswered(correct, q.explain());
       });
-    } else if (q.type==='true-false'){
+    }
+  });
+
+  registerType('true-false', {
+    build: function(){
+      return '<div class="tf-row" id="tfRow">' +
+        '<button class="tf-btn" data-v="true">TRUE</button>' +
+        '<button class="tf-btn" data-v="false">FALSE</button>' +
+        '</div>';
+    },
+    wire: function(q, onAnswered, ui){
       document.querySelectorAll('#tfRow .tf-btn').forEach(function(btn){
         btn.addEventListener('click', function(){
-          if (state.answered) return;
-          var val = btn.getAttribute('data-v')==='true';
-          var correct = val === q.correctAnswer;
-          document.querySelectorAll('#tfRow .tf-btn').forEach(function(b){ b.disabled=true; });
-          btn.classList.add(correct ? 'is-correct':'is-wrong');
-          onAnswered(correct, q.explain());
-        });
-      });
-    } else if (q.type==='order'){
-      var picks = [];
-      document.querySelectorAll('#orderRow .order-tile').forEach(function(tile){
-        tile.addEventListener('click', function(){
-          if (state.answered) return;
-          var v = parseInt(tile.getAttribute('data-v'),10);
-          if (picks.indexOf(v)>-1) return;
-          picks.push(v);
-          var slot = document.createElement('span');
-          slot.className='slot'; slot.textContent = picks.length;
-          tile.appendChild(slot);
-          tile.classList.add('locked');
-          if (picks.length === q.numbers.length){
-            var correct = JSON.stringify(picks)===JSON.stringify(q.correctOrder);
-            onAnswered(correct, q.explain());
-          }
-        });
-      });
-      document.getElementById('clearOrder').addEventListener('click', function(){
-        if (state.answered) return;
-        picks = [];
-        document.querySelectorAll('#orderRow .order-tile').forEach(function(tile){
-          tile.classList.remove('locked');
-          var s = tile.querySelector('.slot'); if (s) s.remove();
-        });
-      });
-    } else if (q.type==='symbol'){
-      document.querySelectorAll('#symRow .symbol-btn').forEach(function(btn){
-        btn.addEventListener('click', function(){
-          if (state.answered) return;
-          var v = btn.getAttribute('data-v');
-          var correct = v === q.correctKey;
-          document.querySelectorAll('#symRow .symbol-btn').forEach(function(b){ b.disabled=true; });
-          btn.classList.add(correct ? 'is-correct':'is-wrong');
+          if (ui.answered()) return;
+          var correct = (btn.getAttribute('data-v')==='true') === q.correctAnswer;
+          ui.reveal('#tfRow .tf-btn', function(b){ return (b.getAttribute('data-v')==='true') === q.correctAnswer; });
+          if (!correct) btn.classList.add('is-wrong');
           onAnswered(correct, q.explain());
         });
       });
     }
-    wireStrikeToggles();
+  });
+
+  /* ================= SHARED: QUESTION BODY (used by case mode + trail mode) ================= */
+  function buildInteractiveBody(q){
+    var t = TYPES[q.type];
+    if (t) return t.build(q, ui);
+    // No renderer for this type. Without this branch the prompt rendered with no
+    // controls, no Check button and no Next button -- a silent dead end whose
+    // only escape was the back link. Say so, and always leave a way forward.
+    console.error('DetectiveGame: no question type registered for "' + q.type + '".');
+    return '<p class="load-error">This clue could not be loaded.</p>' +
+      '<button class="next-btn" id="skipBtn">Skip this clue &#8594;</button>';
   }
 
-  // Process-of-elimination toggles on .opt-btn options (see strikeBadge()).
-  // Purely a scratch mark: doesn't affect answer selection, and doesn't
-  // block the option underneath from still being clicked as the answer.
+  /* ================= INTERACTION WIRING (shared by case mode + trail mode) ================= */
+  function wireInteractive(q, onAnswered){
+    var t = TYPES[q.type];
+    if (t){
+      t.wire(q, onAnswered, ui);
+      wireStrikeToggles();
+      return;
+    }
+    var skip = document.getElementById('skipBtn');
+    if (skip) skip.addEventListener('click', function(){
+      skip.remove();
+      onAnswered(false, 'This clue could not be loaded, so it was skipped.');
+    });
+  }
+
+  // Process-of-elimination toggles (see renderOptions()). Purely a scratch mark:
+  // it doesn't answer the question, and doesn't stop the option beside it from
+  // being clicked as the answer. It's a real <button>, so Enter and Space work
+  // without a keydown handler, and it no longer needs stopPropagation now that
+  // it sits outside the option rather than inside it.
   function wireStrikeToggles(){
     document.querySelectorAll('#optGrid .opt-strike').forEach(function(el){
-      function toggle(e){
+      el.addEventListener('click', function(){
         if (state.answered) return;
-        e.stopPropagation();
-        var btn = el.closest('.opt-btn');
-        var active = btn.classList.toggle('struck');
-        el.setAttribute('aria-pressed', active ? 'true' : 'false');
-        el.setAttribute('aria-label', active ? 'Unmark' : 'Mark as wrong');
-      }
-      el.addEventListener('click', toggle);
-      el.addEventListener('keydown', function(e){
-        if (e.key==='Enter' || e.key===' '){ e.preventDefault(); toggle(e); }
+        var btn = el.parentNode.querySelector('.opt-btn');
+        el.setAttribute('aria-pressed', btn.classList.toggle('struck') ? 'true' : 'false');
       });
     });
   }
 
-  function finishAnswer(correct, explainText){
-    state.answered = true;
-    if (correct){ state.score++; state.streak++; } else { state.streak = 0; }
+  // Everything both modes do once an answer lands: lock the scratch toggles,
+  // stamp the verdict, announce it, and hand focus to the way forward.
+  //
+  // Focus matters more here than it looks. Every screen replaces #app wholesale,
+  // so the focused element is destroyed and focus falls back to <body> -- a
+  // keyboard user was re-tabbing from the top of the document for each of the 8
+  // clues in a case and 10 stops in a trail. role="status" on the explanation
+  // means a screen reader hears the verdict instead of it only being drawn.
+  function closeOutAnswer(cf, correct, explainText, okWord, noWord, nextLabel, onNext){
+    document.querySelectorAll('#optGrid .opt-strike').forEach(function(el){ el.disabled = true; });
 
-    var cf = document.getElementById('caseFile');
     var stamp = document.createElement('div');
     stamp.className = 'stamp ' + (correct ? 'ok':'no');
-    stamp.textContent = correct ? 'Case Matches!' : 'Re-examine';
+    stamp.textContent = correct ? okWord : noWord;
     cf.appendChild(stamp);
 
     var explainBox = document.createElement('div');
     explainBox.className = 'explain-box';
+    explainBox.setAttribute('role','status');
     explainBox.textContent = explainText;
     cf.appendChild(explainBox);
 
     var nextBtn = document.createElement('button');
     nextBtn.className = 'next-btn';
-    nextBtn.textContent = (state.qIndex+1 < state.total) ? 'Next Clue →' : 'See Case Summary →';
-    nextBtn.addEventListener('click', function(){
-      state.qIndex++;
-      if (state.qIndex >= state.total){ renderSummary(); }
-      else { nextQuestion(); }
-    });
+    nextBtn.textContent = nextLabel;
+    nextBtn.addEventListener('click', onNext);
     cf.appendChild(nextBtn);
+    nextBtn.focus();
+  }
+
+
+  function finishAnswer(correct, explainText){
+    state.answered = true;
+    if (correct){ state.score++; state.streak++; } else { state.streak = 0; }
+    closeOutAnswer(
+      document.getElementById('caseFile'), correct, explainText,
+      'Case Matches!', 'Re-examine',
+      (state.qIndex+1 < state.total) ? 'Next Clue →' : 'See Case Summary →',
+      function(){
+        state.qIndex++;
+        if (state.qIndex >= state.total){ renderSummary(); }
+        else { nextQuestion(); }
+      });
   }
 
   /* ================= SUMMARY ================= */
@@ -372,8 +403,7 @@ var DetectiveGame = (function(){
     else { rank='Rookie Detective'; note='Every detective starts here. Try this case again — new numbers, same skill.'; }
 
     if (pct>=75) solvedCases[state.modeId] = true;
-    state.badges = Object.keys(solvedCases).length;
-    document.getElementById('badgeNum').textContent = state.badges;
+    setBadgeCount();
 
     var html = '<div class="summary">';
     html += '<div class="stamp-big">Case Closed</div>';
@@ -390,7 +420,8 @@ var DetectiveGame = (function(){
     html += '</div>';
     document.getElementById('app').innerHTML = html;
     document.getElementById('replayBtn').addEventListener('click', function(){ startMode(mode.id); });
-    document.getElementById('homeBtn').addEventListener('click', function(){ state.screen='home'; renderHome(); });
+    document.getElementById('homeBtn').addEventListener('click', function(){ renderHome(); });
+    focusScreen('.stamp-big');
   }
 
   /* ================= TRAIL MODE (the "big one" case) ================= */
@@ -401,31 +432,63 @@ var DetectiveGame = (function(){
     return seq.slice(0, TRAIL_LENGTH);
   }
 
+  /*
+    The map is one wide zigzag scaled to its container with width:100%. On a
+    phone that means a scale factor around 0.39, which rendered the node numbers
+    at ~4px and START/FINISH at ~3.5px — a decorative squiggle with unreadable
+    labels. Narrow screens get the same zigzag folded into two rows instead, so
+    the viewBox is about half as wide and everything lands roughly twice the
+    size. The radii and font sizes below scale with the layout to match.
+
+    Chosen at render time rather than by a media query, because the geometry
+    lives here. The trail re-renders at every stop, so rotating mid-question
+    keeps the previous layout until the next clue — fine for a progress map.
+  */
   function buildTrailMapSVG(n, currentIdx){
-    var W=760, H=170;
-    var xStep = (W-60)/(n-1);
+    var narrow = (typeof window !== 'undefined') && window.innerWidth <= 560;
+    var perRow = narrow ? Math.ceil(n/2) : n;
+    var rows = Math.ceil(n/perRow);
+    var W = narrow ? 400 : 760;
+    var rowH = 170;
+    var H = rowH * rows;
+    var xStep = (W-60)/(perRow-1);
     var pts = [];
     for (var i=0;i<n;i++){
-      pts.push({ x: 30+i*xStep, y: (i%2===0) ? 42 : 128 });
+      var row = Math.floor(i/perRow);
+      var col = i % perRow;
+      // Serpentine: odd rows run right-to-left, so the path stays continuous
+      // where one row hands over to the next.
+      if (row % 2 === 1) col = perRow-1-col;
+      // Zigzag phase follows the COLUMN, not the running index. Keying it to the
+      // index left each new row starting on the opposite phase, which stretched
+      // the row-to-row link into a long vertical drop.
+      pts.push({ x: 30+col*xStep, y: row*rowH + ((col%2===0) ? 42 : 128) });
     }
+    // The two-row layout uses bigger labels sitting further from their node, so
+    // START would render above y=0 and get clipped. Give the viewBox headroom
+    // rather than moving the labels back in toward the circles.
+    var padTop = narrow ? 14 : 0;
+    var vbH = H + (narrow ? 20 : 0);
     var pathAll = pts.map(function(p){ return p.x+','+p.y; }).join(' ');
     var progressPts = pts.slice(0, currentIdx+1).map(function(p){ return p.x+','+p.y; }).join(' ');
 
-    var svg = '<div class="trail-map-wrap"><svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg">';
+    var svg = '<div class="trail-map-wrap"><svg viewBox="0 '+(-padTop)+' '+W+' '+vbH+'" xmlns="http://www.w3.org/2000/svg">';
     svg += '<polyline points="'+pathAll+'" fill="none" stroke="#cbb98d" stroke-width="3" stroke-dasharray="2 7" stroke-linecap="round"/>';
     if (currentIdx>0) svg += '<polyline points="'+progressPts+'" fill="none" stroke="#3E7C7B" stroke-width="4" stroke-linecap="round"/>';
     pts.forEach(function(p,i){
       var st = i<currentIdx ? 'done' : (i===currentIdx ? 'current' : 'future');
       var fill = st==='done' ? '#3E7C7B' : (st==='current' ? '#D9A441' : '#F5EFE0');
       var stroke = st==='future' ? '#cbb98d' : '#16233A';
-      var r = st==='current' ? 15 : 12;
+      var r = (st==='current' ? 15 : 12) * (narrow ? 1.5 : 1);
       svg += '<circle cx="'+p.x+'" cy="'+p.y+'" r="'+r+'" fill="'+fill+'" stroke="'+stroke+'" stroke-width="2"/>';
       var content = st==='done' ? '✓' : String(i+1);
       var textColor = st==='future' ? '#a89568' : (st==='done' ? '#ffffff' : '#241a08');
-      svg += '<text x="'+p.x+'" y="'+(p.y+4)+'" text-anchor="middle" font-family="Baloo 2, sans-serif" font-weight="800" font-size="'+(st==='current'?13:11)+'" fill="'+textColor+'">'+content+'</text>';
+      svg += '<text x="'+p.x+'" y="'+(p.y+4)+'" text-anchor="middle" font-family="Baloo 2, sans-serif" font-weight="800" font-size="'+Math.round((st==='current'?13:11)*(narrow?1.6:1))+'" fill="'+textColor+'">'+content+'</text>';
       if (i===0 || i===n-1){
-        var labelY = p.y<80 ? p.y-20 : p.y+26;
-        svg += '<text x="'+p.x+'" y="'+labelY+'" class="trail-node-label">'+(i===0?'START':'FINISH')+'</text>';
+        var off = narrow ? 32 : 20;
+        var labelY = (p.y % rowH) < 80 ? p.y-off : p.y+off+6;
+        svg += '<text x="'+p.x+'" y="'+labelY+'" class="trail-node-label"'
+          + (narrow ? ' style="font-size:17px;"' : '') + '>'+(i===0?'START':'FINISH')+'</text>';
       }
     });
     svg += '</svg></div>';
@@ -433,7 +496,7 @@ var DetectiveGame = (function(){
   }
 
   function startTrail(){
-    state.screen='trail';
+    if (ON_CASE_START) ON_CASE_START();
     state.trailSeq = genTrailSequence();
     state.trailIdx = 0;
     state.trailWrongTurns = 0;
@@ -444,7 +507,7 @@ var DetectiveGame = (function(){
     state.answered = false;
     var modeId = state.trailSeq[state.trailIdx];
     state._trailMode = MODES.filter(function(m){ return m.id===modeId; })[0];
-    state.current = state._trailMode.gen();
+    state.current = generate(state._trailMode);
     renderTrail();
   }
 
@@ -472,43 +535,32 @@ var DetectiveGame = (function(){
     html += '</div>';
 
     document.getElementById('app').innerHTML = html;
-    document.getElementById('backBtn').addEventListener('click', function(){ state.screen='home'; renderHome(); });
+    document.getElementById('backBtn').addEventListener('click', function(){ renderHome(); });
     wireInteractive(q, trailAnswered);
+    focusScreen('.q-mode-label');
   }
 
   function trailAnswered(correct, explainText){
     state.answered = true;
     if (!correct) state.trailWrongTurns++;
 
-    var cf = document.getElementById('caseFile');
-    var stamp = document.createElement('div');
-    stamp.className = 'stamp ' + (correct ? 'ok':'no');
-    stamp.textContent = correct ? 'Right Way!' : 'Wrong Turn';
-    cf.appendChild(stamp);
-
-    var explainBox = document.createElement('div');
-    explainBox.className = 'explain-box';
-    explainBox.textContent = explainText;
-    cf.appendChild(explainBox);
-
     var isLast = state.trailIdx+1 >= TRAIL_LENGTH;
-    var nextBtn = document.createElement('button');
-    nextBtn.className = 'next-btn';
-    nextBtn.textContent = isLast ? 'Reach the Finish →' : 'Continue the Trail →';
-    nextBtn.addEventListener('click', function(){
-      state.trailIdx++;
-      if (state.trailIdx >= TRAIL_LENGTH){ renderTrailFinale(); }
-      else { nextTrailNode(); }
-    });
-    cf.appendChild(nextBtn);
+    closeOutAnswer(
+      document.getElementById('caseFile'), correct, explainText,
+      'Right Way!', 'Wrong Turn',
+      isLast ? 'Reach the Finish →' : 'Continue the Trail →',
+      function(){
+        state.trailIdx++;
+        if (state.trailIdx >= TRAIL_LENGTH){ renderTrailFinale(); }
+        else { nextTrailNode(); }
+      });
   }
 
   function renderTrailFinale(){
     var wrong = state.trailWrongTurns;
     var perfect = wrong===0;
     solvedCases['trail'] = true;
-    state.badges = Object.keys(solvedCases).length;
-    document.getElementById('badgeNum').textContent = state.badges;
+    setBadgeCount();
 
     var rank, note;
     if (perfect){ rank='Ace Investigator'; note='You followed the whole trail without a single wrong turn.'; }
@@ -531,14 +583,36 @@ var DetectiveGame = (function(){
     html += '</div>';
     document.getElementById('app').innerHTML = html;
     document.getElementById('replayBtn').addEventListener('click', startTrail);
-    document.getElementById('homeBtn').addEventListener('click', function(){ state.screen='home'; renderHome(); });
+    document.getElementById('homeBtn').addEventListener('click', function(){ renderHome(); });
+    focusScreen('.stamp-big');
   }
 
   /* ================= PUBLIC API ================= */
+  // Fail loudly and early. Every one of these used to be an undocumented
+  // requirement that blew up somewhere far from the actual mistake.
   function start(config){
+    config = config || {};
+    var app = document.getElementById('app');
+    if (!app){
+      console.error('DetectiveGame: this page has no <div id="app"> to render into.');
+      return;
+    }
+    if (!config.modes || !config.modes.length){
+      console.error('DetectiveGame: start() needs a non-empty `modes` array.');
+      app.innerHTML = '<p class="load-error">This game has no case files configured.</p>';
+      return;
+    }
+    var bad = config.modes.filter(function(m){ return !m || typeof m.gen !== 'function'; });
+    if (bad.length){
+      console.error('DetectiveGame: every mode needs a gen() function; ' + bad.length + ' do not.');
+      app.innerHTML = '<p class="load-error">This game has a case file that could not be opened.</p>';
+      return;
+    }
     MODES = config.modes;
-    HOME_INTRO = config.homeIntro;
-    TRAIL_ALL_WORD = config.trailAllFilesWord;
+    HOME_INTRO = config.homeIntro || '';
+    TRAIL_ALL_WORD = config.trailAllFilesWord || String(config.modes.length);
+    QUESTIONS_PER_CASE = config.questionsPerCase || 8;
+    ON_CASE_START = typeof config.onCaseStart === 'function' ? config.onCaseStart : null;
     renderHome();
   }
 
@@ -547,6 +621,8 @@ var DetectiveGame = (function(){
     choice: choice,
     shuffle: shuffle,
     fmt: fmt,
+    registerType: registerType,
+    hasType: hasType,
     start: start
   };
 })();

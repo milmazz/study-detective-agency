@@ -13,4 +13,8 @@ jobs:
       # Reads mise.toml so CI runs the exact Node version this repo
       # pins locally — one place declares it, not two.
       - uses: jdx/mise-action@v2
+      # The site has no dependencies; this installs jsdom for test/dom.test.js.
+      # Without it those tests skip themselves rather than fail, so CI installs
+      # deliberately to make sure the DOM half actually runs here.
+      - run: npm ci
       - run: node --test

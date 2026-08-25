@@ -5,11 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Number Division — Detective Agency</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🕵️</text></svg>">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Baloo+2:wght@500;600;700;800&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../../assets/css/base.css">
-<link rel="stylesheet" href="../../assets/css/game.css">
+<!-- Fonts are self-hosted and declared in base.css. This used to be a
+     render-blocking <link> to fonts.googleapis.com — a whole extra origin
+     (DNS + TCP + TLS) before the first pixel, which is what the homepage
+     already avoided. Baloo 2 is preloaded because base.css has to download
+     and parse before the browser would otherwise discover it. -->
+<link rel="preload" as="font" type="font/woff2" href="../../assets/fonts/baloo2-latin1.woff2" crossorigin>
+<link rel="stylesheet" href="../../assets/css/base.css?v=4">
+<link rel="stylesheet" href="../../assets/css/game.css?v=7">
+<!-- Place-value question styles. Math only, and after game.css — see the
+     header in numeration.css. -->
+<link rel="stylesheet" href="../../assets/css/numeration.css?v=2">
 </head>
 <body>
 <div class="agency">
@@ -27,10 +33,19 @@
       </div>
     </div>
   </div>
-  <div id="app"></div>
+  <noscript>
+    <p class="load-error">This case file needs JavaScript switched on — the
+    questions are generated fresh in your browser each time you open it.</p>
+  </noscript>
+  <!-- The engine renders every screen in here. It doubles as the main
+       landmark so a screen reader can skip straight to the question. -->
+  <main id="app"></main>
 </div>
 
-<script src="../../assets/js/game-engine.js"></script>
+<script src="../../assets/js/game-engine.js?v=6"></script>
+<!-- Place-value question types. Must load after the engine and before the
+     page script below, which calls start(). -->
+<script src="../../assets/js/numeration-types.js?v=3"></script>
 <script>
 (function(){
   "use strict";
@@ -62,6 +77,18 @@
     for (var i=1;i<n;i++) d.push(randInt(0,9));
     return d;
   }
+  // Filler digits that never collide with `avoid`, so a prompt can state how
+  // many times that digit appears and be telling the truth. genDigits alone
+  // made "the digit 4 appears twice" false for 34% of value-compare questions
+  // (941,445 has three 4s) -- correctly scored, but a false claim about a
+  // number in the one lesson whose whole skill is looking carefully at digits.
+  // Leading digit stays non-zero, as in genDigits.
+  function genDigitsAvoiding(n, avoid){
+    function pick(lo){ var v = randInt(lo,8); return v>=avoid ? v+1 : v; }
+    var d = [pick(1)];
+    for (var i=1;i<n;i++) d.push(pick(0));
+    return d;
+  }
   function digitsToNum(d){ return parseInt(d.join(''),10); }
   function roundToPlace(n, placeValue){ return Math.round(n/placeValue)*placeValue; }
 
@@ -76,7 +103,7 @@
       type:'click-digit', number:num,
       targetPlaceIdx: placeIdx,
       prompt: 'Click the digit in the <span class="hl">' + PLACES[placeIdx].short + '</span> place.',
-      explain: function(picked){
+      explain: function(){
         var correctDigit = digitAt(num, PLACES[placeIdx].value);
         return 'In ' + fmt(num) + ', the digit in the ' + PLACES[placeIdx].short + ' place is ' + correctDigit + '.';
       }
@@ -85,30 +112,46 @@
 
   function genValueCompare(){
     var sameNumber = Math.random() < 0.5;
-    var diff = choice([-2,-1,1,2]); // keep to guide's difficulty range
+    // The distractor pool offers "equal in value to" (0) and "one thousand times"
+    // (+/-3), so those have to be reachable answers -- otherwise a kid learns to
+    // strike them on sight and beats the question without doing the place-value
+    // reasoning. 0 only works across two numbers: within one number the prompt
+    // says the digit appears twice, which needs two different places.
+    var diff = sameNumber ? choice([-3,-2,-1,1,2,3]) : choice([-3,-2,-1,0,1,2,3]);
     var lowIdx = randInt(0,4);
     var hiIdx = lowIdx + Math.abs(diff);
-    if (hiIdx > 7) { hiIdx = 7; lowIdx = hiIdx - Math.abs(diff); }
+    // Unreachable while lowIdx tops out at 4 and |diff| at 3, but it is the
+    // bound that keeps PLACES[hiIdx] in range if either is ever widened.
+    var TOP = PLACES.length - 2;
+    if (hiIdx > TOP) { hiIdx = TOP; lowIdx = hiIdx - Math.abs(diff); }
     var aIdx, bIdx;
     if (diff > 0){ aIdx = hiIdx; bIdx = lowIdx; } else { aIdx = lowIdx; bIdx = hiIdx; }
     var d = randInt(1,9);
 
-    var numA, numB, labelA, labelB;
+    var numA, numB;
+    // Filler avoids d so the count the prompt states is exactly the count on
+    // screen: twice within one number, once in each of two numbers.
     if (sameNumber){
       var n = Math.max(aIdx,bIdx)+2;
-      var digits = genDigits(n);
+      var digits = genDigitsAvoiding(n, d);
       digits[n-1-aIdx] = d; digits[n-1-bIdx] = d;
       numA = numB = digitsToNum(digits);
-      labelA = 'circled digit'; labelB = 'underlined digit';
     } else {
       var nA = aIdx+2, nB = bIdx+2;
-      var da = genDigits(nA); da[nA-1-aIdx] = d;
-      var db = genDigits(nB); db[nB-1-bIdx] = d;
+      var da = genDigitsAvoiding(nA, d); da[nA-1-aIdx] = d;
+      var db = genDigitsAvoiding(nB, d); db[nB-1-bIdx] = d;
       numA = digitsToNum(da); numB = digitsToNum(db);
-      labelA = 'digit ' + d + ' in Number A'; labelB = 'digit ' + d + ' in Number B';
     }
 
     var correctDiff = aIdx - bIdx; // positive => A's place is bigger
+
+    // Every option has to name BOTH sides of the comparison. A bare
+    // "Value is one-tenth the value of" is a fragment with no object, and in
+    // the two-number variant nothing established which number was the subject
+    // — so the inverse option (always in the set) read as equally correct.
+    var subjA = sameNumber ? 'the ' + PLACES[aIdx].short + ' digit' : "Number A's digit";
+    var subjB = sameNumber ? 'the ' + PLACES[bIdx].short + ' digit' : "Number B's digit";
+    function cap(t){ return t.charAt(0).toUpperCase() + t.slice(1); }
     var distractorPool = shuffle([-3,-2,-1,0,1,2,3].filter(function(v){ return v!==correctDiff; }));
     var opts = [correctDiff].concat(distractorPool.slice(0,3));
     opts = shuffle(opts);
@@ -117,12 +160,12 @@
       type:'value-compare', sameNumber:sameNumber, numA:numA, numB:numB, aIdx:aIdx, bIdx:bIdx, d:d,
       prompt: sameNumber
         ? 'In the number <span class="num-sub">' + fmt(numA) + '</span>, the digit ' + d + ' appears twice. Compare the value of the digit in the <span class="hl">' + PLACES[aIdx].short + '</span> place to the value of the digit in the <span class="hl">' + PLACES[bIdx].short + '</span> place.'
-        : 'Compare the value of the digit ' + d + ' in each number below.',
-      options: opts.map(function(v){ return {key:String(v), label:'Value is ' + RATIO_LABEL[String(v)]}; }),
+        : 'Compare the value of the digit ' + d + ' in <span class="hl">Number A</span> to its value in <span class="hl">Number B</span>.',
+      options: opts.map(function(v){ return {key:String(v), label: cap(subjA) + ' is ' + RATIO_LABEL[String(v)] + ' ' + subjB}; }),
       correctKey: String(correctDiff),
       explain: function(){
         var valA = d*PLACES[aIdx].value, valB = d*PLACES[bIdx].value;
-        return 'The digit in the ' + PLACES[aIdx].short + ' place is worth ' + fmt(valA) + '. The digit in the ' + PLACES[bIdx].short + ' place is worth ' + fmt(valB) + '. So the first is ' + RATIO_LABEL[String(correctDiff)] + ' the second.';
+        return cap(subjA) + ' is worth ' + fmt(valA) + '. ' + cap(subjB) + ' is worth ' + fmt(valB) + '. So ' + subjA + ' is ' + RATIO_LABEL[String(correctDiff)] + ' ' + subjB + '.';
       }
     };
   }
@@ -144,13 +187,18 @@
       var factor = op==='x10' ? 10:100;
       distractors.push(base*factor*10, Math.floor(base*factor/10)||base, base+factor);
     } else {
-      var f2 = op==='d10'?10:100;
-      distractors.push(correct*10, correct/10, base);
+      var f2 = op==='d10' ? 10 : 100;
+      // Multiplied instead of divided, and didn't operate at all -- the two real
+      // misconceptions. The old third option was correct/10, fractional for
+      // every division question (45% of all options here): off-topic for a
+      // whole-number unit and eliminable at a glance. Note correct*10 would
+      // equal base for the /10 case anyway, so it was never a fourth option.
+      // The loop below fills the last slot with a whole-number place slip.
+      distractors.push(base*f2, base);
     }
     var opts = [correct].concat(distractors).filter(function(v,i,a){ return a.indexOf(v)===i && v>=0; });
     while(opts.length<4){ opts.push(correct + choice([-10,10,-100,100,-1000,1000])); opts = opts.filter(function(v,i,a){return a.indexOf(v)===i && v>=0;}); }
     opts = shuffle(opts.slice(0,4));
-    if (opts.indexOf(correct)===-1) opts[0]=correct;
 
     return {
       type:'mcq-simple',
@@ -237,7 +285,8 @@
       options: opts,
       correctKeys: opts.filter(function(o){return o.ok;}).map(function(o){return o.key;}),
       explain: function(){
-        return 'Expanded form: ' + correctA + ' — one correct way is to multiply each digit by its place value; another is to write those products as a sum: ' + correctB + '.';
+        return 'Expanded form: ' + correctA + ' — one correct way is to multiply each digit by its place value; another is to write those products as a sum: ' + correctB + '. '
+          + 'Watch out for an option that adds up to the right number but bundles several digits together, like ending in "+ ' + fmt(num % 1000) + '" — expanded form needs every digit multiplied by its own place value, one at a time.';
       }
     };
   }
@@ -246,22 +295,33 @@
       var q = genExpandedOnce();
       if (q) return q;
     }
-    // extremely unlikely fallback
-    return genExpandedOnce() || { type:'multiselect', number:0, prompt:'', options:[], correctKeys:[], explain:function(){return '';} };
+    // 0 of 50,000 measured generations needed even a second attempt, so getting
+    // here means something upstream changed. Throw rather than fall back to an
+    // empty multiselect: the engine compares [] to [] and scores that CORRECT,
+    // so the kid would be awarded the point for clicking Check on a blank
+    // question. The engine catches this and degrades to one skippable clue.
+    throw new Error('genExpanded: no valid question after 20 attempts');
   }
 
   function genTrueFalse(){
     var n = randInt(6,9);
     var digits = genDigits(n);
     var num = digitsToNum(digits);
-    var posIdx = randInt(0, n-1);
+    // Only ask about a NON-ZERO digit. "The digit in the tens place has a
+    // value of (0 x 100)" is 0 = 0 whichever place the statement names, so
+    // the "move the place" branch below can't actually make it false.
+    var nonZero = [];
+    for (var i=0;i<n;i++) if (digitAt(num, PLACES[i].value) !== 0) nonZero.push(i);
+    var posIdx = choice(nonZero); // genDigits() forces a non-zero leading digit, so never empty
     var actualDigit = digitAt(num, PLACES[posIdx].value);
     var isTrue = Math.random() < 0.5;
     var statedDigit = actualDigit, statedPlaceIdx = posIdx;
     if (!isTrue){
       if (Math.random()<0.5){
         statedPlaceIdx = posIdx + choice([-1,1,-2,2]);
-        if (statedPlaceIdx<0 || statedPlaceIdx>8 || statedPlaceIdx===posIdx) statedPlaceIdx = (posIdx+1)%n;
+        // Stay inside the places this number actually has (n-1, not 8), so
+        // the statement never names a place value bigger than the number.
+        if (statedPlaceIdx<0 || statedPlaceIdx>n-1 || statedPlaceIdx===posIdx) statedPlaceIdx = (posIdx+1)%n;
       } else {
         do { statedDigit = randInt(0,9); } while (statedDigit===actualDigit);
       }
@@ -269,7 +329,10 @@
     var statedValue = statedDigit * PLACES[statedPlaceIdx].value;
     return {
       type:'true-false', number:num,
-      prompt:'In the number <span class="num-sub" style="font-size:1.15em;">' + fmt(num) + '</span>, is this statement True or False?<br><br>"The digit ' + digitAt(num, PLACES[posIdx].value) + ' has a value of (' + statedDigit + ' × ' + fmt(PLACES[statedPlaceIdx].value) + ')."',
+      // The statement names the PLACE, not the digit's value. "The digit 8
+      // has a value of..." is true of the OTHER 8 whenever a number repeats
+      // that digit, which made the false branch above produce true claims.
+      prompt:'In the number <span class="num-sub" style="font-size:1.15em;">' + fmt(num) + '</span>, is this statement True or False?<br><br>"The digit in the <span class="hl">' + PLACES[posIdx].short + '</span> place has a value of (' + statedDigit + ' × ' + fmt(PLACES[statedPlaceIdx].value) + ')."',
       correctAnswer: isTrue,
       explain: function(){
         return 'The digit in the ' + PLACES[posIdx].short + ' place is ' + actualDigit + ', so its real value is ' + actualDigit + ' × ' + fmt(PLACES[posIdx].value) + ' = ' + fmt(actualDigit*PLACES[posIdx].value) + '. ' + (isTrue ? 'That matches the statement.' : 'The statement claimed ' + fmt(statedValue) + ', which does not match.');
@@ -296,7 +359,12 @@
       // compare two numbers with symbol
       var nA = randInt(4,7), nB = randInt(4,7);
       var a = digitsToNum(genDigits(nA)), b = digitsToNum(genDigits(nB));
-      while (a===b) b = digitsToNum(genDigits(nB));
+      // Two random numbers are essentially never equal, so resampling on a===b
+      // meant '=' was correct in 0 of 45,299 measured questions while the button
+      // was always on screen -- the game never once taught that two numbers can
+      // be equal. Make it come up deliberately about one time in eight.
+      if (Math.random() < 0.125) b = a;
+      else while (a===b) b = digitsToNum(genDigits(nB));
       var correctSym = a<b ? '<' : (a>b ? '>' : '=');
       return {
         type:'symbol', a:a, b:b, correctKey:correctSym,
@@ -319,7 +387,6 @@
     var opts = [correct, down, up, num].filter(function(v,i,a){ return a.indexOf(v)===i; });
     while (opts.length<4){ opts.push(correct + pv*choice([-2,2,3])); opts = opts.filter(function(v,i,a){return a.indexOf(v)===i && v>=0;}); }
     opts = shuffle(opts.slice(0,4));
-    if (opts.indexOf(correct)===-1) opts[0]=correct;
     return {
       type:'mcq-simple',
       prompt:'Round <span class="num-sub" style="font-size:1.15em;">' + fmt(num) + '</span> to the nearest <span class="hl">' + PLACES[roundIdx].short.replace('-',' ') + '</span>.',

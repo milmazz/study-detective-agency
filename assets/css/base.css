@@ -4,7 +4,62 @@
   (see games/math, games/ela) instead of redefining --ink/--ink-2/--shadow
   per page.
 */
+
+/*
+  Self-hosted fonts. These were served from fonts.googleapis.com, which cost
+  a whole extra origin (DNS + TCP + TLS) on the critical path — and on the two
+  game pages that <link> was render-blocking, so nothing painted until a
+  third party answered. Now they sit on the connection the browser already has.
+
+  These are narrower than Google's `latin` subsets: those carry ~215-230 glyphs
+  each, and this site is English 4th-grade content. Cutting to ASCII + Latin-1
+  + the few typographic marks actually used took all three from 119 KB to 83 KB
+  — the largest single asset saving available here. Regenerate with
+  scripts/subset-fonts.sh; the unicode-range below must keep matching what that
+  script asks for, or the browser downloads a file that can't render the
+  character it wanted.
+
+  Baloo 2 is a variable font (one file spans the whole weight range, verified
+  against its fvar table); Special Elite is static 400. Monospace is not
+  self-hosted at all — see --mono below.
+  The source URLs above each block are Google's full latin files — fetch them
+  with a modern-browser User-Agent and take the `latin` block.
+
+  Filenames encode the subset because fonts ship immutable with no ?v=
+  cache-buster: change what a file CONTAINS and you must rename it, here and
+  in every page's preload href. Licenses: assets/fonts/LICENSE.md
+*/
+/* https://fonts.gstatic.com/s/baloo2/v23/wXKrE3kTposypRyd51jcAM4olXc.woff2 */
+@font-face{
+  font-family:'Baloo 2'; font-style:normal; font-weight:400 800;
+  font-display:swap; src:url(../fonts/baloo2-latin1.woff2) format('woff2');
+  unicode-range:U+0020-007E, U+00A0-00A1, U+00B7, U+00BF, U+00C0-00FF, U+00D7, U+00F7, U+2013-2014, U+2018-2019, U+201C-201D, U+2026;
+}
+/* https://fonts.gstatic.com/s/specialelite/v20/XLYgIZbkc4JPUL5CVArUVL0ntnAOSFNuQsI.woff2 */
+@font-face{
+  font-family:'Special Elite'; font-style:normal; font-weight:400;
+  font-display:swap; src:url(../fonts/special-elite-latin1.woff2) format('woff2');
+  unicode-range:U+0020-007E, U+00A0-00A1, U+00B7, U+00BF, U+00C0-00FF, U+00D7, U+00F7, U+2013-2014, U+2018-2019, U+201C-201D, U+2026;
+}
+
+/*
+  Screen transitions move focus to the top of whatever just rendered, so a
+  keyboard user doesn't restart at the top of the document for every clue (see
+  focusScreen() in game-engine.js). Those targets are tabindex="-1" — reachable
+  only from script, never by tabbing — so the browser's focus ring on them
+  signals nothing a user can act on and reads as a rendering bug: a full-width
+  blue box around a heading. Interactive controls are untouched and keep theirs.
+*/
+[tabindex="-1"]:focus{ outline:none; }
+
+/*
+  Monospace is a system stack, not a webfont. This was Roboto Mono, which cost
+  24.7 KB and a request to render digits, pills and a few small labels — places
+  where a system mono is visually near-indistinguishable at these sizes. The
+  faces below are the platform defaults, so nothing is downloaded.
+*/
 :root{
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
   --ink:#2B2018;
   --ink-2:#3A2C1F;
   --folder:#E8DCC0;
@@ -49,7 +104,3 @@ body{
   min-height:100vh;
 }
 
-.sr-only{
-  position:absolute; width:1px;height:1px; padding:0;margin:-1px;overflow:hidden;
-  clip:rect(0,0,0,0); white-space:nowrap; border:0;
-}

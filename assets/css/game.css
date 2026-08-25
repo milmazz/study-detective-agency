@@ -61,7 +61,9 @@ h1.title{
   margin:6px 0 0;
   font-size:14.5px;
   color:#C9D2E2;
-  max-width:46ch;
+  /* em, not ch — see the note on .site-subtitle in index.html. 46ch x 0.583em
+     is the width this had with Baloo 2 loaded, minus the reflow on swap. */
+  max-width:26.8em;
 }
 .badge-counter{
   flex-shrink:0;
@@ -135,7 +137,7 @@ h1.title{
 .trail-map-wrap{ margin-bottom:16px; }
 .trail-map-wrap svg{ width:100%; height:auto; display:block; }
 .trail-node-label{
-  font-family:'Roboto Mono', monospace; font-size:9px; fill:var(--ink-2); text-anchor:middle;
+  font-family:var(--mono); font-size:9px; fill:var(--ink-2); text-anchor:middle;
 }
 .trail-legend{
   display:flex; gap:16px; justify-content:center; font-size:11px; color:#5b5140; margin-top:2px; flex-wrap:wrap;
@@ -154,7 +156,7 @@ h1.title{
 }
 .back-btn:hover{ text-decoration:underline; }
 .progress-pill{
-  font-family:'Roboto Mono', monospace; font-size:12.5px; font-weight:700;
+  font-family:var(--mono); font-size:12.5px; font-weight:700;
   background:var(--folder-dark); border-radius:20px; padding:4px 12px; color:var(--ink);
 }
 .streak-pill{
@@ -185,53 +187,25 @@ h1.title{
   padding:0 3px; border-radius:3px;
 }
 
-.number-display{
-  font-family:'Roboto Mono', monospace;
-  font-size:clamp(22px,6vw,30px);
-  font-weight:700;
-  letter-spacing:1px;
-  color:var(--ink);
-  margin:6px 0 18px;
-  text-align:center;
-  word-break:break-all;
-}
-.digit-box{
-  display:inline-block;
-  padding:2px 3px;
-  border-radius:5px;
-  cursor:pointer;
-  transition: background .1s ease, transform .1s ease;
-}
-.digit-box:hover{ background:rgba(217,164,65,0.35); }
-.digit-box:focus-visible{ outline:3px solid var(--teal); }
-.digit-box.picked{ background:var(--mustard); color:#241a08; border-radius:6px; }
-.comma-sep{ color:#8a7c5e; }
-.num-sub{
-  font-family:'Roboto Mono', monospace; color:var(--ink-2); font-weight:700;
-}
-.num-highlight{
-  background:rgba(217,164,65,0.45);
-  border-radius:4px;
-  padding:0 2px;
-  border-bottom:2.5px solid var(--red);
-}
-
-.two-numbers{
-  display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin:10px 0 18px;
-}
-.num-card{
-  background:#fff; border:1.5px solid #cbb98d; border-radius:8px;
-  padding:10px 14px; text-align:center; min-width:150px;
-}
-.num-card .who{ font-size:11.5px; font-weight:700; color:var(--teal-dark); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;}
-.num-card .val{ font-family:'Roboto Mono', monospace; font-size:19px; font-weight:700; color:var(--ink); }
-
 .options-grid{
   display:grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr));
   gap:10px; margin-top:6px;
 }
+/* .opt-wrap exists so the strike toggle can be a SIBLING of the option button
+   rather than a child: <button> may not contain interactive content, and while
+   it was nested the option's accessible name absorbed the toggle's label. It's
+   the grid item now, and the positioning context for the toggle. */
+.opt-wrap{ position:relative; display:flex; }
+/* The right-hand strip is reserved for the strike toggle. The toggle used to
+   overhang the button's top-right corner, which meant the bigger touch target
+   also covered more of the thing it sits on: 22x22px of the option at 36px,
+   against 13x13px at the old 22px. It also reached 14px into a 10px grid gap,
+   so in a two-column layout it painted over the neighbouring option. Reserving
+   space instead means the target can grow without ever covering label text or
+   another control. Keep these in step with .opt-strike's width below. */
+.opt-wrap .opt-btn{ flex:1; padding-right:40px; }
+
 .opt-btn{
-  position:relative;
   background:#fff; border:1.5px solid #cbb98d; border-radius:8px;
   padding:12px 10px; font-family:inherit; font-size:14.5px; font-weight:700;
   color:var(--ink); cursor:pointer; text-align:left;
@@ -240,34 +214,50 @@ h1.title{
 .opt-btn:hover{ border-color:var(--mustard); background:#fffaf0; }
 .opt-btn:focus-visible{ outline:3px solid var(--teal); }
 .opt-btn.chosen{ border-color:var(--teal); background:rgba(62,124,123,0.12); }
-.opt-btn.is-correct{ border-color:var(--teal); background:rgba(62,124,123,0.22); }
-.opt-btn.is-wrong{ border-color:var(--red); background:rgba(178,58,72,0.14); }
+/* Answer feedback. Every answerable control, not just .opt-btn — the engine
+   adds these to .tf-btn too, and that selector was missing, so True/False
+   cases graded silently with no colour at all. .symbol-btn gets the same pair
+   in numeration.css, next to the rest of the symbol styles. */
+.opt-btn.is-correct, .tf-btn.is-correct{ border-color:var(--teal); background:rgba(62,124,123,0.22); }
+.opt-btn.is-wrong, .tf-btn.is-wrong{ border-color:var(--red); background:rgba(178,58,72,0.14); }
 .opt-btn[disabled]{ cursor:default; }
 .opt-btn .chk{ display:inline-block; width:16px; }
+
+/* Shown when a question type has no renderer, or a generator threw. Both used
+   to leave the kid on a prompt with no controls and no way forward. */
+.load-error{
+  background:rgba(178,58,72,0.08); border:1.5px dashed var(--red);
+  border-radius:8px; padding:14px 16px; margin:10px 0 0;
+  color:var(--ink); font-weight:600; font-size:14.5px;
+}
 
 /* process-of-elimination toggle: mark an option as wrong without answering it */
 .opt-btn.struck{ opacity:0.55; }
 .opt-btn.struck .opt-label{ text-decoration:line-through; }
 .opt-strike{
-  position:absolute; top:-9px; right:-9px;
-  width:22px; height:22px; border-radius:50%;
-  background:#fff; border:1.5px solid #cbb98d; color:#8a7c66;
-  font-family:'Roboto Mono', monospace; font-size:12px; font-weight:800; line-height:1;
+  position:absolute; top:50%; right:6px; transform:translateY(-50%);
+  width:26px; height:26px; padding:0; border-radius:50%;
+  background:#fff; border:1.5px solid #cbb98d; color:#9d8e75;
+  font-family:var(--mono); font-size:13px; font-weight:800; line-height:1;
   display:flex; align-items:center; justify-content:center;
   cursor:pointer; opacity:1;
 }
-.opt-strike:hover{ border-color:var(--red); color:var(--red); }
-.opt-strike:focus-visible{ outline:3px solid var(--teal); outline-offset:1px; }
-.opt-btn.struck .opt-strike{ background:var(--red); border-color:var(--red-dark); color:#fff; }
-
-.symbol-row{ display:flex; gap:12px; justify-content:center; margin-top:6px; }
-.symbol-btn{
-  font-family:'Roboto Mono', monospace; font-size:26px; font-weight:700;
-  width:64px; height:56px; border-radius:8px; border:1.5px solid #cbb98d;
-  background:#fff; cursor:pointer; color:var(--ink);
+/* Touch pointers get a bigger target. At 22px a kid aiming for the answer hit
+   the toggle instead -- and since the toggle swallowed the tap, the answer
+   silently didn't register. WCAG 2.5.8 wants 24px minimum; this is comfortably
+   past it for a 9-year-old on a phone. Growing it costs the option nothing now
+   that the strip is reserved rather than overlapped -- the padding just has to
+   grow with it. */
+@media (hover:none){
+  .opt-wrap .opt-btn{ padding-right:50px; }
+  .opt-strike{ width:36px; height:36px; font-size:16px; }
 }
-.symbol-btn:hover{ border-color:var(--mustard); }
-.symbol-btn:focus-visible{ outline:3px solid var(--teal); }
+.opt-strike[disabled]{ cursor:default; opacity:0.45; }
+.opt-strike:hover:not([disabled]){ border-color:var(--red); color:var(--red); }
+.opt-strike:focus-visible{ outline:3px solid var(--teal); outline-offset:1px; }
+/* Keyed off aria-pressed, not a descendant selector: the toggle is a sibling of
+   the option now, so .opt-btn.struck .opt-strike no longer matches anything. */
+.opt-strike[aria-pressed="true"]{ background:var(--red); border-color:var(--red-dark); color:#fff; }
 
 .tf-row{ display:flex; gap:10px; margin-top:6px; }
 .tf-btn{
@@ -275,21 +265,6 @@ h1.title{
   padding:12px; border-radius:8px; border:1.5px solid #cbb98d; background:#fff; cursor:pointer;
 }
 .tf-btn:hover{ border-color:var(--mustard); }
-
-.order-row{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:6px; }
-.order-tile{
-  position:relative;
-  font-family:'Roboto Mono', monospace; font-size:16px; font-weight:700;
-  padding:14px 12px; border-radius:8px; border:1.5px solid #cbb98d; background:#fff; cursor:pointer;
-  min-width:110px; text-align:center;
-}
-.order-tile .slot{
-  position:absolute; top:-9px; left:-9px; background:var(--mustard); color:#241a08;
-  width:24px; height:24px; border-radius:50%; font-size:12.5px; font-weight:800;
-  display:flex; align-items:center; justify-content:center; border:2px solid #fff;
-}
-.order-tile.locked{ background:#fff8e8; border-color:var(--mustard); }
-.order-hint{ font-size:12px; color:#6b6150; text-align:center; margin-top:8px; }
 
 .check-btn{
   margin-top:18px;
@@ -300,11 +275,6 @@ h1.title{
 .check-btn:hover{ filter:brightness(1.04); }
 .check-btn:active{ transform:translateY(2px); box-shadow:none; }
 .check-btn[disabled]{ opacity:0.5; cursor:default; box-shadow:none; }
-.clear-link{
-  background:none;border:none;font-family:inherit;font-size:12.5px;font-weight:700;
-  color:var(--teal-dark); cursor:pointer; margin-left:12px;
-}
-
 .explain-box{
   margin-top:16px; padding:12px 14px; border-radius:8px;
   background:#fff; border:1.5px dashed #cbb98d; font-size:13.5px; line-height:1.5; color:#3a3324;
@@ -353,9 +323,28 @@ h1.title{
 .summary .rank-note{ font-size:13.5px; color:#5b5140; margin-bottom:16px; }
 .summary .stat-row{ display:flex; justify-content:center; gap:26px; margin:12px 0 20px; flex-wrap:wrap; }
 .summary .stat{ text-align:center; }
-.summary .stat .n{ font-size:24px; font-weight:800; color:var(--ink); font-family:'Roboto Mono', monospace; }
+.summary .stat .n{ font-size:24px; font-weight:800; color:var(--ink); font-family:var(--mono); }
 .summary .stat .l{ font-size:11px; letter-spacing:1px; text-transform:uppercase; color:#6b6150; }
 .summary-btns{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+
+/* The stamp is absolutely positioned in the case file's top-right corner while
+   the case label sits top-left. On a phone with a long prompt — the ELA passage
+   boxes are the worst case — it could land on top of the text. Below 560px it
+   drops into the flow instead, where it can't overlap: the DOM puts it after
+   the options and before the explanation, which is where it lands. */
+@media (max-width:560px){
+  .stamp{
+    /* Centred rather than left-aligned: it lands in the flow between the
+       options and the explanation, and at -10deg a left-aligned stamp hangs
+       back into the card's padding and reads like it slipped. Centring keeps
+       the rotation clear of both edges and looks deliberate.
+       transform is left alone — stampIn fills forwards to rotate(-10deg) and
+       the reduced-motion rule below sets the same angle, so anything set here
+       would be overridden anyway. */
+    position:static; display:block; width:fit-content;
+    margin:2px auto 12px;
+  }
+}
 
 @media (prefers-reduced-motion: reduce){
   .stamp{ animation:none; transform:rotate(-10deg) scale(1); opacity:1; }

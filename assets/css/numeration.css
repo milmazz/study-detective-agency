@@ -1,0 +1,120 @@
+/*
+  Place-value question styles — the Numbers Division only.
+
+  These moved out of game.css, which every game page loads. Nothing here means
+  anything to a game that isn't about numbers: .digit-box is addressed by
+  data-place, .num-card labels a Number A / Number B pair, .order-tile carries
+  a numbered slot. The ELA page was downloading all of it and matching none of
+  it. Loaded only by games/math/, alongside assets/js/numeration-types.js,
+  which registers the types these style.
+
+  Load AFTER game.css. Nothing here depends on that today -- every selector
+  below is either unique to this file or, in .symbol-btn's case, ordered
+  within it -- but game.css owns the shared question shell these sit inside.
+*/
+
+.number-display{
+  font-family:var(--mono);
+  font-size:clamp(22px,6vw,30px);
+  font-weight:700;
+  letter-spacing:1px;
+  color:var(--ink);
+  margin:6px 0 18px;
+  text-align:center;
+  word-break:break-all;
+}
+.digit-box{
+  display:inline-block;
+  padding:2px 3px;
+  border-radius:5px;
+  cursor:pointer;
+  transition: background .1s ease, transform .1s ease;
+}
+.digit-box:hover{ background:rgba(217,164,65,0.35); }
+.digit-box:focus-visible{ outline:3px solid var(--teal); }
+.digit-box.picked{ background:var(--mustard); color:#241a08; border-radius:6px; }
+
+/*
+  Bigger digits, and real padding around them, on small screens. The clamp
+  floor of 22px plus 3px of side padding gives a ~19px-wide target at a 360px
+  viewport — under the 24px WCAG 2.5.8 minimum, with adjacent boxes abutting.
+  "Click the digit in the ten-thousands place" is the ONLY interaction in Case
+  No. 01, performed by a 9-year-old on a phone, so it has to be hittable.
+  .number-display already sets word-break, so wrapping to a second line is safe.
+*/
+@media (max-width:480px){
+  .number-display{ font-size:26px; letter-spacing:0; line-height:1.9; }
+  .digit-box{ padding:6px 8px; margin:0 1px; }
+}
+.comma-sep{ color:#8a7c5e; }
+.num-sub{
+  font-family:var(--mono); color:var(--ink-2); font-weight:700;
+}
+.num-highlight{
+  background:rgba(217,164,65,0.45);
+  border-radius:4px;
+  padding:0 2px;
+  border-bottom:2.5px solid var(--red);
+}
+
+.two-numbers{
+  display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin:10px 0 18px;
+}
+.num-card{
+  background:#fff; border:1.5px solid #cbb98d; border-radius:8px;
+  padding:10px 14px; text-align:center; min-width:150px;
+}
+.num-card .who{ font-size:11.5px; font-weight:700; color:var(--teal-dark); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;}
+.num-card .val{ font-family:var(--mono); font-size:19px; font-weight:700; color:var(--ink); }
+
+/* The engine adds .is-correct/.is-wrong to whatever the type says is
+   answerable; game.css carries the .opt-btn/.tf-btn half, and this is the
+   symbol row's.
+
+   Declared BEFORE .symbol-btn:hover on purpose. Both are specificity (0,2,0),
+   so source order decides, and in the single game.css these sat above the
+   symbol block -- so hovering a revealed answer showed the mustard hover
+   border rather than the teal correct one. Putting them below :hover here
+   would quietly change that, and a file move should not change what the page
+   looks like. (.opt-btn is already the other way round, so the two disagree.
+   Worth deciding deliberately sometime; not as a side effect of this split.) */
+.symbol-btn.is-correct{ border-color:var(--teal); background:rgba(62,124,123,0.22); }
+.symbol-btn.is-wrong{ border-color:var(--red); background:rgba(178,58,72,0.14); }
+
+.symbol-row{ display:flex; gap:12px; justify-content:center; margin-top:6px; }
+.symbol-btn{
+  font-family:var(--mono); font-size:26px; font-weight:700;
+  width:64px; height:56px; border-radius:8px; border:1.5px solid #cbb98d;
+  background:#fff; cursor:pointer; color:var(--ink);
+}
+.symbol-btn:hover{ border-color:var(--mustard); }
+.symbol-btn:focus-visible{ outline:3px solid var(--teal); }
+
+.order-row{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:6px; }
+.order-tile{
+  position:relative;
+  font-family:var(--mono); font-size:16px; font-weight:700;
+  padding:14px 12px; border-radius:8px; border:1.5px solid #cbb98d; background:#fff; cursor:pointer;
+  min-width:110px; text-align:center;
+  /* Explicit, not inherited: these get disabled once the ordering is graded,
+     and the UA's disabled style would otherwise drop them to 30% alpha —
+     washing out the very numbers the kid is reading back to check their
+     order against the explanation. .opt-btn already sets its own colour,
+     which is why disabling it never had this problem. */
+  color:var(--ink);
+}
+.order-tile .slot{
+  position:absolute; top:-9px; left:-9px; background:var(--mustard); color:#241a08;
+  width:24px; height:24px; border-radius:50%; font-size:12.5px; font-weight:800;
+  display:flex; align-items:center; justify-content:center; border:2px solid #fff;
+}
+.order-tile.locked{ background:#fff8e8; border-color:var(--mustard); }
+/* Set once the ordering is graded, so the tiles stop reading as pickable. */
+.order-tile[disabled]{ cursor:default; }
+.order-hint{ font-size:12px; color:#6b6150; text-align:center; margin-top:8px; }
+
+.clear-link{
+  background:none;border:none;font-family:inherit;font-size:12.5px;font-weight:700;
+  color:var(--teal-dark); cursor:pointer; margin-left:12px;
+}
+.clear-link[disabled]{ opacity:0.5; cursor:default; }

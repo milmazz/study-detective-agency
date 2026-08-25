@@ -1,21 +1,53 @@
-# Cache-Control rules for Cloudflare Pages.
-# https://developers.cloudflare.com/pages/configuration/headers/
+# Cache-Control rules. This deploys as a static-assets Worker, not Pages,
+# but the _headers file works the same way and is picked up from the repo root.
+# https://developers.cloudflare.com/workers/static-assets/headers/
 #
-# HTML pages stay short-lived so edits (new cases, copy fixes) show up
-# quickly. CSS/JS/data get a longer cache since Cloudflare Pages purges
-# its own edge cache on every deploy anyway — this max-age mainly
-# controls how long a returning VISITOR'S browser reuses its local copy.
-# Bump these once the asset structure settles down, or move to
-# content-hashed filenames for indefinite (immutable) caching.
+# HTML pages stay short-lived so edits (new cases, copy fixes) show up quickly.
+#
+# Assets are cached for a year and marked immutable, which is only safe because
+# every asset URL carries a hand-bumped ?v=N (see the <link>/<script> tags in
+# index.html and the game pages). That version token lives in the HTML, so it
+# ships on the HTML's 300s TTL — bump it in the same commit as an asset change
+# and every visitor picks up both within five minutes.
+#
+# Without the token this was a real bug, not just staleness: HTML expires after
+# 300s but assets sat in the browser cache for 24h, so a returning visitor could
+# pair NEW html with an OLD game-engine.js. Add a question type and the stale
+# engine renders the prompt with no answer UI at all (buildInteractiveBody has
+# no else branch); add an engine helper and the page throws and #app stays
+# blank. Both are silent — no error, nothing in the console.
+#
+# Two exceptions, both immutable by FILENAME instead of by token:
+#
+# Fonts under /assets/fonts/ carry no ?v= because a preload href and base.css's
+# url() have to name the same thing in two files — see assets/fonts/LICENSE.md.
+# The filename encodes the subset, so changing what a font contains renames it.
+#
+# /assets/img/og-image.jpg carries no ?v= because a token would not help: the
+# og:image and twitter:image URLs are consumed by social scrapers, which cache
+# by URL and ignore Cache-Control entirely. Replacing the share card means a new
+# filename, updated in both meta tags in index.html — nothing else picks it up.
+#
+# nosniff and Referrer-Policy are free and worth having. A full CSP is not: the
+# homepage and both game pages rely on inline <script> and <style> (a deliberate
+# render-blocking fix, see 42edcb2), so a CSP would need 'unsafe-inline' for
+# scripts and lose most of its value. There is also no injection path to defend
+# — no user input is stored or reflected, and every innerHTML interpolation takes
+# generated numbers or page-authored literals.
 
+# There is deliberately no /index.html rule: html_handling redirects that URL
+# to / before headers apply, so it could never match. Nothing links to it
+# either — every internal link on the site is written extension-less.
 /
   Cache-Control: public, max-age=300, must-revalidate
-
-/index.html
-  Cache-Control: public, max-age=300, must-revalidate
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
 
 /games/*
   Cache-Control: public, max-age=300, must-revalidate
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
 
 /assets/*
-  Cache-Control: public, max-age=86400
+  Cache-Control: public, max-age=31536000, immutable
+  X-Content-Type-Options: nosniff
