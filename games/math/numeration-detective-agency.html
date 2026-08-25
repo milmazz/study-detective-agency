@@ -39,10 +39,10 @@
   <main id="app"></main>
 </div>
 
-<script src="../../assets/js/game-engine.js?v=4"></script>
+<script src="../../assets/js/game-engine.js?v=5"></script>
 <!-- Place-value question types. Must load after the engine and before the
      page script below, which calls start(). -->
-<script src="../../assets/js/numeration-types.js?v=1"></script>
+<script src="../../assets/js/numeration-types.js?v=2"></script>
 <script>
 (function(){
   "use strict";
@@ -72,6 +72,18 @@
   function genDigits(n){
     var d = [randInt(1,9)];
     for (var i=1;i<n;i++) d.push(randInt(0,9));
+    return d;
+  }
+  // Filler digits that never collide with `avoid`, so a prompt can state how
+  // many times that digit appears and be telling the truth. genDigits alone
+  // made "the digit 4 appears twice" false for 34% of value-compare questions
+  // (941,445 has three 4s) -- correctly scored, but a false claim about a
+  // number in the one lesson whose whole skill is looking carefully at digits.
+  // Leading digit stays non-zero, as in genDigits.
+  function genDigitsAvoiding(n, avoid){
+    function pick(lo){ var v = randInt(lo,8); return v>=avoid ? v+1 : v; }
+    var d = [pick(1)];
+    for (var i=1;i<n;i++) d.push(pick(0));
     return d;
   }
   function digitsToNum(d){ return parseInt(d.join(''),10); }
@@ -114,15 +126,17 @@
     var d = randInt(1,9);
 
     var numA, numB;
+    // Filler avoids d so the count the prompt states is exactly the count on
+    // screen: twice within one number, once in each of two numbers.
     if (sameNumber){
       var n = Math.max(aIdx,bIdx)+2;
-      var digits = genDigits(n);
+      var digits = genDigitsAvoiding(n, d);
       digits[n-1-aIdx] = d; digits[n-1-bIdx] = d;
       numA = numB = digitsToNum(digits);
     } else {
       var nA = aIdx+2, nB = bIdx+2;
-      var da = genDigits(nA); da[nA-1-aIdx] = d;
-      var db = genDigits(nB); db[nB-1-bIdx] = d;
+      var da = genDigitsAvoiding(nA, d); da[nA-1-aIdx] = d;
+      var db = genDigitsAvoiding(nB, d); db[nB-1-bIdx] = d;
       numA = digitsToNum(da); numB = digitsToNum(db);
     }
 

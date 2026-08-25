@@ -7,6 +7,11 @@
   README), but it means tests can't just require() it. These helpers pull that
   script out and run it, so the generators can be exercised directly.
 
+  This sits outside test/ on purpose: `node --test` treats every .js file under
+  a test directory as a test file, so in there this ran as a zero-test file and
+  reported itself as a passing test -- inflating the count, and turning any
+  import-time throw into a phantom failure against a file with no tests in it.
+
   loadModes()  runs the page script with a stubbed DetectiveGame and returns the
                config it passed to start(). No DOM, no dependencies.
   openPage()   builds a real DOM with jsdom, inlining the <script src> tags the
@@ -18,18 +23,28 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-const ROOT = path.join(__dirname, '..', '..');
+const ROOT = path.join(__dirname, '..');
 
 const GAMES = {
-  math: {
-    page: 'games/math/numeration-detective-agency.html',
-    typeModules: ['assets/js/numeration-types.js'],
-  },
-  ela: {
-    page: 'games/ela/words-division.html',
-    typeModules: [],
-  },
+  math: { page: 'games/math/numeration-detective-agency.html' },
+  ela: { page: 'games/ela/words-division.html' },
 };
+
+const SCRIPT_SRC = /<script src="([^"]+)"><\/script>/g;
+const ENGINE = path.join('assets', 'js', 'game-engine.js');
+
+// Which type modules a page loads is read from the page, never listed here. A
+// hardcoded list goes on passing after the page stops loading a module, so
+// "every question names a registered type" would keep asserting against types
+// the real page no longer has -- the suite agreeing with itself rather than
+// with what ships. The ?v= cache-buster isn't part of the filename.
+function typeModulesOf(pageRelPath) {
+  const html = fs.readFileSync(path.join(ROOT, pageRelPath), 'utf8');
+  const pageDir = path.dirname(path.join(ROOT, pageRelPath));
+  return [...html.matchAll(SCRIPT_SRC)]
+    .map((m) => path.relative(ROOT, path.resolve(pageDir, m[1].split('?')[0])))
+    .filter((rel) => rel !== ENGINE);
+}
 
 // The <script src=...> tags carry attributes; the page's own script doesn't.
 // So this only ever matches the inline one.
@@ -88,7 +103,7 @@ function loadModes(gameKey) {
   };
   const ctx = vm.createContext(sandbox);
 
-  for (const mod of game.typeModules) {
+  for (const mod of typeModulesOf(game.page)) {
     vm.runInContext(fs.readFileSync(path.join(ROOT, mod), 'utf8'), ctx, { filename: mod });
   }
   vm.runInContext(inlineScriptOf(game.page), ctx, { filename: game.page });
@@ -123,7 +138,7 @@ function openPage(gameKey) {
 
   // Inline the linked scripts. jsdom would otherwise try to fetch them, and the
   // ?v= cache-buster on each href isn't a real filename.
-  html = html.replace(/<script src="([^"]+)"><\/script>/g, (_, src) => {
+  html = html.replace(SCRIPT_SRC, (_, src) => {
     const file = path.resolve(pageDir, src.split('?')[0]);
     return '<script>' + fs.readFileSync(file, 'utf8') + '</script>';
   });

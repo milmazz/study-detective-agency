@@ -93,8 +93,12 @@ scripts/
   dev-server.js                  Local dev server (see "Running it locally")
   subset-fonts.sh                Regenerates assets/fonts/ (run by hand, not
                                   a build step — see assets/fonts/LICENSE.md)
+test-support/
+  load-game.js                   Loads a game page's inline script for tests.
+                                  Outside test/ because `node --test` globs
+                                  everything under it, and a helper is not a
+                                  test
 test/
-  helpers/load-game.js           Loads a game page's inline script for tests
   game-engine.test.js            Pure helpers
   generators.test.js             Property tests over every question generator
   dom.test.js                    Rendering + wiring, via jsdom (see "Testing")

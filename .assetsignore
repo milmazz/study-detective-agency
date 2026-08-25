@@ -12,6 +12,7 @@ README.md
 LICENSE
 scripts
 test
+test-support
 # npm surface: exists only for the test suite, never served.
 package.json
 package-lock.json

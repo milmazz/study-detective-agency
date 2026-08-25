@@ -21,7 +21,15 @@
         function pick(){
           if (ui.answered()) return;
           var correct = parseInt(el.getAttribute('data-place'),10) === q.targetPlaceIdx;
-          document.querySelectorAll('.digit-box').forEach(function(d){ d.classList.remove('picked'); });
+          document.querySelectorAll('.digit-box').forEach(function(d){
+            d.classList.remove('picked');
+            // The answer has landed, so the boxes are inert. Left as-is they
+            // kept role=button and tabindex=0, so a screen reader went on
+            // announcing 4-7 buttons that silently do nothing -- the same lie
+            // the keydown handler below exists to fix, one step later on.
+            d.setAttribute('aria-disabled','true');
+            d.setAttribute('tabindex','-1');
+          });
           el.classList.add('picked');
           onAnswered(correct, q.explain());
         }

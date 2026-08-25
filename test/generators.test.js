@@ -13,7 +13,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { loadModes, stripTags } = require('./helpers/load-game.js');
+const { loadModes, stripTags } = require('../test-support/load-game.js');
 
 // Enough draws to catch a fault that shows up in a fraction of a percent.
 // genTrueFalse's bug hit 4.29% of its questions; the digit-zero half of it,
@@ -110,6 +110,41 @@ const PLACES = ['ones', 'tens', 'hundreds', 'thousands', 'ten-thousands',
   'hundred-thousands', 'millions', 'ten-millions', 'hundred-millions'];
 const PLACE_VALUE = PLACES.map((_, i) => 10 ** i);
 const unformat = (s) => Number(String(s).replace(/,/g, ''));
+
+/* ================= a prompt's claims about a number must be true ================= */
+
+// Scored correctly, rendered correctly, and still lying to the reader. Nothing
+// else in this file would catch it, because nothing here reads the prompt as a
+// claim -- only as a question. A kid who actually counts the digits is the one
+// who finds it, which is the worst possible reviewer to leave it to.
+const COUNT_WORDS = { once: 1, twice: 2, 'three times': 3, 'four times': 4 };
+
+for (const game of ['math', 'ela']) {
+  test(`${game}: a digit count stated in a prompt is true of the number shown`, () => {
+    // "In the number 941,445, the digit 4 appears twice" -- it appears three
+    // times. 34% of value-compare's same-number questions made a false claim
+    // like this before the filler digits were made to avoid the stated digit.
+    let checked = 0;
+    eachQuestion(game, (q, mode) => {
+      const text = stripTags(q.prompt);
+      const claims = text.matchAll(
+        /number ([\d,]*\d)[\s\S]*?the digit (\d) appears (once|twice|three times|four times|(\d+) times)/g
+      );
+      for (const m of claims) {
+        const actual = [...String(unformat(m[1]))].filter((c) => c === m[2]).length;
+        const claimed = m[4] ? Number(m[4]) : COUNT_WORDS[m[3]];
+        assert.equal(actual, claimed,
+          `${mode.id}: "${text}" -- ${m[1]} contains ${actual} of the digit ${m[2]}, ` +
+          `but the prompt says ${m[3]}`);
+        checked++;
+      }
+    });
+    if (game === 'math') {
+      assert.ok(checked > 100,
+        `expected plenty of digit-count claims to check, saw ${checked}`);
+    }
+  });
+}
 
 test('math: true/false statements are scored by arithmetic, not by phrasing', () => {
   // The original bug: the statement named the digit by VALUE ("the digit 8 has

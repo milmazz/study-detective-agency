@@ -15,7 +15,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { openPage, haveJsdom, click, press } = require('./helpers/load-game.js');
+const { openPage, haveJsdom, click, press } = require('../test-support/load-game.js');
 
 const skip = haveJsdom() ? false : 'jsdom is not installed — run `npm install`';
 
@@ -27,11 +27,26 @@ const CONTROLS = [
   '#tfRow .tf-btn:not([disabled])',
   '#symRow .symbol-btn:not([disabled])',
   '#orderRow .order-tile:not(.locked)',
-  '#skipBtn',
   '.digit-box[role="button"]',
 ];
 
+// #skipBtn is deliberately NOT a control. A clue that failed to load still
+// offers a way forward, and that button carries class="next-btn" -- so
+// playToSummary's own "click the next button" step swallowed it and reported
+// success on a game whose question types had all failed to register. Deleting
+// the numeration-types.js tag from the math page disabled four of its seven
+// types and still left 44 of 47 tests green, including "a case plays through
+// to its summary". The degraded path has dedicated tests further down; reaching
+// it anywhere else means the game is broken.
+function assertPlayable(doc) {
+  assert.equal(doc.querySelector('.load-error'), null,
+    'a clue failed to load during what should be a normal playthrough');
+  assert.equal(doc.querySelector('#skipBtn'), null,
+    'a clue degraded to a skip button during what should be a normal playthrough');
+}
+
 function firstControl(doc) {
+  assertPlayable(doc);
   for (const sel of CONTROLS) {
     const el = doc.querySelector(sel);
     if (el) return el;
@@ -60,6 +75,7 @@ function reachQuestion(game, selector, attempts = 300) {
 function playToSummary(win, doc, limit = 200) {
   for (let i = 0; i < limit; i++) {
     if (doc.querySelector('.summary')) return true;
+    assertPlayable(doc);
     const next = doc.querySelector('.next-btn');
     if (next) { click(win, next); continue; }
     // multiselect grades on its own button, so pick something then submit
@@ -229,6 +245,27 @@ test('Space also answers a digit box', { skip }, () => {
   const { win, doc } = found;
   press(win, doc.querySelector('.digit-box[role="button"]'), ' ');
   assert.ok(doc.querySelector('.stamp'), 'Space should answer the question');
+});
+
+test('digit boxes stop being operable once the answer lands', { skip }, () => {
+  // Same argument as above, one step later in the flow. Once the question is
+  // graded the boxes do nothing, but they kept role=button and tabindex=0 — so
+  // a screen reader went on announcing 4-7 buttons that silently ignore you.
+  const found = reachQuestion('math', '.digit-box[role="button"]');
+  assert.ok(found, 'expected to reach a click-digit question');
+  const { win, doc } = found;
+
+  click(win, doc.querySelector('.digit-box[role="button"]'));
+  assert.ok(doc.querySelector('.stamp'), 'the question should be graded');
+
+  const boxes = [...doc.querySelectorAll('.digit-box')];
+  assert.ok(boxes.length > 0, 'the number should still be on screen');
+  for (const box of boxes) {
+    assert.equal(box.getAttribute('aria-disabled'), 'true',
+      'a graded digit box should announce itself as disabled');
+    assert.equal(box.getAttribute('tabindex'), '-1',
+      'a graded digit box should drop out of the tab order');
+  }
 });
 
 /* ================= degraded paths ================= */

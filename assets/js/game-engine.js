@@ -178,7 +178,11 @@ var DetectiveGame = (function(){
     small set of engine helpers a renderer legitimately needs; a registered type
     should not reach past it into engine internals.
   */
-  var TYPES = {};
+  // Null prototype, not {}: TYPES['constructor'] on a plain object returns
+  // Object, which is truthy, so a lookup sails past the "no renderer" guard and
+  // then throws on t.build -- landing on exactly the dead end that guard exists
+  // to prevent, instead of the skippable clue.
+  var TYPES = Object.create(null);
   function registerType(name, def){ TYPES[name] = def; }
   function hasType(name){ return Object.prototype.hasOwnProperty.call(TYPES, name); }
 
