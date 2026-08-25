@@ -26,12 +26,13 @@ same-origin quirks.
 ## Project structure
 
 ```
-index.html                       Homepage — reads assets/games-data.js
+index.html                       Homepage — the game catalog (GAMES_DATA/
+                                  SUBJECTS) and its own layout CSS live
+                                  inline (fewer render-blocking requests);
+                                  base.css stays linked since it's shared
 assets/
-  games-data.js                  Single source of truth for the game catalog
   css/
     base.css                     Shared tokens (colors, reset) + per-subject theme
-    site.css                     Homepage-only styles
     game.css                     Shared game shell (masthead, cards, question
                                   types, summary) used by every game page
     ela.css                      ELA-only question styles (reading passages)
@@ -55,8 +56,9 @@ games/
    call `DetectiveGame.start({ modes: MODES, homeIntro: '...',
    trailAllFilesWord: '...' })`. `DetectiveGame` also exposes `randInt`,
    `choice`, `shuffle`, and `fmt` for generators to reuse.
-4. Add one entry to `window.GAMES_DATA` in `assets/games-data.js` — the
-   homepage rebuilds itself from that file automatically.
+4. Add one entry to the `GAMES_DATA` array inside `index.html`'s own
+   `<script>` (near the top, above `render()`) — the homepage rebuilds
+   itself from that array automatically.
 
 ## License
 
