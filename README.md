@@ -35,6 +35,9 @@ assets/
     game.css                     Shared game shell (masthead, cards, question
                                   types, summary) used by every game page
     ela.css                      ELA-only question styles (reading passages)
+  js/
+    game-engine.js                Shared game engine (home/play/trail screens,
+                                  every question-type renderer, click-wiring)
 games/
   math/numeration-detective-agency.html
   ela/words-division.html
@@ -43,10 +46,16 @@ games/
 ## Adding a new game
 
 1. Drop the new game's HTML file into `games/<subject>/`.
-2. Link `../../assets/css/base.css` and `../../assets/css/game.css` in its
-   `<head>`, and set `data-theme="math" | "ela" | "social-studies"` on the
-   `<html>` tag to pick up that subject's accent color.
-3. Add one entry to `window.GAMES_DATA` in `assets/games-data.js` — the
+2. Link `../../assets/css/base.css`, `../../assets/css/game.css`, and
+   `../../assets/js/game-engine.js` in its `<head>`/before its own script,
+   and set `data-theme="math" | "ela" | "social-studies"` on the `<html>`
+   tag to pick up that subject's accent color.
+3. In the page's own inline script, define your question generators and a
+   `MODES` array (`{id, caseNo, title, icon, blurb, gen}` per case), then
+   call `DetectiveGame.start({ modes: MODES, homeIntro: '...',
+   trailAllFilesWord: '...' })`. `DetectiveGame` also exposes `randInt`,
+   `choice`, `shuffle`, and `fmt` for generators to reuse.
+4. Add one entry to `window.GAMES_DATA` in `assets/games-data.js` — the
    homepage rebuilds itself from that file automatically.
 
 ## License
