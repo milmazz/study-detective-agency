@@ -12,3 +12,7 @@ README.md
 LICENSE
 scripts
 test
+# npm surface: exists only for the test suite, never served.
+package.json
+package-lock.json
+node_modules

@@ -33,14 +33,36 @@ no-cache headers, so edits always show up on refresh.
 ## Testing
 
 ```bash
+npm install   # once, for the DOM tests
 node --test
 ```
 
-Coverage is intentionally narrow: the pure helpers `DetectiveGame` exposes
-(`randInt`/`choice`/`shuffle`/`fmt`) for question generators to reuse. The
-rendering/DOM-wiring half of the engine isn't unit tested — verify that by
-hand in a browser via `scripts/dev-server.js`. CI
-(`.github/workflows/test.yml`) runs this on every push and pull request.
+Three suites:
+
+- **`test/game-engine.test.js`** — the pure helpers `DetectiveGame` exposes
+  (`randInt`/`choice`/`shuffle`/`fmt`) for question generators to reuse.
+- **`test/generators.test.js`** — property tests over every question
+  generator in every game, tens of thousands of draws each. This is where
+  the educational content lives, and it's the part that can be wrong
+  without *looking* wrong: an ambiguous question, two identical options, or
+  an answer marked correct while being arithmetically false all render
+  perfectly. Assertions run against the generated questions themselves, so
+  they catch faults that show up in a fraction of a percent.
+- **`test/dom.test.js`** — the rendering and wiring half, driven through a
+  real DOM: focus movement between screens, answer reveal, the
+  process-of-elimination toggle, keyboard operation, and the degraded paths
+  (unknown question type, a generator that throws, a page missing
+  `#badgeNum`).
+
+`jsdom` is the repo's only dependency and is dev-only — **nothing here
+ships**, and `.assetsignore` keeps `package.json`, the lockfile and
+`node_modules` out of what gets deployed. `test/dom.test.js` skips itself
+when jsdom is missing, so `node --test` still works on a fresh clone with
+no install; you just get the other two suites. CI installs it so the DOM
+half always runs.
+
+Layout and visual appearance still aren't covered — check those by hand in
+a browser via `scripts/dev-server.js`.
 
 ## Deployment
 
@@ -69,8 +91,13 @@ index.html                       Homepage — the game catalog (GAMES_DATA/
                                   base.css stays linked since it's shared
 scripts/
   dev-server.js                  Local dev server (see "Running it locally")
+  subset-fonts.sh                Regenerates assets/fonts/ (run by hand, not
+                                  a build step — see assets/fonts/LICENSE.md)
 test/
-  game-engine.test.js            node --test coverage (see "Testing")
+  helpers/load-game.js           Loads a game page's inline script for tests
+  game-engine.test.js            Pure helpers
+  generators.test.js             Property tests over every question generator
+  dom.test.js                    Rendering + wiring, via jsdom (see "Testing")
 assets/
   css/
     base.css                     Shared tokens (colors, reset) + per-subject

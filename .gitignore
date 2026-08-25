@@ -1,2 +1,5 @@
 # Local wrangler dev cache/state — not part of the site.
 .wrangler/
+
+# Test-only dependency tree (jsdom). The site itself has no dependencies.
+node_modules/

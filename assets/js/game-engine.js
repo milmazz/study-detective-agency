@@ -180,6 +180,7 @@ var DetectiveGame = (function(){
   */
   var TYPES = {};
   function registerType(name, def){ TYPES[name] = def; }
+  function hasType(name){ return Object.prototype.hasOwnProperty.call(TYPES, name); }
 
   // Strip tags and quotes so option text is safe to put in an aria-label.
   function textOf(html){
@@ -632,6 +633,7 @@ var DetectiveGame = (function(){
     shuffle: shuffle,
     fmt: fmt,
     registerType: registerType,
+    hasType: hasType,
     start: start
   };
 })();
