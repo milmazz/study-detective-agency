@@ -1,0 +1,19 @@
+/* ELA-only question styles (reading passages + text formatting clues). */
+
+.passage-box{
+  background:#fff; border:1.5px solid #cbb98d; border-radius:8px;
+  padding:14px 16px; margin:4px 0 14px;
+  font-family:'Baloo 2', sans-serif; font-weight:400; font-size:15.5px;
+  line-height:1.65; color:var(--charcoal);
+}
+.passage-highlight{
+  background:rgba(217,164,65,0.40); padding:1px 4px; border-radius:3px; font-weight:700;
+}
+.format-target{
+  background:rgba(178,58,72,0.10); border-bottom:2.5px solid var(--red);
+  padding:0 3px; border-radius:2px;
+}
+.fmt-bold{ font-weight:800; }
+.fmt-italic{ font-style:italic; }
+.fmt-caps{ text-transform:uppercase; letter-spacing:0.5px; }
+.q-line{ font-weight:700; }

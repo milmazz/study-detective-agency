@@ -1,0 +1,55 @@
+/*
+  Shared design tokens + reset for every page on the site.
+  Subject accent colors are switched with a `data-theme` attribute on <html>
+  (see games/math, games/ela) instead of redefining --ink/--ink-2/--shadow
+  per page.
+*/
+:root{
+  --ink:#2B2018;
+  --ink-2:#3A2C1F;
+  --folder:#E8DCC0;
+  --folder-dark:#D8C7A0;
+  --paper:#F5EFE0;
+  --mustard:#D9A441;
+  --mustard-dark:#B8842A;
+  --red:#B23A48;
+  --red-dark:#8F2B37;
+  --teal:#3E7C7B;
+  --teal-dark:#2C5E5D;
+  --charcoal:#241F1A;
+  --shadow: 0 6px 18px rgba(43,32,24,0.25);
+}
+[data-theme="math"]{
+  --ink:#16233A;
+  --ink-2:#1F3050;
+  --shadow: 0 6px 18px rgba(22,35,58,0.25);
+}
+[data-theme="ela"]{
+  --ink:#2A1F3D;
+  --ink-2:#372A4E;
+  --shadow: 0 6px 18px rgba(42,31,61,0.25);
+}
+[data-theme="social-studies"]{
+  --ink:#5B3A1E;
+  --ink-2:#6B4826;
+  --shadow: 0 6px 18px rgba(91,58,30,0.25);
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+a{ color:inherit; text-decoration:none; }
+
+body{
+  background:
+    radial-gradient(circle at 15% 10%, rgba(217,164,65,0.08), transparent 40%),
+    radial-gradient(circle at 85% 85%, rgba(62,124,123,0.10), transparent 45%),
+    var(--ink);
+  color:var(--charcoal);
+  font-family:'Baloo 2', system-ui, sans-serif;
+  min-height:100vh;
+}
+
+.sr-only{
+  position:absolute; width:1px;height:1px; padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0,0,0,0); white-space:nowrap; border:0;
+}
