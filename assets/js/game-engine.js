@@ -106,6 +106,12 @@ window.DetectiveGame = (function(){
   }
 
   /* ================= SHARED: QUESTION BODY (used by case mode + trail mode) ================= */
+  // A small "mark as wrong" toggle overlaid on an .opt-btn, for process of
+  // elimination. Purely a scratch mark — see wireStrikeToggles().
+  function strikeBadge(){
+    return '<span class="opt-strike" role="button" tabindex="0" aria-pressed="false" aria-label="Mark as wrong">✕</span>';
+  }
+
   function buildInteractiveBody(q){
     var html = '';
     if (q.type==='click-digit'){
@@ -120,15 +126,15 @@ window.DetectiveGame = (function(){
           '</div>';
       }
       html += '<div class="options-grid" id="optGrid">' + q.options.map(function(o){
-        return '<button class="opt-btn" data-key="'+o.key+'">'+o.label+'</button>';
+        return '<button class="opt-btn" data-key="'+o.key+'">'+strikeBadge()+'<span class="opt-label">'+o.label+'</span></button>';
       }).join('') + '</div>';
     } else if (q.type==='mcq-simple'){
       html += '<div class="options-grid" id="optGrid">' + q.options.map(function(o){
-        return '<button class="opt-btn" data-key="'+o.key+'">'+o.label+'</button>';
+        return '<button class="opt-btn" data-key="'+o.key+'">'+strikeBadge()+'<span class="opt-label">'+o.label+'</span></button>';
       }).join('') + '</div>';
     } else if (q.type==='multiselect'){
       html += '<div class="options-grid" id="optGrid">' + q.options.map(function(o){
-        return '<button class="opt-btn" data-key="'+o.key+'"><span class="chk">☐</span>'+o.label+'</button>';
+        return '<button class="opt-btn" data-key="'+o.key+'">'+strikeBadge()+'<span class="chk">☐</span><span class="opt-label">'+o.label+'</span></button>';
       }).join('') + '</div>';
       html += '<button class="check-btn" id="checkBtn">Check My Answers</button>';
     } else if (q.type==='true-false'){
@@ -305,6 +311,27 @@ window.DetectiveGame = (function(){
         });
       });
     }
+    wireStrikeToggles();
+  }
+
+  // Process-of-elimination toggles on .opt-btn options (see strikeBadge()).
+  // Purely a scratch mark: doesn't affect answer selection, and doesn't
+  // block the option underneath from still being clicked as the answer.
+  function wireStrikeToggles(){
+    document.querySelectorAll('#optGrid .opt-strike').forEach(function(el){
+      function toggle(e){
+        if (state.answered) return;
+        e.stopPropagation();
+        var btn = el.closest('.opt-btn');
+        var active = btn.classList.toggle('struck');
+        el.setAttribute('aria-pressed', active ? 'true' : 'false');
+        el.setAttribute('aria-label', active ? 'Unmark' : 'Mark as wrong');
+      }
+      el.addEventListener('click', toggle);
+      el.addEventListener('keydown', function(e){
+        if (e.key==='Enter' || e.key===' '){ e.preventDefault(); toggle(e); }
+      });
+    });
   }
 
   function finishAnswer(correct, explainText){
