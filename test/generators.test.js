@@ -180,6 +180,73 @@ test('math: true/false statements are scored by arithmetic, not by phrasing', ()
   assert.ok(checked > 100, `expected plenty of true/false questions, saw ${checked}`);
 });
 
+test('math: a rounding answer is the value the number actually rounds to', () => {
+  // Three of the nine cases round, and none of them was ever checked by
+  // arithmetic -- only against the structural rules (four distinct options, a
+  // correctKey among them), every one of which a wrong answer satisfies
+  // perfectly. Two of the three build their question from the number itself
+  // rather than from a place named in the prompt, so an off-by-one in the place
+  // index is the whole failure mode, and it renders beautifully.
+  //
+  // The place is read back out of explain(), not the prompt: that is the
+  // sentence shown after answering, so if it and the scoring ever disagree the
+  // explanation is teaching the wrong place.
+  const ROUND_MODES = new Set(['round', 'round-top', 'round-mark']);
+  let checked = 0;
+  eachQuestion('math', (q, mode) => {
+    if (!ROUND_MODES.has(mode.id)) return;
+    const prompt = stripTags(q.prompt);
+    const explain = stripTags(q.explain());
+
+    const num = unformat(prompt.match(/([\d,]*\d)/)[1]);
+    const place = explain.match(/the ([a-z-]+) place/);
+    assert.ok(place, `${mode.id}: the explanation names no place: ${explain}`);
+    const placeIdx = PLACES.indexOf(place[1]);
+    assert.notEqual(placeIdx, -1, `${mode.id}: unknown place "${place[1]}": ${explain}`);
+
+    const pv = PLACE_VALUE[placeIdx];
+    const below = Math.floor(num / pv) * pv;
+    const expected = (num - below) * 2 >= pv ? below + pv : below;
+
+    assert.equal(Number(q.correctKey), expected,
+      `${mode.id}: "${prompt}" -- ${num} to the nearest ${place[1]} is ${expected}, ` +
+      `but ${q.correctKey} is marked correct`);
+    assert.ok(explain.includes(expected.toLocaleString('en-US')),
+      `${mode.id}: the explanation never states the rounded value ${expected}: ${explain}`);
+    checked++;
+  });
+  assert.ok(checked > 100, `expected plenty of rounding questions, saw ${checked}`);
+});
+
+test('math: the underline case marks one digit, and the one it claims', () => {
+  // Here the underline IS the question -- nothing in the prompt names the place.
+  // numWithUnderline used to return the number with nothing underlined at all
+  // when handed an out-of-range index: an unanswerable question that every other
+  // assertion in this file passes. It throws now, and this pins the digit it
+  // marks to the place the explanation names.
+  //
+  // The aria-label check is the same question asked for a screen reader, which
+  // is told nothing whatsoever by text-decoration.
+  let checked = 0;
+  eachQuestion('math', (q, mode) => {
+    if (mode.id !== 'round-mark') return;
+    const marks = [...q.prompt.matchAll(/<span class="num-underline">(\d)<\/span>/g)];
+    assert.equal(marks.length, 1,
+      `expected exactly one underlined digit, saw ${marks.length}: ${q.prompt}`);
+
+    const num = unformat(stripTags(q.prompt).match(/([\d,]*\d)/)[1]);
+    const placeIdx = PLACES.indexOf(stripTags(q.explain()).match(/the ([a-z-]+) place/)[1]);
+    assert.equal(Number(marks[0][1]), Math.floor(num / PLACE_VALUE[placeIdx]) % 10,
+      `the underlined digit is not the one in the ${PLACES[placeIdx]} place: ${q.prompt}`);
+
+    assert.match(q.prompt, /<span role="img" aria-label="[^"]*underlined[^"]*">/,
+      `the underline carries no screen-reader label, so the question is ` +
+      `unanswerable without sight: ${q.prompt}`);
+    checked++;
+  });
+  assert.ok(checked > 100, `expected plenty of underline questions, saw ${checked}`);
+});
+
 test('math: comparison questions say which number is the subject', () => {
   // Half of these compare two separate numbers. Without naming which is being
   // compared to which, the inverse answer — always present in the options — is
