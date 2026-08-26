@@ -32,16 +32,19 @@ var NUMERATION_QUESTIONS = (function(){
       shuffle = DG.shuffle, fmt = DG.fmt;
 
   /* ================= CORE DATA ================= */
+  // `nearest` is the singular the rounding prompts need: you round to the
+  // nearest ten thousand, not to the nearest ten thousands. `short` stays
+  // plural because it reads as "the ten-thousands place" everywhere else.
   var PLACES = [
-    {name:'ones', short:'ones', value:1},
-    {name:'tens', short:'tens', value:10},
-    {name:'hundreds', short:'hundreds', value:100},
-    {name:'thousands', short:'thousands', value:1000},
-    {name:'ten thousands', short:'ten-thousands', value:10000},
-    {name:'hundred thousands', short:'hundred-thousands', value:100000},
-    {name:'millions', short:'millions', value:1000000},
-    {name:'ten millions', short:'ten-millions', value:10000000},
-    {name:'hundred millions', short:'hundred-millions', value:100000000}
+    {name:'ones', short:'ones', nearest:'one', value:1},
+    {name:'tens', short:'tens', nearest:'ten', value:10},
+    {name:'hundreds', short:'hundreds', nearest:'hundred', value:100},
+    {name:'thousands', short:'thousands', nearest:'thousand', value:1000},
+    {name:'ten thousands', short:'ten-thousands', nearest:'ten thousand', value:10000},
+    {name:'hundred thousands', short:'hundred-thousands', nearest:'hundred thousand', value:100000},
+    {name:'millions', short:'millions', nearest:'million', value:1000000},
+    {name:'ten millions', short:'ten-millions', nearest:'ten million', value:10000000},
+    {name:'hundred millions', short:'hundred-millions', nearest:'hundred million', value:100000000}
   ];
   var RATIO_LABEL = {
     '-3':'one-thousandth the value of', '-2':'one-hundredth the value of', '-1':'one-tenth the value of',
@@ -75,21 +78,40 @@ var NUMERATION_QUESTIONS = (function(){
   // numWithHighlight -- that one is private to the value-compare type's build
   // function, and this only needs to sit inside an mcq-simple prompt string,
   // the same way genRounding already embeds a <span class="hl"> place name.
+  //
+  // The underline is the entire question in the round-mark case -- unlike
+  // value-compare's highlight, no prompt text names the place as well. And
+  // text-decoration is invisible to a screen reader: "Round 45,678 to the place
+  // value of the underlined digit" is all a blind player would get, which is
+  // one case in nine and a tenth of the trail reduced to guesswork. So the
+  // number carries role="img" and an aria-label spelling the digits out in
+  // order with the marked one called out -- exactly what a sighted player sees,
+  // including the part they still have to work out for themselves, since it
+  // names the digit but never its place. It doubles as the fallback for
+  // numeration.css failing to load, which today renders the same dead question
+  // for everyone.
   function numWithUnderline(num, hlIdx){
     var formatted = fmt(num);
     var raw = String(num);
+    // Silently returning an un-underlined number here would be an unanswerable
+    // question that every structural assertion still passes -- see genExpanded
+    // for the same reasoning about failing loudly.
+    if (!(hlIdx>=0 && hlIdx<raw.length)) throw new Error('numWithUnderline: place ' + hlIdx + ' is not in ' + formatted);
     var ptr = 0;
     var out = '';
+    var spoken = [];
     for (var i=0;i<formatted.length;i++){
       var ch = formatted[i];
       if (ch===','){ out += ch; }
       else {
         var placeIdx = raw.length-1-ptr;
-        out += placeIdx===hlIdx ? '<span class="num-underline">'+ch+'</span>' : ch;
+        var marked = placeIdx===hlIdx;
+        out += marked ? '<span class="num-underline">'+ch+'</span>' : ch;
+        spoken.push(marked ? ch + ' underlined' : ch);
         ptr++;
       }
     }
-    return out;
+    return '<span role="img" aria-label="' + formatted + '. Digits from the left: ' + spoken.join(', ') + '.">' + out + '</span>';
   }
   // Shared by genRoundHighest and genRoundUnderline: build the mcq-simple
   // question for "round `num` to the place `roundIdx` names", given a prompt
@@ -401,22 +423,11 @@ var NUMERATION_QUESTIONS = (function(){
     var num = digitsToNum(digits);
     var roundIdxOptions = [1,2,3,4,5].filter(function(i){ return i < n; });
     var roundIdx = choice(roundIdxOptions.length ? roundIdxOptions : [1]);
-    var pv = PLACES[roundIdx].value;
-    var correct = roundToPlace(num, pv);
-    var down = Math.floor(num/pv)*pv;
-    var up = down + pv;
-    var opts = [correct, down, up, num].filter(function(v,i,a){ return a.indexOf(v)===i; });
-    while (opts.length<4){ opts.push(correct + pv*choice([-2,2,3])); opts = opts.filter(function(v,i,a){return a.indexOf(v)===i && v>=0;}); }
-    opts = shuffle(opts.slice(0,4));
-    return {
-      type:'mcq-simple',
-      prompt:'Round <span class="num-sub" style="font-size:1.15em;">' + fmt(num) + '</span> to the nearest <span class="hl">' + PLACES[roundIdx].short.replace('-',' ') + '</span>.',
-      options: opts.map(function(v){ return {key:String(v), label:fmt(v)}; }),
-      correctKey:String(correct),
-      explain: function(){
-        return 'Look at the digit to the right of the ' + PLACES[roundIdx].short + ' place in ' + fmt(num) + '. ' + fmt(num) + ' rounds to ' + fmt(correct) + '.';
-      }
-    };
+    return buildRoundQuestion(
+      num, roundIdx,
+      'Round <span class="num-sub" style="font-size:1.15em;">' + fmt(num) + '</span> to the nearest <span class="hl">' + PLACES[roundIdx].nearest + '</span>.',
+      'Look at the digit to the right of the ' + PLACES[roundIdx].short + ' place in ' + fmt(num) + '.'
+    );
   }
 
   // Round the number to its OWN highest place value -- always the leading
@@ -438,8 +449,8 @@ var NUMERATION_QUESTIONS = (function(){
   // Round to the place the underlined digit sits in. n starts at 2 so the
   // underline can land on the leading digit itself, like the "76" -> 80 case
   // on the worksheet this mirrors; the ones place is skipped as an underline
-  // target because rounding a whole number to the ones place is always the
-  // number itself, which would make every option tie.
+  // target because rounding a whole number to the ones place returns the number
+  // unchanged, so the question would answer itself.
   function genRoundUnderline(){
     var n = randInt(2,7);
     var digits = genDigits(n);
@@ -447,8 +458,8 @@ var NUMERATION_QUESTIONS = (function(){
     var underlineIdx = randInt(1, n-1);
     return buildRoundQuestion(
       num, underlineIdx,
-      'Round <span class="num-sub" style="font-size:1.15em;">' + numWithUnderline(num, underlineIdx) + '</span> to the underlined digit.',
-      'The underlined digit is in the ' + PLACES[underlineIdx].short + ' place, so round to the nearest ' + PLACES[underlineIdx].short.replace('-',' ') + '.'
+      'Round <span class="num-sub" style="font-size:1.15em;">' + numWithUnderline(num, underlineIdx) + '</span> to the place value of the underlined digit.',
+      'The underlined digit is in the ' + PLACES[underlineIdx].short + ' place, so round to the nearest ' + PLACES[underlineIdx].nearest + '.'
     );
   }
 
