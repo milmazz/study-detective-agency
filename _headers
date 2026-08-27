@@ -29,7 +29,7 @@
 # filename, updated in both meta tags in index.html — nothing else picks it up.
 #
 # nosniff and Referrer-Policy are free and worth having. A full CSP is not: the
-# homepage and both game pages rely on inline <script> and <style> (a deliberate
+# homepage and every game page rely on inline <script> and <style> (a deliberate
 # render-blocking fix, see 42edcb2), so a CSP would need 'unsafe-inline' for
 # scripts and lose most of its value. There is also no injection path to defend
 # — no user input is stored or reflected, and every innerHTML interpolation takes

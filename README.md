@@ -8,7 +8,8 @@ practice — no build step, no backend, no accounts, just HTML/CSS/JS.
 
 Live divisions:
 - **Numbers Division** (math) — place value, expanded form, comparing,
-  ordering, rounding.
+  ordering, rounding, and multi-step addition/subtraction word problems
+  solved with an equation and a strip (bar model) diagram.
 - **Words Division** (ELA) — author's purpose, central message, figurative
   language, text formatting clues.
 - **History Division** (social studies) — coming soon.
@@ -130,6 +131,8 @@ assets/
     numeration.css               Math-only question styles (digit boxes,
                                   Number A/B cards, order tiles, </>/=)
     ela.css                      ELA-only question styles (reading passages)
+    word-problems.css            Word-problem question styles (equation line,
+                                  strip/bar-model diagrams)
   fonts/                         Self-hosted woff2 + their licenses; see
                                   fonts/LICENSE.md
   js/
@@ -140,11 +143,15 @@ assets/
                                   and their digit renderers, registered via
                                   DetectiveGame.registerType
     numeration-questions.js       Numbers Division: generators + MODES
+    word-problems-questions.js    Missing Evidence Files: multi-step word
+                                  problems on the engine's built-in
+                                  mcq-simple type, so no matching *-types.js
     words-questions.js            Words Division: passages, pools, generators
-                                  + MODES. Both export the config start()
-                                  takes; the page calls start()
+                                  + MODES. All three export the config
+                                  start() takes; the page calls start()
 games/
   math/numeration-detective-agency.html
+  math/missing-evidence-files.html
   ela/words-division.html
 ```
 
@@ -156,7 +163,8 @@ games/
    and set `data-theme="math" | "ela" | "social-studies"` on the `<html>`
    tag to pick up that subject's accent color. If your subject has its own
    stylesheet — ELA has `ela.css` for reading passages, math has
-   `numeration.css` for its place-value widgets — link that too,
+   `numeration.css` for its place-value widgets and `word-problems.css`
+   for strip diagrams — link that too,
    after `game.css`. Copy the `?v=N` on those
    URLs from an existing page — assets are served `immutable`, so that
    token is the only thing that busts a returning visitor's cache (see

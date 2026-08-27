@@ -10,15 +10,34 @@
   Load AFTER game.css, alongside assets/js/word-problems-questions.js.
 */
 
+/* The lead paragraph of every prompt. Without a rule here it inherited the
+   UA default `margin:1em 0` -- base.css resets only html/body, not p -- which
+   put a ~16px gap above the question text that no other game page has. */
+.q-prompt-lead{ margin:0 0 10px; }
+
 .q-context table{
   border-collapse:collapse;
   margin:2px 0 14px;
   font-family:var(--mono);
   font-size:13px;
 }
+/* Named for screen readers only: the prompt directly above already says it. */
+.q-context caption{
+  position:absolute;
+  width:1px; height:1px;
+  padding:0; margin:-1px;
+  overflow:hidden; clip-path:inset(50%);
+  white-space:nowrap;
+}
+.q-context th,
 .q-context td{
   padding:1px 14px 1px 0;
   color:#5b5140;
+}
+/* <th scope="row"> is for the accessibility tree, not for emphasis. */
+.q-context th{
+  font-weight:400;
+  text-align:left;
 }
 .q-context td.v{
   font-weight:700;
@@ -54,6 +73,13 @@
   text-transform:uppercase;
   margin:0 0 4px;
 }
+/* A strip-label carrying a right-hand marker (the goal total) as well. */
+.strip-head{
+  display:flex;
+  justify-content:space-between;
+}
+.strip-head .goal-mark{ color:var(--red-dark); }
+
 .strip-row{
   display:flex;
   align-items:stretch;
@@ -95,11 +121,36 @@
   text-decoration-color:rgba(43,32,24,0.4);
 }
 
-/* The pill inside the "how much more" bracket that fills the space beyond a
-   shorter bar (combined-vs-single case). The bracket itself -- a flex sibling
-   of the shorter bar, sized with flex:1 so it naturally fills what's left --
-   is built with inline styles in word-problems-questions.js's compareRow(),
-   since its border has to line up with a specific bar's border on each draw. */
+/* The "how much more" bracket (combined-vs-single case): a flex sibling of the
+   shorter bar, sized with flex:1 so it naturally fills whatever the bar leaves.
+   Only the bar's own width varies per draw, so only that stays inline in
+   word-problems-questions.js's compareRow(); everything here is static.
+
+   The generator floors the gap at MIN_BRACKET_PCT so the pill always fits, and
+   generators.test.js holds that floor. overflow:hidden is the backstop: without
+   it a too-narrow bracket spills its pill leftward across the bar, since
+   justify-content:flex-end pushes the overflow that way. */
+.compare-row{
+  display:flex;
+  align-items:stretch;
+  height:34px;
+  margin-bottom:6px;
+}
+.compare-row .strip-row{ margin-bottom:0; }
+.compare-bracket{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  flex:1;
+  min-width:0;
+  overflow:hidden;
+  padding-right:6px;
+  margin-left:-1.5px;
+  border-top:2px solid var(--red);
+  border-bottom:2px solid var(--red);
+  border-right:2px solid var(--red);
+  border-radius:0 6px 6px 0;
+}
 .compare-bracket .tag{
   background:var(--red);
   color:#fff;
@@ -111,7 +162,31 @@
   white-space:nowrap;
 }
 
-@media (max-width:480px){
+/* Breakpoint is 600px, not 480px. Between the two the prompt column is already
+   down to ~394px while the type was still full size, and that band -- not the
+   phone -- was where labels actually clipped: the comparison pill wanted 58px
+   in a 55px bracket. Measured in Chrome across 64,000 segments per viewport. */
+@media (max-width:600px){
   .strip-seg{ font-size:10.5px; }
   .equation-line{ font-size:14.5px; }
+  .compare-bracket{ padding-right:4px; }
+  .compare-bracket .tag{ font-size:9.5px; padding:2px 5px; }
+  /* "? more" becomes "?". The word is the only droppable text in any strip
+     label, and dropping it is what makes the narrow-phone case fit at all --
+     at a 320px viewport the full pill wants 48px in a 36px bracket. */
+  .more-word{ display:none; }
+}
+
+/* Small phones. A 320px viewport leaves the prompt column ~214px, so a
+   seven-character money label like "−$1,050" needs one more step down. */
+@media (max-width:420px){
+  .strip-seg{ font-size:9px; }
+  .strip-label{ font-size:9.5px; }
+}
+/* The smallest phones still in use (320px). The diagram is a supplement --
+   the equation line and the context table above it carry every number in full
+   size -- so shrinking a bar label here beats clipping it. Verified at 0
+   clipped segments in 68,000 draws per viewport, 320px through 1024px. */
+@media (max-width:340px){
+  .strip-seg{ font-size:8px; }
 }

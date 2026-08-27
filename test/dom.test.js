@@ -15,7 +15,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { openPage, haveJsdom, click, press } = require('../test-support/load-game.js');
+const { GAMES, openPage, haveJsdom, click, press } = require('../test-support/load-game.js');
 
 const skip = haveJsdom() ? false : 'jsdom is not installed — run `npm install`';
 
@@ -93,9 +93,17 @@ function playToSummary(win, doc, limit = 200) {
   return false;
 }
 
-/* ================= both games render and play ================= */
+/* ================= every game renders and plays ================= */
 
-for (const game of ['math', 'ela']) {
+/*
+  Driven off GAMES, not a literal list. Both loops in this file used to name
+  ['math', 'ela'], so the third game was added to the site and to
+  generators.test.js while every assertion below silently skipped it -- the
+  suite still went green, and the page had no rendering coverage at all.
+  question-modules.test.js already derives from GAMES and picked the new game
+  up for free, which is the pattern.
+*/
+for (const game of Object.keys(GAMES)) {
   test(`${game}: the home screen lists its case files`, { skip }, () => {
     const doc = openPage(game).document;
     assert.ok(doc.querySelectorAll('.case-card:not(.trail-card)').length > 0);
@@ -366,7 +374,7 @@ test('start() refuses a config it cannot render', { skip }, () => {
 
 /* ================= structure ================= */
 
-for (const game of ['math', 'ela']) {
+for (const game of Object.keys(GAMES)) {
   test(`${game}: the page has the landmarks and fallbacks it claims`, { skip }, () => {
     const doc = openPage(game).document;
     assert.ok(doc.querySelector('main'), 'there should be a main landmark to skip to');
