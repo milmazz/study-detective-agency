@@ -36,7 +36,7 @@ function eachQuestion(game, fn) {
 
 /* ================= invariants every question must hold ================= */
 
-for (const game of ['math', 'ela']) {
+for (const game of ['math', 'ela', 'wordproblems']) {
   test(`${game}: every question names a registered type`, () => {
     const cfg = loadModes(game);
     const seen = new Set();
@@ -124,7 +124,7 @@ const unformat = (s) => Number(String(s).replace(/,/g, ''));
 // who finds it, which is the worst possible reviewer to leave it to.
 const COUNT_WORDS = { once: 1, twice: 2, 'three times': 3, 'four times': 4 };
 
-for (const game of ['math', 'ela']) {
+for (const game of ['math', 'ela', 'wordproblems']) {
   test(`${game}: a digit count stated in a prompt is true of the number shown`, () => {
     // "In the number 941,445, the digit 4 appears twice" -- it appears three
     // times. 34% of value-compare's same-number questions made a false claim

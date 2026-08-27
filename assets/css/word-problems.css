@@ -1,0 +1,117 @@
+/*
+  Word-problem question styles — the Missing Evidence Files only.
+
+  Every case here uses the engine's built-in mcq-simple type (no custom
+  registerType, unlike numeration-types.js): the equation and strip diagram
+  are just HTML embedded in the question's own `prompt` string, the same way
+  numeration-questions.js embeds a <span class="hl"> place name. This file
+  only has to style what that HTML produces.
+
+  Load AFTER game.css, alongside assets/js/word-problems-questions.js.
+*/
+
+.q-context table{
+  border-collapse:collapse;
+  margin:2px 0 14px;
+  font-family:var(--mono);
+  font-size:13px;
+}
+.q-context td{
+  padding:1px 14px 1px 0;
+  color:#5b5140;
+}
+.q-context td.v{
+  font-weight:700;
+  color:var(--ink);
+  font-variant-numeric:tabular-nums;
+}
+
+.equation-line{
+  font-family:var(--mono);
+  font-size:17px;
+  font-weight:700;
+  color:var(--ink);
+  background:#fff;
+  border:1.5px solid #cbb98d;
+  border-radius:6px;
+  padding:9px 12px;
+  margin:0 0 16px;
+  text-align:center;
+  letter-spacing:0.5px;
+  font-variant-numeric:tabular-nums;
+}
+.equation-line .unk{ color:var(--red); }
+
+/* ---- strip (bar model) diagram ---- */
+.strip-block{ margin:0 0 16px; }
+.strip-block:last-child{ margin-bottom:6px; }
+.strip-label{
+  font-family:var(--mono);
+  font-size:10.5px;
+  font-weight:700;
+  letter-spacing:0.5px;
+  color:#6b6150;
+  text-transform:uppercase;
+  margin:0 0 4px;
+}
+.strip-row{
+  display:flex;
+  align-items:stretch;
+  height:34px;
+  border-radius:6px;
+  overflow:hidden;
+  border:1.5px solid #cbb98d;
+  margin-bottom:6px;
+}
+.strip-seg{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-family:var(--mono);
+  font-size:12px;
+  font-weight:700;
+  color:#fff;
+  white-space:nowrap;
+  overflow:hidden;
+  border-right:1.5px solid rgba(255,255,255,0.35);
+  font-variant-numeric:tabular-nums;
+}
+.strip-seg:last-child{ border-right:none; }
+.strip-seg.c-teal{ background:var(--teal); }
+.strip-seg.c-mustard{ background:var(--mustard); color:#241a08; }
+.strip-seg.c-unknown{
+  color:var(--red-dark);
+  background:
+    repeating-linear-gradient(45deg, rgba(178,58,72,0.16) 0 7px, rgba(178,58,72,0.05) 7px 14px);
+  border:2px dashed var(--red);
+  font-weight:800;
+}
+.strip-seg.c-spent{
+  color:#6b6150;
+  background:
+    repeating-linear-gradient(45deg, rgba(43,32,24,0.10) 0 7px, transparent 7px 14px);
+  border-right:2px dashed #3A2C1F;
+  text-decoration:line-through;
+  text-decoration-color:rgba(43,32,24,0.4);
+}
+
+/* The pill inside the "how much more" bracket that fills the space beyond a
+   shorter bar (combined-vs-single case). The bracket itself -- a flex sibling
+   of the shorter bar, sized with flex:1 so it naturally fills what's left --
+   is built with inline styles in word-problems-questions.js's compareRow(),
+   since its border has to line up with a specific bar's border on each draw. */
+.compare-bracket .tag{
+  background:var(--red);
+  color:#fff;
+  font-family:var(--mono);
+  font-size:10.5px;
+  font-weight:800;
+  padding:2px 7px;
+  border-radius:12px;
+  white-space:nowrap;
+}
+
+@media (max-width:480px){
+  .strip-seg{ font-size:10.5px; }
+  .equation-line{ font-size:14.5px; }
+}

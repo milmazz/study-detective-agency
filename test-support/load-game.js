@@ -24,6 +24,7 @@ const ENGINE = path.join('assets', 'js', 'game-engine.js');
 const GAMES = {
   math: { page: 'games/math/numeration-detective-agency.html' },
   ela: { page: 'games/ela/words-division.html' },
+  wordproblems: { page: 'games/math/missing-evidence-files.html' },
 };
 
 const SCRIPT_SRC = /<script src="([^"]+)"><\/script>/g;
