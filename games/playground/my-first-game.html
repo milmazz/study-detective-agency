@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>My First Game - Catch the Clue Stars</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!--
+  ============================================================
+  HI! This whole file is YOUR game. There's nothing fancy here
+  on purpose -- everything a browser needs (the page, the
+  colors, and the brain that makes it move) is in this ONE
+  file, so you can read top to bottom and see how it all fits
+  together. No installing anything: just double-click this
+  file and it opens and plays.
+
+  A game (any game, even the big fancy ones) is really just
+  three ingredients:
+
+    1. HTML  -- the STAGE. What's on the screen: boxes, text,
+               buttons. No movement, no colors yet, just shapes.
+    2. CSS   -- the COSTUMES. Makes the stage look nice: colors,
+               sizes, where things sit.
+    3. JS    -- the BRAIN. The part that makes things actually
+               DO something: move, count points, react when you
+               press a key.
+
+  Scroll down -- each ingredient has its own big labeled
+  section below. Try changing a number or a color and reload
+  the page in your browser to see what happens. You can't
+  break anything permanently -- it's just a text file!
+  ============================================================
+-->
+
+<style>
+  /* ============================================================
+     INGREDIENT 2: THE COSTUMES (CSS)
+     CSS answers one question over and over: "how should this
+     THING look?" You pick a thing (like .player) and then list
+     its style, one line per property.
+     ============================================================ */
+
+  body {
+    font-family: system-ui, sans-serif;
+    background: #16213e;
+    color: #f4f1ec;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px;
+  }
+
+  h1 { margin-bottom: 4px; }
+  p.tip { color: #b9c2d0; max-width: 480px; text-align: center; }
+
+  /* The scoreboard row above the game */
+  #scoreboard {
+    font-size: 1.3em;
+    font-weight: bold;
+    margin: 8px 0;
+    color: #ffd166;
+  }
+
+  /* The game area is the "stage" the stars fall through.
+     position: relative means "everything inside that says
+     position: absolute measures itself from THIS box's edges,
+     not the whole page." */
+  #game-area {
+    position: relative;
+    width: 480px;
+    max-width: 92vw;
+    height: 360px;
+    background: linear-gradient(#1a2b4c, #0f1b33);
+    border: 4px solid #ffd166;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  /* The player (your detective magnifying glass) sits near the
+     bottom and slides left/right. */
+  #player {
+    position: absolute;
+    bottom: 10px;
+    font-size: 2.4em;
+    /* left gets set by JavaScript below -- CSS just says how it
+       looks, JS decides where. */
+    transition: left 0.05s linear;
+  }
+
+  /* Every falling star gets this class. Their exact position
+     (top/left) is set one-by-one by JavaScript, since every
+     star is in a different spot. */
+  .star {
+    position: absolute;
+    font-size: 1.6em;
+  }
+
+  #controls { margin-top: 12px; }
+  #controls button {
+    font-size: 1.4em;
+    padding: 8px 20px;
+    margin: 0 8px;
+    border-radius: 8px;
+    border: none;
+    background: #ffd166;
+    cursor: pointer;
+  }
+  #controls button:active { background: #f4b400; }
+
+  /* The "Case Closed!" win screen. It starts hidden (display:
+     none) and JS switches it to visible when you win. */
+  #win-screen {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 27, 51, 0.95);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 12px;
+  }
+  #win-screen.show { display: flex; }
+  #win-screen button {
+    font-size: 1.1em;
+    padding: 8px 18px;
+    border-radius: 8px;
+    border: none;
+    background: #ffd166;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     INGREDIENT 1: THE STAGE (HTML)
+     This is just a list of boxes. Nothing moves by itself --
+     it's like a stage before the actors show up. Notice each
+     important box has an id="..." so the JavaScript below can
+     find it and control it later.
+     ============================================================ -->
+
+<h1>🕵️ Catch the Clue Stars</h1>
+<p class="tip">Move the magnifying glass with the ⬅️➡️ arrow keys
+  (or the buttons below) and catch 10 falling stars to close the case!</p>
+
+<div id="scoreboard">Clues found: <span id="score">0</span> / 10</div>
+
+<div id="game-area">
+  <div id="player">🔍</div>
+
+  <div id="win-screen">
+    <h2>🎉 Case Closed! 🎉</h2>
+    <p>You caught all the clues. Nice work, detective!</p>
+    <button id="play-again">Play Again</button>
+  </div>
+</div>
+
+<div id="controls">
+  <button id="left-btn">⬅️</button>
+  <button id="right-btn">➡️</button>
+</div>
+
+<script>
+  // ============================================================
+  // INGREDIENT 3: THE BRAIN (JavaScript)
+  // Everything above just sits there until code tells it what
+  // to do. JS is a list of instructions the computer runs, plus
+  // "when this happens, do that" rules called event listeners.
+  // ============================================================
+
+  // --- Step 1: grab the boxes from the stage so we can control them ---
+  // A "variable" is just a labeled box that holds something --
+  // here, each one holds a reference to a piece of HTML.
+  var gameArea   = document.getElementById('game-area');
+  var player     = document.getElementById('player');
+  var scoreLabel = document.getElementById('score');
+  var winScreen  = document.getElementById('win-screen');
+
+  // --- Step 2: the game's "state" -- numbers that change as you play ---
+  var playerX  = 220;   // player's left position in pixels
+  var score    = 0;     // clues caught so far
+  var goal     = 10;    // how many clues to win
+  var gameOver = false;
+
+  var AREA_WIDTH  = 480;
+  var PLAYER_WIDTH = 40;
+  var MOVE_STEP   = 22;  // how far one key press/button click moves you
+
+  // Draw the player at wherever playerX currently is.
+  // Functions are little named recipes: "do these steps" -- you
+  // just say updatePlayer() later instead of repeating them.
+  function updatePlayer() {
+    player.style.left = playerX + 'px';
+  }
+  updatePlayer(); // run it once so the player shows up in the right spot
+
+  function movePlayer(dx) {
+    if (gameOver) return; // no moving after you've already won
+    playerX += dx;
+    // clamp() keeps a number from going below min or above max --
+    // here it stops the player sliding off either edge.
+    if (playerX < 0) playerX = 0;
+    if (playerX > AREA_WIDTH - PLAYER_WIDTH) playerX = AREA_WIDTH - PLAYER_WIDTH;
+    updatePlayer();
+  }
+
+  // --- Step 3: react to the player pressing arrow keys ---
+  // "addEventListener" is the "when this happens, do that" rule.
+  // Here: whenever ANY key is pressed anywhere on the page, run
+  // this function and check which key it was.
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'ArrowLeft')  movePlayer(-MOVE_STEP);
+    if (event.key === 'ArrowRight') movePlayer(MOVE_STEP);
+  });
+
+  // The on-screen buttons do the exact same thing as the keys --
+  // they just call the same movePlayer() function.
+  document.getElementById('left-btn').addEventListener('click', function () {
+    movePlayer(-MOVE_STEP);
+  });
+  document.getElementById('right-btn').addEventListener('click', function () {
+    movePlayer(MOVE_STEP);
+  });
+
+  // --- Step 4: making stars fall ---
+  // Every so often we create a brand new star element, drop it
+  // into the game area at a random left position, and let it
+  // fall. This function makes ONE star; we'll call it on a timer.
+  function spawnStar() {
+    if (gameOver) return;
+
+    var star = document.createElement('div');
+    star.className = 'star';
+    star.textContent = '⭐';
+
+    // Math.random() gives a decimal between 0 and 1. Multiplying
+    // it stretches that into "somewhere across the game area."
+    var startX = Math.random() * (AREA_WIDTH - 24);
+    star.style.left = startX + 'px';
+    star.style.top = '-30px'; // start just above the visible area
+
+    gameArea.appendChild(star);
+
+    var starY = -30;
+    var fallSpeed = 2 + Math.random() * 2; // pixels per tick -- some fall faster than others
+
+    // setInterval repeats a function forever, every X milliseconds,
+    // until we tell it to stop with clearInterval.
+    var fallTimer = setInterval(function () {
+      starY += fallSpeed;
+      star.style.top = starY + 'px';
+
+      if (didPlayerCatch(startX, starY)) {
+        clearInterval(fallTimer);
+        star.remove();
+        catchStar();
+        return;
+      }
+
+      // Star reached the bottom without being caught -- just
+      // remove it, no penalty. This is a low-pressure game!
+      if (starY > 360) {
+        clearInterval(fallTimer);
+        star.remove();
+      }
+    }, 20);
+  }
+
+  // Checks whether the falling star's position overlaps the
+  // player's position -- close enough on both left/right (x) and
+  // up/down (y) counts as a catch.
+  function didPlayerCatch(starX, starY) {
+    var closeEnoughX = Math.abs(starX - playerX) < 34;
+    var playerIsNear = starY > 300 && starY < 340;
+    return closeEnoughX && playerIsNear;
+  }
+
+  function catchStar() {
+    score += 1;
+    scoreLabel.textContent = score;
+    if (score >= goal) {
+      winGame();
+    }
+  }
+
+  function winGame() {
+    gameOver = true;
+    winScreen.classList.add('show');
+  }
+
+  // A star spawns every 900 milliseconds, for as long as the
+  // page is open.
+  setInterval(spawnStar, 900);
+
+  // --- Step 5: Play Again resets everything back to the start ---
+  document.getElementById('play-again').addEventListener('click', function () {
+    score = 0;
+    gameOver = false;
+    scoreLabel.textContent = score;
+    winScreen.classList.remove('show');
+    // Remove any stars still on screen from the last round.
+    var leftoverStars = document.querySelectorAll('.star');
+    leftoverStars.forEach(function (s) { s.remove(); });
+  });
+
+  // ============================================================
+  // Ideas to try next (change a number above, save, reload!):
+  //   - Change `goal` to 20 -- now you need more clues to win.
+  //   - Change `MOVE_STEP` to 60 -- the player zooms sideways.
+  //   - Change the emoji in star.textContent to something else,
+  //     like 🍕 or 🐱.
+  //   - Change `setInterval(spawnStar, 900)` to 400 -- stars fall
+  //     way more often. Try 3000 for the opposite!
+  // ============================================================
+</script>
+
+</body>
+</html>
