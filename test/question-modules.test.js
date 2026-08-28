@@ -137,6 +137,50 @@ for (const key of GAME_KEYS) {
 
 /* ================= the pages agree with each other ================= */
 
+/* ================= the page/stylesheet wiring ================= */
+
+for (const key of GAME_KEYS) {
+  test(`${key}: every class a question emits has a CSS rule behind it`, () => {
+    // A generator can invent any class it likes, and an unstyled one renders as
+    // plain text that looks almost right -- which is how .q-prompt-lead shipped
+    // matching no rule at all, inheriting the UA's `p { margin:1em 0 }` and
+    // opening a gap no other game page has. dom.test.js's header names this
+    // same shape ("classes were added that matched no CSS rule") but only ever
+    // checked the two grading classes by hand.
+    //
+    // The stylesheets are read from the page rather than listed here, for the
+    // reason pageModules() gives: a hardcoded list keeps passing after the page
+    // stops linking a sheet.
+    const html = fs.readFileSync(path.join(ROOT, GAMES[key].page), 'utf8');
+    const pageDir = path.dirname(path.join(ROOT, GAMES[key].page));
+    const sheets = [...html.matchAll(/<link[^>]+href="([^"]+\.css[^"]*)"/g)]
+      .map((m) => path.relative(ROOT, path.resolve(pageDir, m[1].split('?')[0])));
+    assert.ok(sheets.length > 0, 'the page links no stylesheet at all');
+
+    // Inline <style> counts too: the pages carry a deliberate render-blocking
+    // block, and a rule living there is still a rule.
+    const css = sheets.map((f) => fs.readFileSync(path.join(ROOT, f), 'utf8')).join('\n') +
+      '\n' + [...html.matchAll(/<style>([\s\S]*?)<\/style>/g)].map((m) => m[1]).join('\n');
+
+    const cfg = loadModes(key);
+    const used = new Set();
+    for (const mode of cfg.modes) {
+      if (cfg.onCaseStart) cfg.onCaseStart();
+      for (let i = 0; i < 400; i++) {
+        for (const m of String(mode.gen().prompt).matchAll(/class="([^"]+)"/g)) {
+          for (const cls of m[1].split(/\s+/)) if (cls) used.add(cls);
+        }
+      }
+    }
+    assert.ok(used.size > 0, 'no question emitted a single class');
+
+    for (const cls of used) {
+      assert.match(css, new RegExp(`\\.${cls.replace(/-/g, '\\-')}(?![\\w-])`),
+        `questions render class "${cls}" but no stylesheet the page links defines it`);
+    }
+  });
+}
+
 test('no two games share a question module or a global', () => {
   const seen = new Map();
   for (const key of GAME_KEYS) {

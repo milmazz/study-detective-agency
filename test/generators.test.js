@@ -36,7 +36,7 @@ function eachQuestion(game, fn) {
 
 /* ================= invariants every question must hold ================= */
 
-for (const game of ['math', 'ela']) {
+for (const game of ['math', 'ela', 'wordproblems']) {
   test(`${game}: every question names a registered type`, () => {
     const cfg = loadModes(game);
     const seen = new Set();
@@ -124,7 +124,7 @@ const unformat = (s) => Number(String(s).replace(/,/g, ''));
 // who finds it, which is the worst possible reviewer to leave it to.
 const COUNT_WORDS = { once: 1, twice: 2, 'three times': 3, 'four times': 4 };
 
-for (const game of ['math', 'ela']) {
+for (const game of ['math', 'ela', 'wordproblems']) {
   test(`${game}: a digit count stated in a prompt is true of the number shown`, () => {
     // "In the number 941,445, the digit 4 appears twice" -- it appears three
     // times. 34% of value-compare's same-number questions made a false claim
@@ -412,4 +412,173 @@ test('ela: option order varies between draws of the same item', () => {
     assert.ok(orders.size > 1,
       `${mode.id}: option order never changes — options are not being shuffled`);
   }
+});
+
+/* ================= word problems: the equation, the diagram, the options ================= */
+
+// Pull the widths and labels back out of a rendered strip diagram. The prompt
+// is the only artifact these generators produce, so reading it back is the only
+// way to assert on what a kid actually sees.
+function stripSegments(prompt) {
+  return [...prompt.matchAll(
+    /<div class="strip-seg [^"]*" style="flex:0 0 ([\d.]+)%;">([\s\S]*?)<\/div>/g
+  )].map((m) => ({ width: Number(m[1]), label: stripTags(m[2]).trim() }));
+}
+
+test('wordproblems: the printed equation evaluates to the answer', () => {
+  // Every case shows its own equation and then scores a separate correctKey.
+  // Nothing else makes the two agree: a generator that prints one sum and marks
+  // a different one renders perfectly, and the kid who actually does the
+  // arithmetic on the line in front of them is the one who finds it.
+  let checked = 0;
+  eachQuestion('wordproblems', (q, mode) => {
+    const m = /<div class="equation-line">([\s\S]*?)<\/div>\s*<div class="strip-block">/
+      .exec(q.prompt);
+    if (!m) return;
+    // The goal case prints two equations and answers in prose, so its scoring
+    // key is not a number — it gets its own assertion below.
+    if (!Number.isFinite(Number(q.correctKey))) return;
+    const shown = stripTags(m[1]).trim();
+    const lhs = shown.split('=')[0].replace(/[−–]/g, '-').replace(/[$,]/g, '').trim();
+    assert.match(lhs, /^[\d\s()+*/-]+$/, `${mode.id}: unparseable equation "${shown}"`);
+    const value = Function(`"use strict";return (${lhs})`)();
+    assert.equal(value, Number(q.correctKey),
+      `${mode.id}: the prompt shows "${shown}" but the answer is scored as ` +
+      `${q.correctKey} — the equation and the scoring disagree`);
+    checked++;
+  });
+  assert.ok(checked > 100, `expected plenty of equations to check, saw ${checked}`);
+});
+
+test('wordproblems: no strip segment is too narrow to show its own label', () => {
+  // .strip-seg is nowrap + overflow:hidden and its width comes straight from
+  // the drawn numbers, so a lopsided draw silently clips the label off a bar
+  // the question is asking the kid to read. Before the generator ranges were
+  // expressed as ratios, the Reward Fund clipped a multi-character label in
+  // 5.6% of draws — rare enough that hand-checking a few questions missed it
+  // every time, which is exactly what happened.
+  const cfg = loadModes('wordproblems');
+  const floor = cfg.minSegPct;
+  assert.ok(floor > 0, 'the question module should export the floor it promises');
+  let checked = 0;
+  eachQuestion('wordproblems', (q, mode) => {
+    const segs = stripSegments(q.prompt);
+    assert.ok(segs.length > 0, `${mode.id}: the prompt renders no strip diagram`);
+    for (const s of segs) {
+      if (s.label.length <= 1) continue;  // a bare "?" fits anywhere
+      assert.ok(s.width >= floor,
+        `${mode.id}: segment "${s.label}" gets ${s.width}% of its bar, under the ` +
+        `${floor}% floor — the label clips`);
+      checked++;
+    }
+  });
+  assert.ok(checked > 100, `expected plenty of labelled segments, saw ${checked}`);
+});
+
+test('wordproblems: the comparison bracket has room for its pill', () => {
+  // The "? more" pill is ~52px wide and sits in whatever the shorter bar leaves
+  // over. That gap is the answer itself, so a small answer used to squeeze the
+  // pill until it spilled back across the bar — under 4% of the row in 13% of
+  // draws before the gap was floored.
+  const cfg = loadModes('wordproblems');
+  const floor = cfg.minBracketPct;
+  let checked = 0;
+  eachQuestion('wordproblems', (q, mode) => {
+    const m = /<div class="compare-row"><div class="strip-row" style="flex:0 0 ([\d.]+)%;">/
+      .exec(q.prompt);
+    if (!m) return;
+    const bracket = 100 - Number(m[1]);
+    assert.ok(bracket >= floor,
+      `${mode.id}: the bracket gets ${bracket.toFixed(2)}% of the row, under the ` +
+      `${floor}% floor — the pill overflows the bar`);
+    checked++;
+  });
+  assert.ok(checked > 100, `expected plenty of comparison rows, saw ${checked}`);
+});
+
+test('wordproblems: the answer cannot be picked out by its size', () => {
+  // The size version of "every offered answer can actually be the correct one".
+  // That test only covers types drawn from a fixed vocabulary, so it never
+  // reached this game — and every pool here held a running total ("forgot the
+  // last step"), which is always larger than the answer. Measured over 200,000
+  // draws, the answer was NEVER the largest option in any of the three numeric
+  // cases, making "skip the biggest number" a free 4-way-to-3-way; on Missing
+  // Part of the Total the answer was always one of the two smallest, so
+  // guessing between those two scored 50% without reading the question.
+  //
+  // Asserted as a rank histogram rather than a single statistic: whichever
+  // position a guesser prefers, it has to be worth about a guess.
+  const cfg = loadModes('wordproblems');
+  const DRAWS_PER_MODE = 8000;
+  for (const mode of cfg.modes) {
+    const ranks = [0, 0, 0, 0];
+    let numeric = 0;
+    for (let i = 0; i < DRAWS_PER_MODE; i++) {
+      const q = mode.gen();
+      const values = q.options.map((o) => Number(o.key));
+      if (values.some(Number.isNaN)) break;   // the goal case answers in prose
+      assert.equal(values.length, 4, `${mode.id}: expected four options`);
+      const sorted = [...values].sort((a, b) => a - b);
+      ranks[sorted.indexOf(Number(q.correctKey))]++;
+      numeric++;
+    }
+    if (!numeric) continue;
+    const names = ['smallest', 'second', 'third', 'largest'];
+    ranks.forEach((count, i) => {
+      const share = count / numeric;
+      assert.ok(share > 0.15 && share < 0.35,
+        `${mode.id}: the answer is the ${names[i]} option in ${(share * 100).toFixed(1)}% ` +
+        `of draws (want roughly 25%) — its size is a usable hint`);
+    });
+  }
+});
+
+test('wordproblems: the goal case\'s two equations match the option it scores', () => {
+  // The one case that prints two equations and answers in prose rather than
+  // with a number, so the assertion above cannot reach it. Both halves have to
+  // agree with the label being scored: the two shortfalls, and which team the
+  // label names as ahead — the team that is ahead is the one needing less.
+  let checked = 0;
+  eachQuestion('wordproblems', (q, mode) => {
+    if (mode.id !== 'goal') return;
+    const shown = stripTags(
+      /<div class="equation-line">([\s\S]*?)<\/div>\s*<div class="strip-block">/.exec(q.prompt)[1]
+    ).replace(/&nbsp;/g, ' ');
+    const halves = shown.split('·').map((half) =>
+      Function(`"use strict";return (${half.split('=')[0].replace(/[−–]/g, '-').replace(/,/g, '').trim()})`)()
+    );
+    assert.equal(halves.length, 2, `${mode.id}: expected two equations, got "${shown}"`);
+
+    const label = q.options.filter((o) => o.key === q.correctKey)[0].label;
+    const m = /^Team ([AB]) ahead — A still needs ([\d,]+), B still needs ([\d,]+)$/.exec(label);
+    assert.ok(m, `${mode.id}: unparseable scored option "${label}"`);
+    const needA = Number(m[2].replace(/,/g, ''));
+    const needB = Number(m[3].replace(/,/g, ''));
+    assert.equal(needA, halves[0],
+      `${mode.id}: the prompt computes ${halves[0]} for Team A but the answer says ${needA}`);
+    assert.equal(needB, halves[1],
+      `${mode.id}: the prompt computes ${halves[1]} for Team B but the answer says ${needB}`);
+    assert.equal(m[1], needA < needB ? 'A' : 'B',
+      `${mode.id}: "${label}" names Team ${m[1]} as ahead, but Team A needs ${needA} ` +
+      `and Team B needs ${needB} — the team that is ahead is the one needing less`);
+    checked++;
+  });
+  assert.ok(checked > 100, `expected plenty of goal questions, saw ${checked}`);
+});
+
+test('wordproblems: every option names which team each number belongs to', () => {
+  // The goal case answers with a PAIR of numbers, one per team, and the prompt
+  // asks what each team needs. The labels used to read "Team B ahead — needs
+  // 686 / 661 more": which number belonged to which team was left to the
+  // reader, and the two orderings in play disagreed with each other.
+  let checked = 0;
+  eachQuestion('wordproblems', (q, mode) => {
+    if (mode.id !== 'goal') return;
+    for (const o of q.options) {
+      assert.match(o.label, /^Team [AB] ahead — A still needs [\d,]+, B still needs [\d,]+$/,
+        `${mode.id}: option "${o.label}" doesn't say which number is which team's`);
+    }
+    checked++;
+  });
+  assert.ok(checked > 100, `expected plenty of goal questions, saw ${checked}`);
 });
