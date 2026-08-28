@@ -160,6 +160,7 @@
 <div id="controls">
   <button id="left-btn">⬅️</button>
   <button id="right-btn">➡️</button>
+  <button id="music-btn">🔊 Music: On</button>
 </div>
 
 <script>
@@ -294,7 +295,71 @@
   // page is open.
   setInterval(spawnCarrot, 900);
 
-  // --- Step 5: Play Again resets everything back to the start ---
+  // --- Step 5: background music, with an on/off button ---
+  // Quick note: I can't drop in an actual copyrighted song (like a
+  // real track from a real artist) -- games aren't allowed to just
+  // grab music like that without permission. So instead here's a
+  // tiny, cheerful tune made entirely out of code, using something
+  // built into every browser called the Web Audio API. It plays one
+  // note at a time, forever, like a happy little music box.
+  var audioCtx = null;
+  var musicOn = true;
+  var melodyStep = 0;
+
+  // Each pair is [note frequency in Hz, how long to hold it in seconds].
+  // These numbers are just musical notes -- try swapping a few and
+  // reload to hear your own tune!
+  var melody = [
+    [523.25, 0.28], [659.25, 0.28], [783.99, 0.28], [659.25, 0.28],
+    [523.25, 0.28], [587.33, 0.28], [659.25, 0.56],
+    [493.88, 0.28], [523.25, 0.28], [587.33, 0.28], [523.25, 0.28],
+    [493.88, 0.28], [440.00, 0.28], [493.88, 0.56]
+  ];
+
+  function playNextNote() {
+    var note = melody[melodyStep];
+    melodyStep = (melodyStep + 1) % melody.length;
+
+    if (musicOn && audioCtx) {
+      // An oscillator makes the sound; a gain node controls its
+      // volume. Ramping the gain down to (almost) zero over the
+      // note's length is what makes it fade instead of click off.
+      var osc = audioCtx.createOscillator();
+      var volume = audioCtx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.value = note[0];
+      volume.gain.setValueAtTime(0.06, audioCtx.currentTime);
+      volume.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + note[1]);
+      osc.connect(volume);
+      volume.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + note[1]);
+    }
+
+    setTimeout(playNextNote, note[1] * 1000);
+  }
+
+  // Browsers won't let a page play sound until you've clicked or
+  // pressed something on it first -- that's a privacy rule, not a
+  // bug. So we create the AudioContext (and start the music loop)
+  // the very first time the player moves or clicks anything.
+  function unlockAudioOnce() {
+    if (audioCtx) return;
+    var AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return; // this browser can't play sound -- game still works fine without it
+    audioCtx = new AudioContextClass();
+    playNextNote();
+  }
+  document.addEventListener('keydown', unlockAudioOnce, { once: true });
+  document.addEventListener('click', unlockAudioOnce, { once: true });
+
+  var musicBtn = document.getElementById('music-btn');
+  musicBtn.addEventListener('click', function () {
+    musicOn = !musicOn;
+    musicBtn.textContent = musicOn ? '🔊 Music: On' : '🔇 Music: Off';
+  });
+
+  // --- Step 6: Play Again resets everything back to the start ---
   document.getElementById('play-again').addEventListener('click', function () {
     score = 0;
     gameOver = false;
@@ -314,6 +379,9 @@
   //   - Change the emoji in #player to 🐱 or 🐻 for a different pet.
   //   - Change `setInterval(spawnCarrot, 900)` to 400 -- carrots
   //     fall way more often. Try 3000 for the opposite!
+  //   - Change some of the numbers in the `melody` list above to
+  //     hear a different tune. 440 is the note A, 493.88 is B,
+  //     523.25 is C, and so on up a musical scale.
   // ============================================================
 </script>
 
