@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>My First Game - Catch the Clue Stars</title>
+<title>My First Game - Bunny's Carrot Hunt</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <!--
@@ -42,8 +42,8 @@
 
   body {
     font-family: system-ui, sans-serif;
-    background: #16213e;
-    color: #f4f1ec;
+    background: #ffe3ef;
+    color: #6b4a5b;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -51,17 +51,17 @@
   }
 
   h1 { margin-bottom: 4px; }
-  p.tip { color: #b9c2d0; max-width: 480px; text-align: center; }
+  p.tip { color: #a5728a; max-width: 480px; text-align: center; }
 
   /* The scoreboard row above the game */
   #scoreboard {
     font-size: 1.3em;
     font-weight: bold;
     margin: 8px 0;
-    color: #ffd166;
+    color: #ff8fab;
   }
 
-  /* The game area is the "stage" the stars fall through.
+  /* The game area is the "stage" the carrots fall through.
      position: relative means "everything inside that says
      position: absolute measures itself from THIS box's edges,
      not the whole page." */
@@ -70,14 +70,14 @@
     width: 480px;
     max-width: 92vw;
     height: 360px;
-    background: linear-gradient(#1a2b4c, #0f1b33);
-    border: 4px solid #ffd166;
+    background: linear-gradient(#bfe9ff 0%, #bfe9ff 75%, #b8e8a0 75%, #9fd987 100%);
+    border: 4px solid #ff8fab;
     border-radius: 12px;
     overflow: hidden;
   }
 
-  /* The player (your detective magnifying glass) sits near the
-     bottom and slides left/right. */
+  /* The player (your bunny!) sits near the bottom and slides
+     left/right. */
   #player {
     position: absolute;
     bottom: 10px;
@@ -87,10 +87,10 @@
     transition: left 0.05s linear;
   }
 
-  /* Every falling star gets this class. Their exact position
+  /* Every falling carrot gets this class. Their exact position
      (top/left) is set one-by-one by JavaScript, since every
-     star is in a different spot. */
-  .star {
+     carrot is in a different spot. */
+  .carrot {
     position: absolute;
     font-size: 1.6em;
   }
@@ -102,17 +102,17 @@
     margin: 0 8px;
     border-radius: 8px;
     border: none;
-    background: #ffd166;
+    background: #ff8fab;
     cursor: pointer;
   }
-  #controls button:active { background: #f4b400; }
+  #controls button:active { background: #ff6b95; }
 
-  /* The "Case Closed!" win screen. It starts hidden (display:
-     none) and JS switches it to visible when you win. */
+  /* The "You filled the basket!" win screen. It starts hidden
+     (display: none) and JS switches it to visible when you win. */
   #win-screen {
     position: absolute;
     inset: 0;
-    background: rgba(15, 27, 51, 0.95);
+    background: rgba(255, 227, 239, 0.97);
     display: none;
     flex-direction: column;
     align-items: center;
@@ -126,7 +126,7 @@
     padding: 8px 18px;
     border-radius: 8px;
     border: none;
-    background: #ffd166;
+    background: #ff8fab;
     cursor: pointer;
   }
 </style>
@@ -141,18 +141,18 @@
      find it and control it later.
      ============================================================ -->
 
-<h1>🕵️ Catch the Clue Stars</h1>
-<p class="tip">Move the magnifying glass with the ⬅️➡️ arrow keys
-  (or the buttons below) and catch 10 falling stars to close the case!</p>
+<h1>🐰 Bunny's Carrot Hunt</h1>
+<p class="tip">Move the bunny with the ⬅️➡️ arrow keys
+  (or the buttons below) and catch 10 falling carrots to fill the basket!</p>
 
-<div id="scoreboard">Clues found: <span id="score">0</span> / 10</div>
+<div id="scoreboard">Carrots: <span id="score">0</span> / 10 🥕</div>
 
 <div id="game-area">
-  <div id="player">🔍</div>
+  <div id="player">🐰</div>
 
   <div id="win-screen">
-    <h2>🎉 Case Closed! 🎉</h2>
-    <p>You caught all the clues. Nice work, detective!</p>
+    <h2>🧺 Basket Full! 🎉</h2>
+    <p>Yummy! You caught every carrot. Great job, bunny!</p>
     <button id="play-again">Play Again</button>
   </div>
 </div>
@@ -179,28 +179,28 @@
   var winScreen  = document.getElementById('win-screen');
 
   // --- Step 2: the game's "state" -- numbers that change as you play ---
-  var playerX  = 220;   // player's left position in pixels
-  var score    = 0;     // clues caught so far
-  var goal     = 10;    // how many clues to win
+  var playerX  = 220;   // bunny's left position in pixels
+  var score    = 0;     // carrots caught so far
+  var goal     = 10;    // how many carrots to win
   var gameOver = false;
 
   var AREA_WIDTH  = 480;
   var PLAYER_WIDTH = 40;
   var MOVE_STEP   = 22;  // how far one key press/button click moves you
 
-  // Draw the player at wherever playerX currently is.
+  // Draw the bunny at wherever playerX currently is.
   // Functions are little named recipes: "do these steps" -- you
   // just say updatePlayer() later instead of repeating them.
   function updatePlayer() {
     player.style.left = playerX + 'px';
   }
-  updatePlayer(); // run it once so the player shows up in the right spot
+  updatePlayer(); // run it once so the bunny shows up in the right spot
 
   function movePlayer(dx) {
     if (gameOver) return; // no moving after you've already won
     playerX += dx;
     // clamp() keeps a number from going below min or above max --
-    // here it stops the player sliding off either edge.
+    // here it stops the bunny sliding off either edge.
     if (playerX < 0) playerX = 0;
     if (playerX > AREA_WIDTH - PLAYER_WIDTH) playerX = AREA_WIDTH - PLAYER_WIDTH;
     updatePlayer();
@@ -224,60 +224,60 @@
     movePlayer(MOVE_STEP);
   });
 
-  // --- Step 4: making stars fall ---
-  // Every so often we create a brand new star element, drop it
+  // --- Step 4: making carrots fall ---
+  // Every so often we create a brand new carrot element, drop it
   // into the game area at a random left position, and let it
-  // fall. This function makes ONE star; we'll call it on a timer.
-  function spawnStar() {
+  // fall. This function makes ONE carrot; we'll call it on a timer.
+  function spawnCarrot() {
     if (gameOver) return;
 
-    var star = document.createElement('div');
-    star.className = 'star';
-    star.textContent = '⭐';
+    var carrot = document.createElement('div');
+    carrot.className = 'carrot';
+    carrot.textContent = '🥕';
 
     // Math.random() gives a decimal between 0 and 1. Multiplying
     // it stretches that into "somewhere across the game area."
     var startX = Math.random() * (AREA_WIDTH - 24);
-    star.style.left = startX + 'px';
-    star.style.top = '-30px'; // start just above the visible area
+    carrot.style.left = startX + 'px';
+    carrot.style.top = '-30px'; // start just above the visible area
 
-    gameArea.appendChild(star);
+    gameArea.appendChild(carrot);
 
-    var starY = -30;
+    var carrotY = -30;
     var fallSpeed = 2 + Math.random() * 2; // pixels per tick -- some fall faster than others
 
     // setInterval repeats a function forever, every X milliseconds,
     // until we tell it to stop with clearInterval.
     var fallTimer = setInterval(function () {
-      starY += fallSpeed;
-      star.style.top = starY + 'px';
+      carrotY += fallSpeed;
+      carrot.style.top = carrotY + 'px';
 
-      if (didPlayerCatch(startX, starY)) {
+      if (didPlayerCatch(startX, carrotY)) {
         clearInterval(fallTimer);
-        star.remove();
-        catchStar();
+        carrot.remove();
+        catchCarrot();
         return;
       }
 
-      // Star reached the bottom without being caught -- just
+      // Carrot reached the bottom without being caught -- just
       // remove it, no penalty. This is a low-pressure game!
-      if (starY > 360) {
+      if (carrotY > 320) {
         clearInterval(fallTimer);
-        star.remove();
+        carrot.remove();
       }
     }, 20);
   }
 
-  // Checks whether the falling star's position overlaps the
-  // player's position -- close enough on both left/right (x) and
+  // Checks whether the falling carrot's position overlaps the
+  // bunny's position -- close enough on both left/right (x) and
   // up/down (y) counts as a catch.
-  function didPlayerCatch(starX, starY) {
-    var closeEnoughX = Math.abs(starX - playerX) < 34;
-    var playerIsNear = starY > 300 && starY < 340;
+  function didPlayerCatch(carrotX, carrotY) {
+    var closeEnoughX = Math.abs(carrotX - playerX) < 34;
+    var playerIsNear = carrotY > 300 && carrotY < 340;
     return closeEnoughX && playerIsNear;
   }
 
-  function catchStar() {
+  function catchCarrot() {
     score += 1;
     scoreLabel.textContent = score;
     if (score >= goal) {
@@ -290,9 +290,9 @@
     winScreen.classList.add('show');
   }
 
-  // A star spawns every 900 milliseconds, for as long as the
+  // A carrot spawns every 900 milliseconds, for as long as the
   // page is open.
-  setInterval(spawnStar, 900);
+  setInterval(spawnCarrot, 900);
 
   // --- Step 5: Play Again resets everything back to the start ---
   document.getElementById('play-again').addEventListener('click', function () {
@@ -300,19 +300,20 @@
     gameOver = false;
     scoreLabel.textContent = score;
     winScreen.classList.remove('show');
-    // Remove any stars still on screen from the last round.
-    var leftoverStars = document.querySelectorAll('.star');
-    leftoverStars.forEach(function (s) { s.remove(); });
+    // Remove any carrots still on screen from the last round.
+    var leftoverCarrots = document.querySelectorAll('.carrot');
+    leftoverCarrots.forEach(function (c) { c.remove(); });
   });
 
   // ============================================================
   // Ideas to try next (change a number above, save, reload!):
-  //   - Change `goal` to 20 -- now you need more clues to win.
-  //   - Change `MOVE_STEP` to 60 -- the player zooms sideways.
-  //   - Change the emoji in star.textContent to something else,
-  //     like 🍕 or 🐱.
-  //   - Change `setInterval(spawnStar, 900)` to 400 -- stars fall
-  //     way more often. Try 3000 for the opposite!
+  //   - Change `goal` to 20 -- now you need more carrots to win.
+  //   - Change `MOVE_STEP` to 60 -- the bunny zooms sideways.
+  //   - Change the emoji in carrot.textContent to something else,
+  //     like 🍓 or 🧀 or 🍩.
+  //   - Change the emoji in #player to 🐱 or 🐻 for a different pet.
+  //   - Change `setInterval(spawnCarrot, 900)` to 400 -- carrots
+  //     fall way more often. Try 3000 for the opposite!
   // ============================================================
 </script>
 
