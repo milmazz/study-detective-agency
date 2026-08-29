@@ -34,7 +34,15 @@ const ALL_GAMES = Object.keys(GAMES);
 // content each draw. These are the ones that can repeat a clue inside a single
 // case, which is the fault the pool assertions at the bottom of this file exist
 // to catch.
-const POOL_GAMES = ['ela', 'kitoto', 'texas'];
+//
+// Derived, not listed, for the same reason ALL_GAMES is: a hardcoded list keeps
+// the suite green while a newly added pool game quietly skips every no-repeat
+// assertion below. onCaseStart is the marker -- refilling the bags when a case
+// starts is the thing a pool game has to do and a generating game has no use
+// for, so a game that draws from pools cannot ship without it.
+const POOL_GAMES = ALL_GAMES.filter(
+  (g) => typeof loadModes(g).onCaseStart === 'function'
+);
 
 function eachQuestion(game, fn) {
   const cfg = loadModes(game);

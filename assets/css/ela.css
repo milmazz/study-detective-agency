@@ -55,11 +55,3 @@
 
 /* ---------- quotations: what was said, before it is punctuated ---------- */
 .quote-brief{ margin:0; font-weight:400; }
-
-/* These games ask in sentences, not in numbers: an option is a whole statement
-   rather than "4,000" or "<". game.css sizes the shared options grid for the
-   math games, where minmax(150px,1fr) fits four short answers across a row --
-   the same grid turns a sentence into a narrow ribbon five words tall. Widen
-   the minimum column so a long option gets a readable line, and let auto-fit
-   fall back to one column on a phone. */
-.options-grid{ grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); }

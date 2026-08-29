@@ -244,6 +244,7 @@ var WORDS_QUESTIONS = (function(){
     modes: MODES,
     homeIntro: 'Four case files. Every case pulls a fresh passage or example, so you can reopen a file as many times as you need to practice.',
     trailAllFilesWord: 'four',
+    trailTitle: 'The Trail — Follow the Words',
     // Five, not the default eight. The smallest item pool here has 5 entries,
     // so this is the longest a case can run and still show every passage at
     // most once. The math game keeps 8 because its generators build fresh
