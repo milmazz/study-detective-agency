@@ -3,16 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Missing Evidence Files — Detective Agency</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧮</text></svg>">
+<title>The Ledger Files — Detective Agency</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧾</text></svg>">
 <!-- See numeration-detective-agency.html for why fonts are self-hosted and
      preloaded rather than linked to fonts.googleapis.com. -->
 <link rel="preload" as="font" type="font/woff2" href="../../assets/fonts/baloo2-latin1.woff2" crossorigin>
 <link rel="stylesheet" href="../../assets/css/base.css?v=4">
 <link rel="stylesheet" href="../../assets/css/game.css?v=7">
-<!-- Word-problem question styles (equation line, strip diagrams). Math only,
-     and after game.css — see the header in word-problems.css. -->
+<!-- Shared with the Missing Evidence Files: the prompt lead, the context
+     table and the equation line. Must come after game.css. -->
 <link rel="stylesheet" href="../../assets/css/word-problems.css?v=2">
+<!-- This game's own question furniture: the typed answer, the chip groups,
+     and the miniature strip diagrams drawn inside option buttons. -->
+<link rel="stylesheet" href="../../assets/css/ledger.css?v=1">
 </head>
 <body>
 <div class="agency">
@@ -21,8 +24,8 @@
       <div>
         <a class="home-link" href="../../">← All Divisions</a>
         <p class="eyebrow">Detective Agency · Est. 2026</p>
-        <h1 class="title">Missing Evidence Files</h1>
-        <p class="subtitle">Every case is a word-problem mystery. Build the equation, read the strip diagram, and solve for the missing number.</p>
+        <h1 class="title">The Ledger Files</h1>
+        <p class="subtitle">Adding and subtracting big numbers, the equation that fits the story, the diagram that matches it, and a quick estimate when close enough will do.</p>
       </div>
       <div class="badge-counter">
         <div class="num" id="badgeNum">0</div>
@@ -40,7 +43,8 @@
 </div>
 
 <script src="../../assets/js/game-engine.js?v=6"></script>
-<script src="../../assets/js/word-problems-questions.js?v=1"></script>
-<script>DetectiveGame.start(WORD_PROBLEMS_QUESTIONS);</script>
+<script src="../../assets/js/ledger-types.js?v=1"></script>
+<script src="../../assets/js/ledger-questions.js?v=1"></script>
+<script>DetectiveGame.start(LEDGER_QUESTIONS);</script>
 </body>
 </html>

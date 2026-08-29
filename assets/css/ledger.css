@@ -1,0 +1,200 @@
+/*
+  Ledger Files question styles — the typed answer, the chip groups, the
+  equation-option text, and the miniature strip diagrams that sit inside
+  option buttons.
+
+  The furniture this game shares with the Missing Evidence Files — the prompt
+  lead paragraph, the context table, the equation line — is styled by
+  word-problems.css, which both math word-problem pages link. Only what is new
+  here lives in this file.
+
+  Load AFTER game.css and word-problems.css, alongside
+  assets/js/ledger-questions.js and assets/js/ledger-types.js.
+*/
+
+/* Visible to a screen reader, not to the eye. Used for the sentence that
+   describes a strip diagram: the drawing itself is aria-hidden, because read
+   aloud it is a bag of numbers that says nothing about the structure the
+   question is asking about. Same clip-path technique as .q-context caption. */
+.sr-only{
+  position:absolute;
+  width:1px; height:1px;
+  padding:0; margin:-1px;
+  overflow:hidden; clip-path:inset(50%);
+  white-space:nowrap;
+}
+
+/* The "don't solve it, pick the equation" nudge under an equation prompt. */
+.q-note{
+  margin:0 0 10px;
+  font-size:13px;
+  color:#6b6150;
+  font-style:italic;
+}
+
+/* ---- the typed answer ---- */
+.entry-block{ margin:2px 0 0; }
+.entry-label{
+  display:block;
+  font-weight:700;
+  font-size:14px;
+  color:var(--ink);
+  margin-bottom:6px;
+}
+.num-entry{
+  width:100%;
+  max-width:260px;
+  background:#fff;
+  border:1.5px solid #cbb98d;
+  border-radius:8px;
+  padding:12px 14px;
+  font-family:var(--mono);
+  font-size:20px;
+  font-weight:700;
+  color:var(--ink);
+  font-variant-numeric:tabular-nums;
+}
+.num-entry:focus-visible{ outline:3px solid var(--teal); }
+/* Same feedback colors the option buttons use, so a graded box reads the same
+   way a graded option does. */
+.num-entry.is-correct{ border-color:var(--teal); background:rgba(62,124,123,0.22); }
+.num-entry.is-wrong{ border-color:var(--red); background:rgba(178,58,72,0.14); }
+.num-entry[readonly]{ cursor:default; }
+.entry-hint{
+  margin:6px 0 0;
+  font-size:12px;
+  color:#6b6150;
+}
+
+/* ---- choose one from each group ---- */
+.chip-groups{ margin-top:4px; }
+/* A real fieldset, for the grouping a screen reader needs — but the browser
+   default border and padding would draw a box inside the case file's box. */
+.chip-group{
+  border:none;
+  padding:0;
+  margin:0 0 14px;
+  min-width:0;
+}
+.chip-group:last-child{ margin-bottom:0; }
+.chip-lead{
+  padding:0;
+  margin-bottom:7px;
+  font-weight:700;
+  font-size:14px;
+  color:var(--ink);
+}
+.chip-row{ display:flex; flex-wrap:wrap; gap:8px; }
+.chip{
+  background:#fff;
+  border:1.5px solid #cbb98d;
+  border-radius:20px;
+  padding:9px 15px;
+  font-family:inherit;
+  font-size:14.5px;
+  font-weight:700;
+  color:var(--ink);
+  cursor:pointer;
+  transition: border-color .1s ease, background .1s ease;
+}
+.chip:hover{ border-color:var(--mustard); background:#fffaf0; }
+.chip:focus-visible{ outline:3px solid var(--teal); }
+.chip.chosen{ border-color:var(--teal); background:rgba(62,124,123,0.12); }
+.chip.is-correct{ border-color:var(--teal); background:rgba(62,124,123,0.22); }
+.chip.is-wrong{ border-color:var(--red); background:rgba(178,58,72,0.14); }
+.chip[disabled]{ cursor:default; }
+
+/* An equation on a chip or an option button. Monospaced and tabular so the
+   numbers in four stacked equations line up column for column — the whole
+   question is about telling them apart. */
+.eq-opt{
+  font-family:var(--mono);
+  font-size:14px;
+  font-weight:700;
+  letter-spacing:0.3px;
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+}
+
+/* The lettered blanks in a "complete the equation" line. */
+.blank{
+  display:inline-block;
+  min-width:2.4em;
+  padding:1px 6px;
+  border-bottom:2.5px solid var(--red);
+  color:var(--red);
+  text-align:center;
+}
+
+/* ---- miniature strip diagrams (inside option buttons) ---- */
+/*
+  Four bar models in the four-column options grid would leave each one about
+  160px wide, and the three money labels inside it around 45px each. Widening
+  the columns for this one question type keeps the drawing legible without
+  changing the grid every other question renders in. :has() is what makes that
+  possible without the engine having to know a game draws diagrams in its
+  options.
+*/
+.options-grid:has(.mini-model){
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+.mini-model{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  width:100%;
+}
+.mini-row{ display:flex; align-items:stretch; width:100%; }
+.mini-top{ height:20px; }
+.mini-bar{
+  height:30px;
+  border-radius:5px;
+  overflow:hidden;
+  border:1.5px solid #cbb98d;
+}
+/* The brace is the labelled span ABOVE the bar — "this stretch of the bar is
+   m". Drawn as a bracket rather than a filled block so it can't be mistaken
+   for one of the parts underneath it. */
+.mini-brace{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-width:0;
+  font-family:var(--mono);
+  font-size:12px;
+  font-weight:800;
+  color:var(--ink);
+  border:1.5px solid var(--ink);
+  border-bottom:none;
+  border-radius:5px 5px 0 0;
+  margin-right:3px;
+}
+.mini-brace:last-child{ margin-right:0; }
+.mini-seg{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-width:0;
+  font-family:var(--mono);
+  font-size:11.5px;
+  font-weight:700;
+  color:#fff;
+  background:var(--teal);
+  white-space:nowrap;
+  overflow:hidden;
+  border-right:1.5px solid rgba(255,255,255,0.35);
+  font-variant-numeric:tabular-nums;
+}
+.mini-seg:nth-child(2){ background:var(--mustard); color:#241a08; }
+.mini-seg:last-child{ border-right:none; }
+/* The one-segment "m holds an expression" distractor: it carries a whole
+   equation rather than a single number, so it needs the room a part label
+   doesn't. */
+.mini-seg.mini-wide{ font-size:11px; letter-spacing:0.2px; }
+
+@media (max-width:600px){
+  .eq-opt{ font-size:12.5px; white-space:normal; }
+  .mini-seg{ font-size:10px; }
+  .mini-seg.mini-wide{ font-size:9.5px; }
+  .num-entry{ font-size:18px; }
+}

@@ -1,13 +1,17 @@
 /*
-  Word-problem question styles — the Missing Evidence Files only.
+  Word-problem question styles, shared by the two math word-problem pages:
+  the Missing Evidence Files and the Ledger Files.
 
-  Every case here uses the engine's built-in mcq-simple type (no custom
-  registerType, unlike numeration-types.js): the equation and strip diagram
-  are just HTML embedded in the question's own `prompt` string, the same way
-  numeration-questions.js embeds a <span class="hl"> place name. This file
+  The prompt lead, the context table and the equation line are the parts both
+  use; the strip (bar model) rules below belong to the Missing Evidence Files
+  alone. Nothing here is a question type -- the equation and the diagram are
+  just HTML embedded in the question's own `prompt` string, the same way
+  numeration-questions.js embeds a <span class="hl"> place name, so this file
   only has to style what that HTML produces.
 
-  Load AFTER game.css, alongside assets/js/word-problems-questions.js.
+  Load AFTER game.css, alongside a page's own question module. The Ledger
+  Files loads ledger.css after this for its typed answers, chip groups and
+  miniature diagrams.
 */
 
 /* The lead paragraph of every prompt. Without a rule here it inherited the

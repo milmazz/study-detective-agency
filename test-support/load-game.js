@@ -25,6 +25,7 @@ const GAMES = {
   math: { page: 'games/math/numeration-detective-agency.html' },
   ela: { page: 'games/ela/words-division.html' },
   wordproblems: { page: 'games/math/missing-evidence-files.html' },
+  ledger: { page: 'games/math/ledger-files.html' },
 };
 
 const SCRIPT_SRC = /<script src="([^"]+)"><\/script>/g;

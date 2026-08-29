@@ -8,8 +8,10 @@ practice — no build step, no backend, no accounts, just HTML/CSS/JS.
 
 Live divisions:
 - **Numbers Division** (math) — place value, expanded form, comparing,
-  ordering, rounding, and multi-step addition/subtraction word problems
-  solved with an equation and a strip (bar model) diagram.
+  ordering, rounding, multi-step addition/subtraction word problems solved
+  with an equation and a strip (bar model) diagram, and a test-prep set on
+  adding and subtracting: typed answers, choosing the equation that models
+  a story, matching a strip diagram to it, and estimating by rounding.
 - **Words Division** (ELA) — author's purpose, central message, figurative
   language, text formatting clues.
 - **History Division** (social studies) — coming soon.
@@ -131,8 +133,13 @@ assets/
     numeration.css               Math-only question styles (digit boxes,
                                   Number A/B cards, order tiles, </>/=)
     ela.css                      ELA-only question styles (reading passages)
-    word-problems.css            Word-problem question styles (equation line,
-                                  strip/bar-model diagrams)
+    word-problems.css            Word-problem styles shared by both word-
+                                  problem pages (prompt lead, context table,
+                                  equation line) plus the strip/bar-model
+                                  diagrams the Missing Evidence Files draws
+    ledger.css                   Ledger Files question styles (typed answer,
+                                  chip groups, and the miniature strip
+                                  diagrams that sit inside option buttons)
   fonts/                         Self-hosted woff2 + their licenses; see
                                   fonts/LICENSE.md
   js/
@@ -146,12 +153,17 @@ assets/
     word-problems-questions.js    Missing Evidence Files: multi-step word
                                   problems on the engine's built-in
                                   mcq-simple type, so no matching *-types.js
+    ledger-types.js               The Ledger Files' two question types: an
+                                  answer the kid types, and a statement
+                                  completed from two groups of chips
+    ledger-questions.js           Ledger Files: generators + MODES
     words-questions.js            Words Division: passages, pools, generators
-                                  + MODES. All three export the config
+                                  + MODES. All four export the config
                                   start() takes; the page calls start()
 games/
   math/numeration-detective-agency.html
   math/missing-evidence-files.html
+  math/ledger-files.html
   ela/words-division.html
 ```
 
@@ -163,8 +175,9 @@ games/
    and set `data-theme="math" | "ela" | "social-studies"` on the `<html>`
    tag to pick up that subject's accent color. If your subject has its own
    stylesheet — ELA has `ela.css` for reading passages, math has
-   `numeration.css` for its place-value widgets and `word-problems.css`
-   for strip diagrams — link that too,
+   `numeration.css` for its place-value widgets, `word-problems.css` for
+   word-problem furniture and strip diagrams, and `ledger.css` for typed
+   answers and chip groups — link those too,
    after `game.css`. Copy the `?v=N` on those
    URLs from an existing page — assets are served `immutable`, so that
    token is the only thing that busts a returning visitor's cache (see
@@ -211,6 +224,8 @@ games/
    — before `start()` runs. `assets/js/numeration-types.js` is the worked
    example: it registers the four place-value widgets the math game uses, so
    an ELA or history game never loads renderers built for numbers.
+   `assets/js/ledger-types.js` is the smaller one: the typed answer and the
+   chip groups the Ledger Files needs, and nothing else loads them.
 
    If your cases draw from fixed item pools rather than generating fresh
    content each time, use `onCaseStart` to reshuffle them and keep
