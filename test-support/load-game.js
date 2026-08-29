@@ -25,6 +25,7 @@ const GAMES = {
   math: { page: 'games/math/numeration-detective-agency.html' },
   ela: { page: 'games/ela/words-division.html' },
   wordproblems: { page: 'games/math/missing-evidence-files.html' },
+  ledger: { page: 'games/math/ledger-files.html' },
   kitoto: { page: 'games/ela/kitoto-files.html' },
   texas: { page: 'games/social-studies/lone-star-files.html' },
 };

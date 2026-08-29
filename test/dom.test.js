@@ -54,6 +54,53 @@ function firstControl(doc) {
   return null;
 }
 
+/*
+  Answer whatever question is on screen, however that question takes input.
+  Returns false when nothing on the screen can be answered.
+
+  The Ledger Files answers two of its cases through controls no other game has
+  -- a number the kid types, and one chip picked per group -- and both submit
+  through a Check button rather than by clicking an option. Everything that
+  drives a playthrough goes through here, so a new input shape has to be taught
+  to the suite once rather than to each test that plays a game.
+*/
+function answerCurrent(win, doc) {
+  assertPlayable(doc);
+
+  // A typed answer. Deliberately not the correct value: a wrong answer still
+  // has to lead somewhere, and that is the path worth exercising.
+  const entry = doc.querySelector('#numEntry');
+  if (entry && !entry.readOnly) {
+    entry.value = '7';
+    entry.dispatchEvent(new win.Event('input', { bubbles: true }));
+    click(win, doc.querySelector('#checkBtn'));
+    return true;
+  }
+
+  // One pick per group, then submit -- Check stays disabled until every group
+  // has one, so a partial answer would stall here rather than grade.
+  const groups = [...doc.querySelectorAll('.chip-group')];
+  if (groups.length) {
+    for (const group of groups) click(win, group.querySelector('.chip'));
+    click(win, doc.querySelector('#checkBtn'));
+    return true;
+  }
+
+  // multiselect grades on its own button, so pick something then submit
+  const check = doc.querySelector('#checkBtn');
+  if (check) {
+    const opt = doc.querySelector('#optGrid .opt-btn:not([disabled])');
+    if (opt) click(win, opt);
+    click(win, check);
+    return true;
+  }
+
+  const control = firstControl(doc);
+  if (!control) return false;
+  click(win, control);
+  return true;
+}
+
 // Open a case and keep going until a question of the wanted shape turns up.
 // Question types are drawn at random, so a fixed number of attempts is the only
 // way to reach the rarer ones.
@@ -78,17 +125,7 @@ function playToSummary(win, doc, limit = 200) {
     assertPlayable(doc);
     const next = doc.querySelector('.next-btn');
     if (next) { click(win, next); continue; }
-    // multiselect grades on its own button, so pick something then submit
-    const check = doc.querySelector('#checkBtn');
-    if (check) {
-      const opt = doc.querySelector('#optGrid .opt-btn:not([disabled])');
-      if (opt) click(win, opt);
-      click(win, check);
-      continue;
-    }
-    const control = firstControl(doc);
-    if (!control) return false;
-    click(win, control);
+    if (!answerCurrent(win, doc)) return false;
   }
   return false;
 }
@@ -128,7 +165,7 @@ for (const game of Object.keys(GAMES)) {
     assert.equal(doc.activeElement, doc.querySelector('.q-mode-label'),
       'focus should land on the case heading');
 
-    click(win, firstControl(doc));
+    assert.ok(answerCurrent(win, doc), 'the question should be answerable');
     assert.equal(doc.activeElement, doc.querySelector('.next-btn'),
       'focus should move to the way forward once an answer lands');
   });
@@ -137,7 +174,7 @@ for (const game of Object.keys(GAMES)) {
     const win = openPage(game);
     const doc = win.document;
     click(win, doc.querySelector('.case-card:not(.trail-card)'));
-    click(win, firstControl(doc));
+    assert.ok(answerCurrent(win, doc), 'the question should be answerable');
     const explain = doc.querySelector('.explain-box');
     assert.ok(explain, 'an explanation should appear');
     assert.equal(explain.getAttribute('role'), 'status',
@@ -372,8 +409,168 @@ test('start() refuses a config it cannot render', { skip }, () => {
     'a mode without gen() should say so');
 });
 
+/* ================= the Ledger Files' own two question types ================= */
+
+// The engine has no idea a question can be typed into, so `input` events have
+// to be raised the way a keystroke would.
+function type(win, input, text) {
+  input.value = text;
+  input.dispatchEvent(new win.Event('input', { bubbles: true }));
+}
+
+test('a typed answer will not submit until there is a number in the box', { skip }, () => {
+  // The alternative is grading an empty box as a wrong answer, which turns
+  // "press the only button on screen" into the fastest way through a case that
+  // exists precisely because there is nothing to guess between.
+  const found = reachQuestion('ledger', '#numEntry');
+  assert.ok(found, 'expected to reach a typed-answer question');
+  const { win, doc } = found;
+
+  const input = doc.querySelector('#numEntry');
+  const check = doc.querySelector('#checkBtn');
+  assert.ok(check.disabled, 'Check should start disabled with an empty box');
+
+  type(win, input, 'abc');
+  assert.ok(check.disabled, 'letters are not an answer');
+
+  type(win, input, '1,250');
+  assert.ok(!check.disabled, 'a number typed with a comma is still a number');
+});
+
+test('Enter submits a typed answer', { skip }, () => {
+  // There is no <form> here, so nothing submits on Enter by itself — and Enter
+  // is exactly what a kid presses after typing a number.
+  const found = reachQuestion('ledger', '#numEntry');
+  assert.ok(found, 'expected to reach a typed-answer question');
+  const { win, doc } = found;
+
+  const input = doc.querySelector('#numEntry');
+  type(win, input, '425');
+  press(win, input, 'Enter');
+  assert.ok(doc.querySelector('.stamp'), 'Enter should grade the answer');
+});
+
+test('a graded typed answer stays readable and cannot be sent twice', { skip }, () => {
+  // readOnly rather than disabled: the explanation underneath is about the
+  // number in that box, and a disabled input drops out of the accessibility
+  // tree — a screen reader would hear the verdict on an answer it can no
+  // longer read back.
+  const found = reachQuestion('ledger', '#numEntry');
+  assert.ok(found, 'expected to reach a typed-answer question');
+  const { win, doc } = found;
+
+  const input = doc.querySelector('#numEntry');
+  type(win, input, '425');
+  click(win, doc.querySelector('#checkBtn'));
+
+  assert.ok(doc.querySelector('.stamp'), 'the question should be graded');
+  assert.equal(input.value, '425', 'the answer should still be on screen');
+  assert.ok(input.readOnly, 'a graded box should not take another answer');
+  assert.ok(!input.disabled, 'but it should stay in the accessibility tree');
+  assert.ok(doc.querySelector('#checkBtn').disabled,
+    'Check should be disabled once the answer is in');
+  assert.equal(doc.querySelectorAll('.stamp').length, 1,
+    'the verdict should be stamped once');
+});
+
+test('Enter on a graded typed answer does not wake the Check button', { skip }, () => {
+  // The keydown handler re-read the box on every Enter, so a second press
+  // after grading set check.disabled back to false — leaving an enabled button
+  // that does nothing sitting beside "Next Clue →".
+  const found = reachQuestion('ledger', '#numEntry');
+  assert.ok(found, 'expected to reach a typed-answer question');
+  const { win, doc } = found;
+
+  const input = doc.querySelector('#numEntry');
+  type(win, input, '425');
+  press(win, input, 'Enter');
+  assert.ok(doc.querySelector('.stamp'), 'the first Enter should grade the answer');
+
+  press(win, input, 'Enter');
+  assert.ok(doc.querySelector('#checkBtn').disabled,
+    'Check should stay disabled once the answer is in');
+  assert.equal(doc.querySelectorAll('.stamp').length, 1,
+    'the verdict should be stamped once');
+});
+
+test('a rule-out toggle reads the option, not the drawing it hides', { skip }, () => {
+  // The strip-diagram options hide their bar model from screen readers and
+  // name themselves with an .sr-only sentence instead. textOf() stripped tags
+  // without honouring aria-hidden, so the toggle's label read the sentence and
+  // then the bag of numbers underneath it — the exact soup the sentence
+  // replaces.
+  const found = reachQuestion('ledger', '.mini-model');
+  assert.ok(found, 'expected to reach a strip-diagram question');
+  const { doc } = found;
+
+  const wrap = doc.querySelector('.mini-model').closest('.opt-wrap');
+  const label = wrap.querySelector('.opt-strike').getAttribute('aria-label');
+  const spoken = wrap.querySelector('.sr-only').textContent;
+
+  assert.equal(label, 'Rule out: ' + spoken,
+    'the toggle should name the option the way a screen reader hears it');
+  assert.ok(!/aria-hidden/.test(label), 'no markup should leak into the label');
+});
+
+test('a chip group holds one pick at a time', { skip }, () => {
+  const found = reachQuestion('ledger', '.chip-group');
+  assert.ok(found, 'expected to reach a choose-from-each-group question');
+  const { win, doc } = found;
+
+  const chips = [...doc.querySelectorAll('.chip-group')[0].querySelectorAll('.chip')];
+  click(win, chips[0]);
+  click(win, chips[1]);
+  assert.ok(!chips[0].classList.contains('chosen'), 'the first pick should be replaced');
+  assert.ok(chips[1].classList.contains('chosen'), 'the second pick should be held');
+  // aria-pressed is how the state reaches a screen reader; the class only
+  // reaches the eye.
+  assert.equal(chips[0].getAttribute('aria-pressed'), 'false');
+  assert.equal(chips[1].getAttribute('aria-pressed'), 'true');
+});
+
+test('a half-finished statement cannot be submitted', { skip }, () => {
+  // The two halves are scored as one answer, so submitting one of them is not
+  // a partial answer — it is a free way past the half that was left blank.
+  const found = reachQuestion('ledger', '.chip-group');
+  assert.ok(found, 'expected to reach a choose-from-each-group question');
+  const { win, doc } = found;
+
+  const groups = [...doc.querySelectorAll('.chip-group')];
+  assert.ok(groups.length >= 2, 'the statement should have at least two groups');
+  const check = doc.querySelector('#checkBtn');
+  assert.ok(check.disabled, 'Check should start disabled');
+
+  click(win, groups[0].querySelector('.chip'));
+  assert.ok(check.disabled, 'one group answered is not the whole statement');
+
+  for (const group of groups.slice(1)) click(win, group.querySelector('.chip'));
+  assert.ok(!check.disabled, 'every group answered should unlock Check');
+});
+
+test('grading a statement shows the answer in every group', { skip }, () => {
+  // Scored all-or-nothing, revealed group by group: a kid who got the number
+  // right and the reason wrong has to be able to see which half they lost.
+  const found = reachQuestion('ledger', '.chip-group');
+  assert.ok(found, 'expected to reach a choose-from-each-group question');
+  const { win, doc } = found;
+
+  const groups = [...doc.querySelectorAll('.chip-group')];
+  for (const group of groups) click(win, group.querySelector('.chip'));
+  click(win, doc.querySelector('#checkBtn'));
+
+  assert.ok(doc.querySelector('.stamp'), 'the statement should be graded');
+  for (const group of groups) {
+    const chips = [...group.querySelectorAll('.chip')];
+    assert.equal(chips.filter((c) => c.classList.contains('is-correct')).length, 1,
+      'each group should show exactly one right answer, whatever was picked');
+    assert.ok(chips.every((c) => c.disabled), 'a graded group should stop taking picks');
+  }
+  assert.ok(doc.querySelector('#checkBtn').disabled,
+    'Check should be disabled once the statement is graded');
+});
+
 test('the trail card is named by the game, not by the engine', { skip }, () => {
-  // The default name talks about numbers, which is wrong on three of the five
+  // The default name talks about numbers, which is wrong on three of the six
   // games here. It stays the default so the math pages are untouched, and a
   // game that says otherwise has to actually get its own name onto the card.
   const MODE = `[{ id:'x', caseNo:'01', title:'T', icon:'i', blurb:'b', gen:function(){

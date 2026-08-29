@@ -198,8 +198,24 @@ var DetectiveGame = (function(){
   function hasType(name){ return Object.prototype.hasOwnProperty.call(TYPES, name); }
 
   // Strip tags and quotes so option text is safe to put in an aria-label.
+  //
+  // aria-hidden subtrees come out first. An option whose label carries a
+  // decorative drawing hides that drawing and names itself with an .sr-only
+  // sentence instead -- and stripping tags alone put BOTH into the toggle's
+  // label, so it read the sentence and then the bag of numbers underneath it
+  // ("...holding $195 + $210 - $110.m$195 + $210 - $110"), which is the exact
+  // thing the sentence was written to replace.
   function textOf(html){
-    return String(html).replace(/<[^>]*>/g,'').replace(/"/g,'&quot;').trim();
+    var src = String(html);
+    if (typeof document !== 'undefined') {
+      var holder = document.createElement('div');
+      holder.innerHTML = src;
+      holder.querySelectorAll('[aria-hidden="true"]').forEach(function(n){
+        n.parentNode.removeChild(n);
+      });
+      src = holder.textContent;
+    }
+    return src.replace(/<[^>]*>/g,'').replace(/"/g,'&quot;').trim();
   }
 
   // The options grid. The strike toggle is a SIBLING of the option button, never

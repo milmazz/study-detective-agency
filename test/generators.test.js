@@ -615,6 +615,377 @@ test('wordproblems: every option names which team each number belongs to', () =>
   assert.ok(checked > 100, `expected plenty of goal questions, saw ${checked}`);
 });
 
+/* ================= ledger: the arithmetic behind each case ================= */
+
+// The numbers a prompt puts in its context table, as row label -> raw cell text.
+function tableRows(prompt) {
+  return [...prompt.matchAll(/<th scope="row">([^<]*)<\/th><td class="v">([^<]*)<\/td>/g)]
+    .map((m) => [m[1], m[2]]);
+}
+// Every number the prompt puts in bold, in order. That is where the cases
+// without a table state their figures.
+function boldNumbers(prompt) {
+  return [...prompt.matchAll(/<b>([^<]*)<\/b>/g)]
+    .map((m) => unformat(m[1].replace(/[$,]/g, '')))
+    .filter((n) => Number.isFinite(n));
+}
+function evalExpr(text, mode, what) {
+  const cleaned = String(text).replace(/[−–]/g, '-').replace(/[$,]/g, '').trim();
+  assert.match(cleaned, /^[\d\s()+*/-]+$/, `${mode.id}: unparseable ${what} "${text}"`);
+  return Function(`"use strict";return (${cleaned})`)();
+}
+// "x = 143 − 96" and "72 + 72 − 55 = p" are the same shape with the unknown on
+// opposite sides. Returns the value the arithmetic side comes to.
+function equationValue(text, mode) {
+  const sides = stripTags(text).split('=').map((s) => s.trim());
+  assert.equal(sides.length, 2, `${mode.id}: "${text}" is not a single equation`);
+  const arithmetic = sides.filter((s) => !/^[a-z]$/i.test(s));
+  assert.equal(arithmetic.length, 1,
+    `${mode.id}: "${text}" should have the unknown alone on one side`);
+  return evalExpr(arithmetic[0], mode, 'equation');
+}
+const groupLead = (q, needle) =>
+  (q.groups || []).find((g) => stripTags(g.lead).includes(needle));
+const scored = (group) => group.options.find((o) => o.key === group.correctKey);
+const roundHundred = (n) => Math.round(n / 100) * 100;
+const enUS = (n) => Number(n).toLocaleString('en-US');
+
+test('ledger: a typed answer is a whole number the prompt actually leads to', () => {
+  // The typed cases are the ones with nothing to eliminate down to, so the
+  // scored value is the entire question. Every one of them subtracts the rest
+  // of its table from the first row -- a total, then what left it -- which is
+  // an invariant the generator can be checked against without the test knowing
+  // which of the two stories it drew.
+  let checked = 0;
+  eachQuestion('ledger', (q, mode) => {
+    if (q.type !== 'numeric-entry') return;
+    assert.ok(Number.isInteger(q.correctValue) && q.correctValue > 0,
+      `${mode.id}: a typed answer must be a positive whole number, got ${q.correctValue}`);
+    assert.ok(stripTags(q.entryLabel).trim().endsWith('?'),
+      `${mode.id}: the label above the box should ask for something — "${q.entryLabel}"`);
+
+    const values = tableRows(q.prompt).map(([, v]) => unformat(v));
+    assert.ok(values.length >= 2, `${mode.id}: a typed case should show its figures`);
+    const left = values.slice(1).reduce((total, v) => total - v, values[0]);
+    assert.equal(left, q.correctValue,
+      `${mode.id}: the table reads ${values.join(' − ')} = ${left}, ` +
+      `but the answer is scored as ${q.correctValue}`);
+
+    assert.ok(stripTags(q.explain()).includes(enUS(q.correctValue)),
+      `${mode.id}: the explanation never reaches ${enUS(q.correctValue)}`);
+    checked++;
+  });
+  assert.ok(checked > 1000, `expected plenty of typed answers to check, saw ${checked}`);
+});
+
+test('ledger: "N more than" is scored as the addition the story describes', () => {
+  // The mistake this case exists to catch is reading "more than" as a
+  // subtraction, so the one thing that must never slip is the scoring doing it
+  // too. The table states the second day as "first + more", which is enough to
+  // recompute both the one-day and the two-day answer from the prompt alone.
+  let checked = 0;
+  eachQuestion('ledger', (q, mode) => {
+    if (mode.id !== 'morethan') return;
+    const rows = tableRows(q.prompt);
+    assert.equal(rows.length, 2, `${mode.id}: expected two days in the table`);
+    const first = unformat(rows[0][1]);
+    const parts = rows[1][1].split('+').map((s) => unformat(s));
+    assert.equal(parts.length, 2, `${mode.id}: the second day should read "first + more"`);
+    assert.equal(parts[0], first, `${mode.id}: the second day is built from the first`);
+    const second = parts[0] + parts[1];
+
+    const wantsBoth = stripTags(q.prompt).includes('two days altogether');
+    const expected = wantsBoth ? first + second : second;
+    assert.equal(Number(q.correctKey), expected,
+      `${mode.id}: the story gives ${expected} but the answer is scored as ${q.correctKey}`);
+    checked++;
+  });
+  assert.ok(checked > 1000, `expected plenty of "more than" questions, saw ${checked}`);
+});
+
+test('ledger: every chip group is a real choice with exactly one answer', () => {
+  // The chip groups are scored together and all-or-nothing, which is precisely
+  // the shape that hides a group with two chips reading the same thing: the
+  // question still renders, still grades, and is simply unanswerable.
+  let checked = 0;
+  eachQuestion('ledger', (q, mode) => {
+    if (q.type !== 'choose-each') return;
+    assert.ok(Array.isArray(q.groups) && q.groups.length >= 2,
+      `${mode.id}: a completed statement needs at least two groups`);
+    const ids = q.groups.map((g) => g.id);
+    assert.equal(new Set(ids).size, ids.length, `${mode.id}: duplicate group ids`);
+
+    for (const group of q.groups) {
+      assert.ok(stripTags(group.lead).trim().length > 0,
+        `${mode.id}: a group with no lead leaves its chips unlabelled`);
+      assert.ok(group.options.length >= 3, `${mode.id}: ${group.id} offers too little to choose from`);
+      const keys = group.options.map((o) => o.key);
+      const labels = group.options.map((o) => stripTags(o.label).trim());
+      assert.equal(new Set(keys).size, keys.length, `${mode.id}: ${group.id} repeats a key`);
+      assert.equal(new Set(labels).size, labels.length,
+        `${mode.id}: ${group.id} shows the same chip twice — ${labels.join(' | ')}`);
+      for (const label of labels) assert.ok(label.length > 0, `${mode.id}: an empty chip`);
+      assert.ok(keys.includes(group.correctKey),
+        `${mode.id}: ${group.id} scores "${group.correctKey}", which it never offers`);
+    }
+    checked++;
+  });
+  assert.ok(checked > 1000, `expected plenty of chip-group questions, saw ${checked}`);
+});
+
+test('ledger: the smudged line scores the equation that answers the question', () => {
+  // Every way of working the column offered here is one the table really
+  // supports -- that is what makes the item worth asking, and what makes it
+  // dangerous. The reason chip has to be the one that lands on the value chip,
+  // and no other may land there too, or the question has two defensible
+  // answers.
+  //
+  // None of them may print what it comes to, either. While the scored reason
+  // ended in "= <the missing line>", the two groups could be read off each
+  // other, and an item built to score the number AND the reasoning together
+  // was answerable from whichever half a kid got first. A bare expression is
+  // also what evalExpr will accept -- an "=" makes it unparseable.
+  let checked = 0;
+  eachQuestion('ledger', (q, mode) => {
+    if (mode.id !== 'missingline') return;
+    const why = groupLead(q, 'because');
+    const value = groupLead(q, 'The missing count');
+    assert.ok(why && value, `${mode.id}: expected a value group and a reason group`);
+
+    const answer = Number(value.correctKey);
+    const landings = why.options.map((o) => {
+      const text = stripTags(o.label);
+      assert.ok(!text.includes('='),
+        `${mode.id}: "${text}" states its own result, which is the value group's answer`);
+      return { key: o.key, value: evalExpr(text, mode, 'reason') };
+    });
+
+    const hit = landings.filter((l) => l.value === answer);
+    assert.equal(hit.length, 1,
+      `${mode.id}: ${hit.length} of the offered equations land on ${answer}`);
+    assert.equal(hit[0].key, why.correctKey,
+      `${mode.id}: the equation reaching the scored value is not the one scored`);
+
+    // And the answer really is the missing line: the four rows must total what
+    // the prompt says they total.
+    const rows = tableRows(q.prompt).map(([, v]) => (v === '?' ? answer : unformat(v)));
+    const total = unformat(/total in [^<]*is <b>([\d,]+)<\/b>/.exec(q.prompt)[1]);
+    assert.equal(rows.reduce((a, b) => a + b, 0), total,
+      `${mode.id}: the four lines do not add up to ${total}`);
+    checked++;
+  });
+  assert.ok(checked > 1000, `expected plenty of smudged-line questions, saw ${checked}`);
+});
+
+test('ledger: only one of the four equations offered can be the right one', () => {
+  // This case asks which equation MODELS the story rather than what the answer
+  // is, so two options coming to the same value is the failure mode: both are
+  // then defensible and only one is scored. Tying the scored equation to the
+  // value its own explanation works out to is what stops the pair drifting.
+  let checked = 0;
+  eachQuestion('ledger', (q, mode) => {
+    if (mode.id !== 'equation') return;
+    const values = q.options.map((o) => equationValue(o.label, mode));
+    assert.equal(new Set(values).size, values.length,
+      `${mode.id}: two equations come to the same number — ${values.join(', ')}`);
+
+    const answer = values[q.options.findIndex((o) => o.key === q.correctKey)];
+    assert.ok(Number.isInteger(answer) && answer > 0,
+      `${mode.id}: the scored equation comes to ${answer}`);
+    assert.ok(stripTags(q.explain()).includes('= ' + enUS(answer)),
+      `${mode.id}: the explanation never works out to ${enUS(answer)}`);
+    checked++;
+  });
+  assert.ok(checked > 1000, `expected plenty of equation questions, saw ${checked}`);
+});
+
+test('ledger: exactly one strip diagram is a bar model of the story', () => {
+  // The four diagrams are told apart by their structure, and the accessible
+  // name is the only place that structure is stated -- the drawing itself is
+  // aria-hidden. So the description is the question for a screen-reader user,
+  // and "one bar labeled m across all three parts" has to describe exactly one
+  // option: the scored one.
+  let checked = 0;
+  eachQuestion('ledger', (q, mode) => {
+    if (mode.id !== 'strip') return;
+    // The description, not the whole label: the drawing underneath it repeats
+    // the same money amounts, and reading both would double every part.
+    const describe = (o) => /<span class="sr-only">([^<]*)<\/span>/.exec(o.label)[1];
+    const whole = q.options.filter((o) =>
+      /^One bar labeled m, split into three parts/.test(describe(o)));
+    assert.equal(whole.length, 1,
+      `${mode.id}: ${whole.length} options claim to be the whole split into three parts`);
+    assert.equal(whole[0].key, q.correctKey, `${mode.id}: the whole-bar model is not the one scored`);
+
+    // Its three parts are the three amounts the story gives, and they add up to
+    // the total the explanation names.
+    const story = boldNumbers(q.prompt);
+    const parts = [...describe(whole[0]).matchAll(/\$([\d,]+)/g)].map((m) => unformat(m[1]));
+    assert.deepEqual(parts, story, `${mode.id}: the diagram's parts are not the story's amounts`);
+    assert.ok(stripTags(q.explain()).includes(enUS(parts.reduce((a, b) => a + b, 0))),
+      `${mode.id}: the explanation never adds the parts up`);
+    checked++;
+  });
+  assert.ok(checked > 1000, `expected plenty of strip-diagram questions, saw ${checked}`);
+});
+
+test('ledger: an estimate is the rounding it says it is', () => {
+  // Two ways to get this wrong and still render perfectly: score a number that
+  // is not what the figure rounds to, or score a total that is not the two
+  // rounded numbers combined. Both are recomputed here from the equation the
+  // prompt prints and the figures it shows.
+  let checked = 0;
+  eachQuestion('ledger', (q, mode) => {
+    if (mode.id !== 'estimate' || q.type !== 'choose-each') return;
+    const line = stripTags(/<div class="equation-line">([\s\S]*?)<\/div>/.exec(q.prompt)[1]);
+    const shape = /^([\d,]+)\s*([+−])\s*A\s*=\s*B$/.exec(line.trim());
+    assert.ok(shape, `${mode.id}: unexpected equation line "${line}"`);
+
+    const printed = unformat(shape[1]);
+    const blankA = Number(groupLead(q, 'Blank A').correctKey);
+    const blankB = Number(groupLead(q, 'Blank B').correctKey);
+    assert.equal(blankA % 100, 0, `${mode.id}: ${blankA} is not rounded to a hundred`);
+    assert.equal(blankB, shape[2] === '+' ? printed + blankA : printed - blankA,
+      `${mode.id}: ${line} does not come to the ${blankB} it scores`);
+
+    // What A rounds FROM: the named day's row for the addition, the number the
+    // story says left early for the subtraction.
+    const day = /Blank A — ([^’]+)’s steps/.exec(stripTags(groupLead(q, 'Blank A').lead));
+    if (day) {
+      const row = tableRows(q.prompt).find(([label]) => label === day[1]);
+      assert.ok(row, `${mode.id}: Blank A names ${day[1]}, which is not in the table`);
+      assert.equal(blankA, roundHundred(unformat(row[1])),
+        `${mode.id}: ${row[1]} does not round to ${blankA}`);
+      // The number already printed on the line is the other day, rounded.
+      const rounded = tableRows(q.prompt).map(([, v]) => roundHundred(unformat(v)));
+      assert.ok(rounded.includes(printed), `${mode.id}: ${printed} is no day rounded off`);
+    } else {
+      const [total, leaving] = boldNumbers(q.prompt);
+      assert.equal(printed, total, `${mode.id}: the line starts from ${printed}, not ${total}`);
+      assert.equal(blankA, roundHundred(leaving),
+        `${mode.id}: ${leaving} does not round to ${blankA}`);
+    }
+    checked++;
+  });
+  assert.ok(checked > 1000, `expected plenty of estimate questions, saw ${checked}`);
+});
+
+test('ledger: an estimate never offers a ragged number among round ones', () => {
+  // Every figure in an estimating question is a round hundred, so a distractor
+  // of 1,043 among 900/1,000/1,100 is eliminable without estimating anything --
+  // it is an answer key. numericOptions() takes a `step` for exactly this, and
+  // nothing else would notice if a call lost it.
+  let checked = 0;
+  eachQuestion('ledger', (q, mode) => {
+    if (mode.id !== 'estimate') return;
+    const values = q.type === 'choose-each'
+      ? q.groups.flatMap((g) => g.options.map((o) => Number(o.key)))
+      : q.options.map((o) => Number(o.key));
+    for (const v of values) {
+      assert.equal(v % 100, 0, `${mode.id}: ${v} is offered among rounded hundreds`);
+      assert.ok(v > 0, `${mode.id}: ${v} is not a count of anything`);
+    }
+    checked++;
+  });
+  assert.ok(checked > 1000, `expected plenty of estimate questions, saw ${checked}`);
+});
+
+test('ledger: the payout case\'s two statements agree with each other', () => {
+  // Spent and profit are scored as one answer, so they have to be one answer:
+  // the profit must be the sales minus the very total the other group scores,
+  // not minus some other reading of the same table.
+  let checked = 0;
+  eachQuestion('ledger', (q, mode) => {
+    if (mode.id !== 'profit' || q.type !== 'choose-each') return;
+    const rows = tableRows(q.prompt);
+    const earned = unformat(rows[rows.length - 1][1].replace('$', ''));
+    const supplies = rows.slice(0, -1).map(([, v]) => unformat(v.replace('$', '')));
+
+    const spent = Number(groupLead(q, 'spent this much').correctKey);
+    const profit = Number(groupLead(q, 'profit').correctKey);
+    assert.equal(spent, supplies.reduce((a, b) => a + b, 0),
+      `${mode.id}: the scored total is not every supply line added up`);
+    assert.equal(profit, earned - spent,
+      `${mode.id}: ${earned} − ${spent} is not the ${profit} it scores`);
+    assert.ok(profit > 0, `${mode.id}: a profit of ${profit} is not a profit`);
+    checked++;
+  });
+  assert.ok(checked > 1000, `expected plenty of payout questions, saw ${checked}`);
+});
+
+test('ledger: a chip group does not give its answer away by size either', () => {
+  // The rank histogram below, applied to the groups rather than to the options
+  // -- and it is where the giveaways actually were. Every wrong supply total
+  // was a line left OUT of the column, so the right one was the largest chip
+  // every time; every wrong value on the smudged line was larger than the
+  // missing one, so the answer was the smallest chip every time. Both groups
+  // scored full marks without reading the question.
+  const cfg = loadModes('ledger');
+  const DRAWS_PER_MODE = 12000;
+  const seen = new Map();
+  for (const mode of cfg.modes) {
+    for (let i = 0; i < DRAWS_PER_MODE; i++) {
+      const q = mode.gen();
+      for (const group of q.groups || []) {
+        const values = group.options.map((o) => Number(o.key));
+        if (values.some(Number.isNaN)) continue;   // the reason group is prose
+        const id = `${mode.id}/${group.id}`;
+        if (!seen.has(id)) seen.set(id, { ranks: new Array(values.length).fill(0), n: 0 });
+        const tally = seen.get(id);
+        assert.equal(values.length, tally.ranks.length, `${id}: chip count varies between draws`);
+        tally.ranks[[...values].sort((a, b) => a - b).indexOf(Number(group.correctKey))]++;
+        tally.n++;
+      }
+    }
+  }
+  assert.ok(seen.size >= 5, `expected several numeric chip groups, measured ${seen.size}`);
+  for (const [id, { ranks, n }] of seen) {
+    if (n < 2000) continue;
+    const even = 1 / ranks.length;
+    ranks.forEach((count, i) => {
+      const share = count / n;
+      assert.ok(share > even * 0.6 && share < even * 1.45,
+        `${id}: the answer is chip ${i + 1} of ${ranks.length} by size in ` +
+        `${(share * 100).toFixed(1)}% of draws (want about ${(even * 100).toFixed(0)}%)`);
+    });
+  }
+});
+
+test('ledger: the answer cannot be picked out by its size', () => {
+  // The same rank histogram the Missing Evidence Files is held to, and for the
+  // same reason: this game's pools are mistakes too, and mistakes cluster on
+  // one side of the answer unless the split is drawn deliberately. Only the
+  // cases scored by a number can be measured -- the equation and diagram cases
+  // score a shape, not a size.
+  const cfg = loadModes('ledger');
+  const DRAWS_PER_MODE = 12000;
+  let measured = 0;
+  for (const mode of cfg.modes) {
+    const ranks = [0, 0, 0, 0];
+    let numeric = 0;
+    for (let i = 0; i < DRAWS_PER_MODE; i++) {
+      const q = mode.gen();
+      if (!q.options) continue;
+      const values = q.options.map((o) => Number(o.key));
+      if (values.some(Number.isNaN)) continue;   // scored by shape, not by size
+      assert.equal(values.length, 4, `${mode.id}: expected four options`);
+      const sorted = [...values].sort((a, b) => a - b);
+      ranks[sorted.indexOf(Number(q.correctKey))]++;
+      numeric++;
+    }
+    if (numeric < 2000) continue;
+    measured++;
+    const names = ['smallest', 'second', 'third', 'largest'];
+    ranks.forEach((count, i) => {
+      const share = count / numeric;
+      assert.ok(share > 0.15 && share < 0.35,
+        `${mode.id}: the answer is the ${names[i]} option in ${(share * 100).toFixed(1)}% ` +
+        `of draws (want roughly 25%) — its size is a usable hint`);
+    });
+  }
+  assert.ok(measured >= 3, `expected at least three numerically scored cases, measured ${measured}`);
+});
+
 /* ================= kitoto: the ELA cases that can lie quietly ================= */
 
 test('kitoto: the four dialogue options differ only in punctuation', () => {
