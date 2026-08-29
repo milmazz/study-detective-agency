@@ -235,7 +235,7 @@ games/
    start the game from the global it exports:
 
    ```html
-   <script src="../../assets/js/game-engine.js?v=6"></script>
+   <script src="../../assets/js/game-engine.js?v=7"></script>
    <script src="../../assets/js/my-questions.js?v=1"></script>
    <script>DetectiveGame.start(MY_QUESTIONS);</script>
    ```
