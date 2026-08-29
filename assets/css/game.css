@@ -186,6 +186,11 @@ h1.title{
   background:rgba(178,58,72,0.10);
   padding:0 3px; border-radius:3px;
 }
+/* The actual question, when the prompt also carries something to read first --
+   a passage, a word, a field note. It lived in ela.css until a second subject
+   (the social studies game) started asking questions the same way; a rule two
+   subject sheets both need is a shared rule. */
+.q-line{ font-weight:700; }
 
 .options-grid{
   display:grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr));

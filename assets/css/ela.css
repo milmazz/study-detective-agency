@@ -16,4 +16,50 @@
 .fmt-bold{ font-weight:800; }
 .fmt-italic{ font-style:italic; }
 .fmt-caps{ text-transform:uppercase; letter-spacing:0.5px; }
-.q-line{ font-weight:700; }
+
+/* ---------- retelling: the numbered event list with one step lifted out ---------- */
+.retell-title{
+  font-family:'Special Elite', monospace;
+  font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:var(--red);
+  margin:0 0 10px;
+}
+.retell-list{
+  margin:0; padding-left:22px;
+  font-weight:400; font-size:15px; line-height:1.5;
+}
+.retell-list li{ margin-bottom:8px; }
+.retell-list li:last-child{ margin-bottom:0; }
+/* The gap the question is about. Sized and coloured so it reads as a hole in
+   the sequence rather than as another event. */
+.retell-blank{
+  background:rgba(217,164,65,0.22);
+  border:2px dashed var(--mustard-dark);
+  border-radius:6px;
+  padding:8px 10px;
+  font-family:'Special Elite', monospace;
+  font-size:18px; font-weight:700; color:var(--mustard-dark);
+}
+
+/* ---------- word study: one word, with its prefix or suffix picked out ---------- */
+.word-build{
+  font-family:'Special Elite', monospace;
+  font-size:clamp(22px,6vw,30px); text-align:center; letter-spacing:1px;
+  color:var(--charcoal); padding:6px 0;
+}
+.affix{
+  color:var(--red-dark);
+  background:rgba(178,58,72,0.12);
+  border-bottom:3px solid var(--red);
+  padding:0 4px; border-radius:3px;
+}
+
+/* ---------- quotations: what was said, before it is punctuated ---------- */
+.quote-brief{ margin:0; font-weight:400; }
+
+/* These games ask in sentences, not in numbers: an option is a whole statement
+   rather than "4,000" or "<". game.css sizes the shared options grid for the
+   math games, where minmax(150px,1fr) fits four short answers across a row --
+   the same grid turns a sentence into a narrow ribbon five words tall. Widen
+   the minimum column so a long option gets a readable line, and let auto-fit
+   fall back to one column on a phone. */
+.options-grid{ grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); }

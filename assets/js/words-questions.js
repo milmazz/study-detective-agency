@@ -14,7 +14,7 @@
   Exports the config object DetectiveGame.start() takes. The page calls start();
   this file deliberately does not, so requiring it has no side effects.
 
-  Load AFTER game-engine.js.
+  Load AFTER game-engine.js and question-kit.js.
 */
 var WORDS_QUESTIONS = (function(){
   "use strict";
@@ -26,22 +26,13 @@ var WORDS_QUESTIONS = (function(){
          : null;
   if (!DG) throw new Error('assets/js/words-questions.js: load game-engine.js first');
 
-  var choice = DG.choice, shuffle = DG.shuffle;
+  var KIT = (typeof QUESTION_KIT !== 'undefined') ? QUESTION_KIT
+          : (typeof require === 'function') ? require('./question-kit.js')
+          : null;
+  if (!KIT) throw new Error('assets/js/words-questions.js: load question-kit.js first');
 
-  // Build a 4-option MCQ from a fixed pool of {key,label}, guaranteeing the correct
-  // one is included and options aren't duplicated.
-  function buildOptionsFromPool(pool, correctKey, count){
-    count = count || 4;
-    var correct = pool.filter(function(o){ return o.key===correctKey; })[0];
-    // The likeliest typo when adding content. Without this the engine reads
-    // .key off undefined and the page dies with a stack trace that doesn't say
-    // which key is missing; the engine turns this into one skippable clue and
-    // names the culprit in the console.
-    if (!correct) throw new Error('buildOptionsFromPool: no option with key "' + correctKey + '" in the pool');
-    var rest = shuffle(pool.filter(function(o){ return o.key!==correctKey; }));
-    var picked = [correct].concat(rest.slice(0, Math.min(count-1, rest.length)));
-    return shuffle(picked);
-  }
+  var shuffle = DG.shuffle;
+  var buildOptionsFromPool = KIT.buildOptionsFromPool;
 
   /* ================= CONTENT: passages & craft-move data ================= */
 
@@ -160,55 +151,28 @@ var WORDS_QUESTIONS = (function(){
 
   /* ================= ITEM DRAWING ================= */
   /*
-    Draw without replacement. These generators used choice(), which samples WITH
-    replacement, from pools of 5-8 across 8 clues -- so every single generated
-    case repeated a passage and about three in four repeated one back-to-back.
-    A kid answering the same passage twice in a row answers the second one from
-    memory rather than by reading it.
+    Draw without replacement, and refill every bag when a case starts. These
+    generators used choice(), which samples WITH replacement, from pools of 5-8
+    across 8 clues -- so every single generated case repeated a passage and
+    about three in four repeated one back-to-back. A kid answering the same
+    passage twice in a row answers the second one from memory rather than by
+    reading it. The mechanics live in question-kit.js, which every pool-driven
+    game on the site shares.
 
-    Each mode keeps its own bag and reshuffles when it runs dry, so the bag also
-    carries across a replay and across trail stops.
+    The no-repeat guarantee is per CASE, not global: with a fresh bag and
+    questionsPerCase at or below the smallest pool, a case cannot repeat an item
+    at all. A trail is 10 stops shared out over 4 modes, so a mode can come up
+    more often than its pool has entries -- MESSAGE_ITEMS holds 5, and drawing
+    it 6 times has to reuse one. Measured at 0.49% of trails over 50,000;
+    back-to-back is ruled out inside the drawer. Closing it entirely would mean
+    either more passages or a shorter trail.
   */
-  function drawer(pool){
-    var bag = [];
-    var last = null;
-    function draw(){
-      if (!bag.length){
-        bag = shuffle(pool);
-        // A refill can deal the item just shown straight back off the top. In
-        // a case that never happens (the bag is reset and outlasts the case),
-        // but a trail draws 10 stops across 4 modes, so one mode can be drawn
-        // more times than its pool holds. Swap it away from the top so a
-        // repeat is at least never back-to-back.
-        if (pool.length > 1 && bag[bag.length-1] === last){
-          var t = bag[bag.length-1]; bag[bag.length-1] = bag[0]; bag[0] = t;
-        }
-      }
-      last = bag.pop();
-      return last;
-    }
-    draw.reset = function(){ bag = shuffle(pool); };
-    return draw;
-  }
-  var draws = {
-    purpose: drawer(PURPOSE_ITEMS),
-    message: drawer(MESSAGE_ITEMS),
-    figlang: drawer(FIGLANG_ITEMS),
-    format:  drawer(FORMAT_ITEMS)
-  };
-  // Refill every bag when a case starts. Draining alone wasn't enough: a bag
-  // that carried over could run dry mid-case and refill with items the kid had
-  // already seen in that same case. With a fresh bag and questionsPerCase at or
-  // below the smallest pool, a case cannot repeat an item at all.
-  //
-  // That guarantee is per CASE, not global. A trail is 10 stops shared out over
-  // 4 modes, so a mode can come up more often than its pool has entries --
-  // MESSAGE_ITEMS holds 5, and drawing it 6 times has to reuse one. Measured at
-  // 0.49% of trails over 50,000; back-to-back is ruled out in drawer() above.
-  // Closing it entirely would mean either more passages or a shorter trail.
-  function resetDraws(){
-    Object.keys(draws).forEach(function(k){ draws[k].reset(); });
-  }
+  var draws = KIT.drawers({
+    purpose: PURPOSE_ITEMS,
+    message: MESSAGE_ITEMS,
+    figlang: FIGLANG_ITEMS,
+    format:  FORMAT_ITEMS
+  });
 
   /* ================= QUESTION GENERATORS ================= */
 
@@ -285,7 +249,7 @@ var WORDS_QUESTIONS = (function(){
     // most once. The math game keeps 8 because its generators build fresh
     // numbers each time rather than drawing from a fixed pool.
     questionsPerCase: 5,
-    onCaseStart: resetDraws
+    onCaseStart: draws.resetAll
   };
 })();
 

@@ -1,0 +1,32 @@
+/*
+  Social-studies-only question styles.
+
+  The one widget this subject needs is the field note: the map description,
+  place, scenario, or change a question is asked about, set apart from the
+  question itself the way the ELA game sets a passage apart. It is styled as a
+  clipped-in note rather than a page of a book, because that is what it is.
+*/
+.brief-box{
+  background:#fff;
+  border:1.5px solid #cbb98d;
+  border-left:6px solid var(--mustard-dark);
+  border-radius:8px;
+  padding:12px 16px 14px;
+  margin:4px 0 14px;
+  font-family:'Baloo 2', sans-serif; font-weight:400; font-size:15.5px;
+  line-height:1.6; color:var(--charcoal);
+}
+.brief-label{
+  font-family:'Special Elite', monospace;
+  font-size:10.5px; letter-spacing:1.5px; text-transform:uppercase;
+  color:var(--mustard-dark);
+  margin:0 0 6px;
+}
+
+/* These games ask in sentences, not in numbers: an option is a whole statement
+   rather than "4,000" or "<". game.css sizes the shared options grid for the
+   math games, where minmax(150px,1fr) fits four short answers across a row --
+   the same grid turns a sentence into a narrow ribbon five words tall. Widen
+   the minimum column so a long option gets a readable line, and let auto-fit
+   fall back to one column on a phone. */
+.options-grid{ grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); }

@@ -11,8 +11,12 @@ Live divisions:
   ordering, rounding, and multi-step addition/subtraction word problems
   solved with an equation and a strip (bar model) diagram.
 - **Words Division** (ELA) — author's purpose, central message, figurative
-  language, text formatting clues.
-- **History Division** (social studies) — coming soon.
+  language, text formatting clues; plus a second file on *Kitoto the Mighty*
+  covering retelling, story elements, theme, author's craft, context clues,
+  prefixes and suffixes, and punctuating quotations.
+- **History Division** (social studies) — the four physical regions of Texas,
+  the work and traditions the land shapes, and how Texans adapt to and modify
+  their environment.
 
 ## Running it locally
 
@@ -130,15 +134,21 @@ assets/
                                   used by every game page
     numeration.css               Math-only question styles (digit boxes,
                                   Number A/B cards, order tiles, </>/=)
-    ela.css                      ELA-only question styles (reading passages)
+    ela.css                      ELA-only question styles (reading passages,
+                                  the retelling list, prefix/suffix display)
     word-problems.css            Word-problem question styles (equation line,
                                   strip/bar-model diagrams)
+    social-studies.css           Social-studies-only question styles (the
+                                  field-note box a question is asked about)
   fonts/                         Self-hosted woff2 + their licenses; see
                                   fonts/LICENSE.md
   js/
     game-engine.js                Shared game engine (home/play/trail screens,
                                   click-wiring, and the three subject-neutral
                                   question types)
+    question-kit.js               Helpers every pool-driven game needs: drawing
+                                  items without replacement, and assembling an
+                                  MCQ from a fixed pool or from authored options
     numeration-types.js           The math game's place-value question types
                                   and their digit renderers, registered via
                                   DetectiveGame.registerType
@@ -147,12 +157,19 @@ assets/
                                   problems on the engine's built-in
                                   mcq-simple type, so no matching *-types.js
     words-questions.js            Words Division: passages, pools, generators
-                                  + MODES. All three export the config
-                                  start() takes; the page calls start()
+                                  + MODES
+    kitoto-questions.js           The Kitoto Files: the Module 1 Lessons 11-15
+                                  skills, drilled on the folktale itself
+    texas-questions.js            The Lone Star Files: Texas regions, and
+                                  adapting vs modifying the environment. All
+                                  five export the config start() takes; the
+                                  page calls start()
 games/
   math/numeration-detective-agency.html
   math/missing-evidence-files.html
   ela/words-division.html
+  ela/kitoto-files.html
+  social-studies/lone-star-files.html
 ```
 
 ## Adding a new game
@@ -213,9 +230,20 @@ games/
    an ELA or history game never loads renderers built for numbers.
 
    If your cases draw from fixed item pools rather than generating fresh
-   content each time, use `onCaseStart` to reshuffle them and keep
-   `questionsPerCase` at or below your smallest pool — that's what stops a
-   case repeating an item. The ELA game does both.
+   content each time, link `assets/js/question-kit.js` (after the engine,
+   before your module) and build your pools with `QUESTION_KIT.drawers({...})`.
+   That deals items without replacement; hand its `resetAll` to `onCaseStart`
+   and keep `questionsPerCase` at or below your smallest pool, and a case
+   cannot repeat an item at all. All three of the ELA and social studies games
+   do this. `question-kit.js` also has `buildOptionsFromPool` (an MCQ over a
+   fixed answer vocabulary) and `buildAuthoredOptions` (one correct label plus
+   the distractors you wrote for it).
+
+   One thing worth knowing before you shape a question: the no-repeat
+   assertion in `test/generators.test.js` compares **prompts**. A case whose
+   prompt never changes and varies only its options counts as repeating
+   itself — rightly, since that is what a reader sees — so put the thing being
+   asked about in the prompt.
 4. Link that module after the engine (and after any type module), and
    start the game from the global it exports:
 

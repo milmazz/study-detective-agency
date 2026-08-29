@@ -98,6 +98,12 @@ for (const key of GAME_KEYS) {
     assert.equal(typeof cfg.trailAllFilesWord, 'string');
     assert.ok(cfg.trailAllFilesWord.trim().length > 0);
 
+    if (cfg.trailTitle !== undefined) {
+      // Optional: it names the biggest card on the home screen, and an empty
+      // string would render that card with no title at all.
+      assert.equal(typeof cfg.trailTitle, 'string');
+      assert.ok(cfg.trailTitle.trim().length > 0, 'trailTitle names the trail card');
+    }
     if (cfg.questionsPerCase !== undefined) {
       assert.ok(Number.isInteger(cfg.questionsPerCase) && cfg.questionsPerCase > 0,
         'questionsPerCase must be a positive integer');
