@@ -1,21 +1,17 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="math">
+<html lang="en" data-theme="ela">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Number Division — Detective Agency</title>
+<title>The Kitoto Files — Detective Agency</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🕵️</text></svg>">
-<!-- Fonts are self-hosted and declared in base.css. This used to be a
-     render-blocking <link> to fonts.googleapis.com — a whole extra origin
-     (DNS + TCP + TLS) before the first pixel, which is what the homepage
-     already avoided. Baloo 2 is preloaded because base.css has to download
-     and parse before the browser would otherwise discover it. -->
+<!-- Fonts are self-hosted and declared in base.css. Baloo 2 is preloaded
+     because base.css has to download and parse before the browser would
+     otherwise discover it. -->
 <link rel="preload" as="font" type="font/woff2" href="../../assets/fonts/baloo2-latin1.woff2" crossorigin>
 <link rel="stylesheet" href="../../assets/css/base.css?v=4">
 <link rel="stylesheet" href="../../assets/css/game.css?v=9">
-<!-- Place-value question styles. Math only, and after game.css — see the
-     header in numeration.css. -->
-<link rel="stylesheet" href="../../assets/css/numeration.css?v=3">
+<link rel="stylesheet" href="../../assets/css/ela.css?v=3">
 </head>
 <body>
 <div class="agency">
@@ -24,8 +20,8 @@
       <div>
         <a class="home-link" href="../../">← All Divisions</a>
         <p class="eyebrow">Detective Agency · Est. 2026</p>
-        <h1 class="title">Number Division</h1>
-        <p class="subtitle">Every case is a place-value mystery. Pick a file, examine the evidence, crack the number.</p>
+        <h1 class="title">The Kitoto Files</h1>
+        <p class="subtitle">A mouse went looking for the mightiest one in the world. Retell it, read it closely, and take its words apart.</p>
       </div>
       <div class="badge-counter">
         <div class="num" id="badgeNum">0</div>
@@ -35,7 +31,7 @@
   </div>
   <noscript>
     <p class="load-error">This case file needs JavaScript switched on — the
-    questions are generated fresh in your browser each time you open it.</p>
+    questions are dealt fresh in your browser each time you open it.</p>
   </noscript>
   <!-- The engine renders every screen in here. It doubles as the main
        landmark so a screen reader can skip straight to the question. -->
@@ -43,10 +39,11 @@
 </div>
 
 <script src="../../assets/js/game-engine.js?v=7"></script>
-<!-- Place-value question types. Must load after the engine and before the
-     page script below, which calls start(). -->
-<script src="../../assets/js/numeration-types.js?v=4"></script>
-<script src="../../assets/js/numeration-questions.js?v=2"></script>
-<script>DetectiveGame.start(NUMERATION_QUESTIONS);</script>
+<!-- Shared pool-drawing helpers, then this game's own content. Both live
+     under /assets/ so they are cached for a year against their ?v= token
+     instead of expiring with this page. -->
+<script src="../../assets/js/question-kit.js?v=1"></script>
+<script src="../../assets/js/kitoto-questions.js?v=1"></script>
+<script>DetectiveGame.start(KITOTO_QUESTIONS);</script>
 </body>
 </html>
