@@ -8,14 +8,12 @@
 <!-- See numeration-detective-agency.html for why fonts are self-hosted and
      preloaded rather than linked to fonts.googleapis.com. -->
 <link rel="preload" as="font" type="font/woff2" href="../../assets/fonts/baloo2-latin1.woff2" crossorigin>
-<link rel="stylesheet" href="../../assets/css/base.css?v=4">
-<link rel="stylesheet" href="../../assets/css/game.css?v=9">
-<!-- Shared with the Missing Evidence Files: the prompt lead, the context
-     table and the equation line. Must come after game.css. -->
-<link rel="stylesheet" href="../../assets/css/word-problems.css?v=2">
 <!-- This game's own question furniture: the typed answer, the chip groups,
-     and the miniature strip diagrams drawn inside option buttons. -->
-<link rel="stylesheet" href="../../assets/css/ledger.css?v=1">
+     and the miniature strip diagrams drawn inside option buttons. Imports
+     word-problems.css (shared with the Missing Evidence Files), game.css
+     and base.css itself (see its header), so this one link carries the
+     whole chain in the right cascade order. -->
+<link rel="stylesheet" href="../../assets/css/ledger.css">
 </head>
 <body>
 <div class="agency">
@@ -42,9 +40,9 @@
   <main id="app"></main>
 </div>
 
-<script src="../../assets/js/game-engine.js?v=8"></script>
-<script src="../../assets/js/ledger-types.js?v=1"></script>
-<script src="../../assets/js/ledger-questions.js?v=1"></script>
-<script>DetectiveGame.start(LEDGER_QUESTIONS);</script>
+<script type="module" src="../../assets/js/game-engine.js"></script>
+<script type="module" src="../../assets/js/ledger-types.js"></script>
+<script type="module" src="../../assets/js/ledger-questions.js"></script>
+<script type="module">DetectiveGame.start(LEDGER_QUESTIONS);</script>
 </body>
 </html>

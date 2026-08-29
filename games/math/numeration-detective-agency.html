@@ -11,11 +11,10 @@
      already avoided. Baloo 2 is preloaded because base.css has to download
      and parse before the browser would otherwise discover it. -->
 <link rel="preload" as="font" type="font/woff2" href="../../assets/fonts/baloo2-latin1.woff2" crossorigin>
-<link rel="stylesheet" href="../../assets/css/base.css?v=4">
-<link rel="stylesheet" href="../../assets/css/game.css?v=9">
-<!-- Place-value question styles. Math only, and after game.css — see the
-     header in numeration.css. -->
-<link rel="stylesheet" href="../../assets/css/numeration.css?v=3">
+<!-- Place-value question styles, math only. Imports game.css and base.css
+     itself (see its header), so this one link carries the whole chain in
+     the right cascade order. -->
+<link rel="stylesheet" href="../../assets/css/numeration.css">
 </head>
 <body>
 <div class="agency">
@@ -42,11 +41,11 @@
   <main id="app"></main>
 </div>
 
-<script src="../../assets/js/game-engine.js?v=8"></script>
+<script type="module" src="../../assets/js/game-engine.js"></script>
 <!-- Place-value question types. Must load after the engine and before the
      page script below, which calls start(). -->
-<script src="../../assets/js/numeration-types.js?v=4"></script>
-<script src="../../assets/js/numeration-questions.js?v=2"></script>
-<script>DetectiveGame.start(NUMERATION_QUESTIONS);</script>
+<script type="module" src="../../assets/js/numeration-types.js"></script>
+<script type="module" src="../../assets/js/numeration-questions.js"></script>
+<script type="module">DetectiveGame.start(NUMERATION_QUESTIONS);</script>
 </body>
 </html>

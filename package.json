@@ -6,19 +6,22 @@
   "license": "MIT",
   "scripts": {
     "test": "node --test",
-    "dev": "node scripts/dev-server.js"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "//": [
-    "This file exists ONLY for the test suite. The site itself still has no",
-    "build step and no runtime dependencies -- it deploys straight from the",
-    "repo as static files, and .assetsignore keeps this file, the lockfile and",
-    "node_modules out of what gets served.",
+    "The site is built with Vite: `npm run build` writes the deployable",
+    "site to dist/ with content-hashed asset filenames (that hash is what",
+    "lets _headers cache /assets/* immutable for a year). The game code",
+    "itself has no runtime dependencies -- Vite only bundles and hashes it.",
     "",
-    "jsdom is needed by test/dom.test.js. That file skips itself when jsdom is",
-    "missing, so a fresh clone can run `node --test` with no install at all and",
-    "still get the generator and helper suites."
+    "jsdom is needed by test/dom.test.js. That file skips itself when jsdom",
+    "is missing, so `node --test` runs on a fresh clone without an install",
+    "and still gets the generator and helper suites."
   ],
   "devDependencies": {
-    "jsdom": "^30.0.1"
+    "jsdom": "^30.0.1",
+    "vite": "^8.2.2"
   }
 }

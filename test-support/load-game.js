@@ -30,20 +30,50 @@ const GAMES = {
   texas: { page: 'games/social-studies/lone-star-files.html' },
 };
 
-const SCRIPT_SRC = /<script src="([^"]+)"><\/script>/g;
+const SCRIPT_SRC = /<script type="module" src="([^"]+)"><\/script>/g;
 
 /*
   Which modules a page loads is read from the page, never listed here. A
   hardcoded list goes on passing after the page stops loading a module, so
   "every question names a registered type" would keep asserting against types
   the real page no longer has -- the suite agreeing with itself rather than with
-  what ships. The ?v= cache-buster isn't part of the filename.
+  what ships. The tags are type="module" so Vite bundles them; the files
+  themselves are still global-style scripts (window.* assignments), which is
+  what lets these tests require() the same sources the pages link.
 */
 function pageModules(pageRelPath) {
   const html = fs.readFileSync(path.join(ROOT, pageRelPath), 'utf8');
   const pageDir = path.dirname(path.join(ROOT, pageRelPath));
   return [...html.matchAll(SCRIPT_SRC)]
-    .map((m) => path.relative(ROOT, path.resolve(pageDir, m[1].split('?')[0])));
+    .map((m) => path.relative(ROOT, path.resolve(pageDir, m[1])));
+}
+
+/*
+  The stylesheets a page loads, in cascade order. A page links exactly one
+  sheet; that sheet @imports the rest of its chain (subject sheet -> game.css
+  -> base.css), which is how the order is fixed against a bundler that makes
+  no promise about the order of separate <link> tags. Read from the page and
+  followed recursively for the same reason pageModules() reads the page: a
+  list written in a test goes on passing after the wiring changes.
+*/
+const CSS_IMPORT = /@import\s+'([^']+)'\s*;/g;
+function pageStylesheets(pageRelPath) {
+  const html = fs.readFileSync(path.join(ROOT, pageRelPath), 'utf8');
+  const pageDir = path.dirname(path.join(ROOT, pageRelPath));
+  const seen = new Set();
+  const sheets = [];
+  const visit = (file) => {
+    if (seen.has(file)) return;
+    seen.add(file);
+    for (const m of fs.readFileSync(file, 'utf8').matchAll(CSS_IMPORT)) {
+      visit(path.resolve(path.dirname(file), m[1]));
+    }
+    sheets.push(path.relative(ROOT, file)); // imports first: cascade order
+  };
+  for (const m of html.matchAll(/<link[^>]+rel="stylesheet"[^>]+href="([^"]+)"/g)) {
+    visit(path.resolve(pageDir, m[1]));
+  }
+  return sheets;
 }
 
 /*
@@ -133,12 +163,16 @@ function openPage(gameKey) {
   const pageDir = path.dirname(pagePath);
   let html = fs.readFileSync(pagePath, 'utf8');
 
-  // Inline the linked scripts. jsdom would otherwise try to fetch them, and the
-  // ?v= cache-buster on each href isn't a real filename.
+  // Inline the linked scripts, as CLASSIC scripts: jsdom would otherwise try
+  // to fetch them, and it does not execute type="module" at all. Downgrading
+  // is safe because the files are global-style (window.* assignments) and
+  // classic inline scripts run in the same document order modules would.
   html = html.replace(SCRIPT_SRC, (_, src) => {
-    const file = path.resolve(pageDir, src.split('?')[0]);
+    const file = path.resolve(pageDir, src);
     return '<script>' + fs.readFileSync(file, 'utf8') + '</script>';
   });
+  // Same downgrade for the page's inline start() call.
+  html = html.replace(/<script type="module">/g, '<script>');
 
   const dom = new jsdom.JSDOM(html, { runScripts: 'dangerously', pretendToBeVisual: true });
   return dom.window;
@@ -157,5 +191,5 @@ const stripTags = (html) => String(html).replace(/<[^>]*>/g, '');
 
 module.exports = {
   GAMES, loadModes, openPage, haveJsdom, click, press, stripTags,
-  pageModules, ROOT, ENGINE,
+  pageModules, pageStylesheets, ROOT, ENGINE,
 };

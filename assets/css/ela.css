@@ -1,4 +1,7 @@
-/* ELA-only question styles (reading passages + text formatting clues). */
+/* ELA-only question styles (reading passages + text formatting clues).
+   Imports the shared shell (which imports base.css), so an ELA page links
+   only this sheet — the @import chain fixes the cascade order. */
+@import './game.css';
 
 .passage-box{
   background:#fff; border:1.5px solid #cbb98d; border-radius:8px;

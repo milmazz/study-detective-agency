@@ -8,9 +8,13 @@
   word-problems.css, which both math word-problem pages link. Only what is new
   here lives in this file.
 
-  Load AFTER game.css and word-problems.css, alongside
+  Imports word-problems.css (which imports the shared shell and base.css),
+  so the Ledger Files page links only this sheet — the @import chain is what
+  fixes the cascade order, and it is what makes this file's overrides of
+  word-problems.css rules (.q-context) reliably win. Loaded alongside
   assets/js/ledger-questions.js and assets/js/ledger-types.js.
 */
+@import './word-problems.css';
 
 /* Visible to a screen reader, not to the eye. Used for the sentence that
    describes a strip diagram: the drawing itself is aria-hidden, because read

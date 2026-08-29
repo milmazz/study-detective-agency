@@ -8,10 +8,13 @@
   it. Loaded only by games/math/, alongside assets/js/numeration-types.js,
   which registers the types these style.
 
-  Load AFTER game.css. Nothing here depends on that today -- every selector
-  below is either unique to this file or, in .symbol-btn's case, ordered
-  within it -- but game.css owns the shared question shell these sit inside.
+  Imports game.css (which imports base.css), so the page links only this
+  sheet — the @import chain fixes the cascade order. Nothing below depends
+  on coming after game.css today -- every selector is either unique to this
+  file or, in .symbol-btn's case, ordered within it -- but game.css owns the
+  shared question shell these sit inside.
 */
+@import './game.css';
 
 .number-display{
   font-family:var(--mono);

@@ -1,5 +1,8 @@
+# Build output: what `npm run build` (Vite) writes and wrangler deploys.
+dist/
+
 # Local wrangler dev cache/state — not part of the site.
 .wrangler/
 
-# Test-only dependency tree (jsdom). The site itself has no dependencies.
+# Dev dependency tree (Vite, jsdom). The site itself has no runtime dependencies.
 node_modules/

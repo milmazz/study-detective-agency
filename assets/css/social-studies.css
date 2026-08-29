@@ -5,7 +5,11 @@
   place, scenario, or change a question is asked about, set apart from the
   question itself the way the ELA game sets a passage apart. It is styled as a
   clipped-in note rather than a page of a book, because that is what it is.
+
+  Imports the shared shell (which imports base.css), so the page links only
+  this sheet — the @import chain fixes the cascade order.
 */
+@import './game.css';
 .brief-box{
   background:#fff;
   border:1.5px solid #cbb98d;
