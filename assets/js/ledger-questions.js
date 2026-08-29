@@ -349,10 +349,19 @@ var LEDGER_QUESTIONS = (function(){
     ]);
 
     var rowName = led.row + ' ' + (missingIdx+1);
+    /*
+      Expressions, not equations: none of the three prints what it comes to.
+
+      With the results shown, the right-hand side of the scored reason WAS the
+      answer to the value group, so the two groups could be read off each other
+      and the item that exists to score the number and the reasoning together
+      collapsed into one skill. What is left is still the same three ways to
+      work the column, and only one of them lands on the missing line.
+    */
     var eq = {
-      right: fmt(total) + ' − ' + known.map(fmt).join(' − ') + ' = ' + fmt(missing),
-      allKnown: known.map(fmt).join(' + ') + ' = ' + fmt(sumKnown),
-      partial: fmt(total) + ' − ' + fmt(known[1]) + ' − ' + fmt(known[2]) + ' = ' + fmt(droppedOne)
+      right: fmt(total) + ' − ' + known.map(fmt).join(' − '),
+      allKnown: known.map(fmt).join(' + '),
+      partial: fmt(total) + ' − ' + fmt(known[1]) + ' − ' + fmt(known[2])
     };
 
     return {
@@ -368,9 +377,10 @@ var LEDGER_QUESTIONS = (function(){
         { id:'g1', lead: 'The missing count for ' + rowName + ' was:',
           options: valueChips,
           correctKey: String(missing) },
-        // Every equation here is arithmetically true. Only one of them answers
-        // the question, which is the whole point of the item: the study guide's
-        // version scores the reasoning separately from the number.
+        // Every expression here is something the table really supports. Only
+        // one of them answers the question, which is the whole point of the
+        // item: the study guide's version scores the reasoning separately from
+        // the number.
         { id:'g2', lead:'because:',
           options: shuffle([
             { key:'right', label:'<span class="eq-opt">' + eq.right + '</span>' },
@@ -747,8 +757,9 @@ var LEDGER_QUESTIONS = (function(){
   function genProfitTableOnce(){
     var stall = choice(STALLS);
     var who = twoPeople()[0];
+    // The three bands don't overlap, so the lines can't collide and no de-dup
+    // pass is needed here.
     var costs = [randInt(24, 60), randInt(9, 22), randInt(4, 8)];
-    if (costs[0] === costs[1] || costs[1] === costs[2] || costs[0] === costs[2]) costs[1] += 1;
     var spent = sum(costs);
     // The profit is floored above the biggest line that can be counted twice
     // below, so every wrong total still leaves a profit worth talking about.

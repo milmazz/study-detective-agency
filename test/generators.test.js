@@ -702,10 +702,17 @@ test('ledger: every chip group is a real choice with exactly one answer', () => 
 });
 
 test('ledger: the smudged line scores the equation that answers the question', () => {
-  // Every equation offered here is arithmetically TRUE -- that is what makes
-  // the item worth asking, and what makes it dangerous. The reason chip has to
-  // be the one that lands on the value chip, and no other equation may land
-  // there too, or the question has two defensible answers.
+  // Every way of working the column offered here is one the table really
+  // supports -- that is what makes the item worth asking, and what makes it
+  // dangerous. The reason chip has to be the one that lands on the value chip,
+  // and no other may land there too, or the question has two defensible
+  // answers.
+  //
+  // None of them may print what it comes to, either. While the scored reason
+  // ended in "= <the missing line>", the two groups could be read off each
+  // other, and an item built to score the number AND the reasoning together
+  // was answerable from whichever half a kid got first. A bare expression is
+  // also what evalExpr will accept -- an "=" makes it unparseable.
   let checked = 0;
   eachQuestion('ledger', (q, mode) => {
     if (mode.id !== 'missingline') return;
@@ -715,12 +722,10 @@ test('ledger: the smudged line scores the equation that answers the question', (
 
     const answer = Number(value.correctKey);
     const landings = why.options.map((o) => {
-      const [lhs, rhs] = stripTags(o.label).split('=');
-      const left = evalExpr(lhs, mode, 'reason');
-      const right = unformat(rhs);
-      assert.equal(left, right,
-        `${mode.id}: "${stripTags(o.label)}" is not even true — ${left} ≠ ${right}`);
-      return { key: o.key, value: right };
+      const text = stripTags(o.label);
+      assert.ok(!text.includes('='),
+        `${mode.id}: "${text}" states its own result, which is the value group's answer`);
+      return { key: o.key, value: evalExpr(text, mode, 'reason') };
     });
 
     const hit = landings.filter((l) => l.value === answer);

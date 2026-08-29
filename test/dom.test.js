@@ -473,6 +473,45 @@ test('a graded typed answer stays readable and cannot be sent twice', { skip }, 
     'the verdict should be stamped once');
 });
 
+test('Enter on a graded typed answer does not wake the Check button', { skip }, () => {
+  // The keydown handler re-read the box on every Enter, so a second press
+  // after grading set check.disabled back to false — leaving an enabled button
+  // that does nothing sitting beside "Next Clue →".
+  const found = reachQuestion('ledger', '#numEntry');
+  assert.ok(found, 'expected to reach a typed-answer question');
+  const { win, doc } = found;
+
+  const input = doc.querySelector('#numEntry');
+  type(win, input, '425');
+  press(win, input, 'Enter');
+  assert.ok(doc.querySelector('.stamp'), 'the first Enter should grade the answer');
+
+  press(win, input, 'Enter');
+  assert.ok(doc.querySelector('#checkBtn').disabled,
+    'Check should stay disabled once the answer is in');
+  assert.equal(doc.querySelectorAll('.stamp').length, 1,
+    'the verdict should be stamped once');
+});
+
+test('a rule-out toggle reads the option, not the drawing it hides', { skip }, () => {
+  // The strip-diagram options hide their bar model from screen readers and
+  // name themselves with an .sr-only sentence instead. textOf() stripped tags
+  // without honouring aria-hidden, so the toggle's label read the sentence and
+  // then the bag of numbers underneath it — the exact soup the sentence
+  // replaces.
+  const found = reachQuestion('ledger', '.mini-model');
+  assert.ok(found, 'expected to reach a strip-diagram question');
+  const { doc } = found;
+
+  const wrap = doc.querySelector('.mini-model').closest('.opt-wrap');
+  const label = wrap.querySelector('.opt-strike').getAttribute('aria-label');
+  const spoken = wrap.querySelector('.sr-only').textContent;
+
+  assert.equal(label, 'Rule out: ' + spoken,
+    'the toggle should name the option the way a screen reader hears it');
+  assert.ok(!/aria-hidden/.test(label), 'no markup should leak into the label');
+});
+
 test('a chip group holds one pick at a time', { skip }, () => {
   const found = reachQuestion('ledger', '.chip-group');
   assert.ok(found, 'expected to reach a choose-from-each-group question');

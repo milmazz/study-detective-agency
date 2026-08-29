@@ -63,6 +63,10 @@
       // just sits in the box.
       input.addEventListener('keydown', function(e){
         if (e.key !== 'Enter') return;
+        // Once the answer is in, sync() would read the box again and hand back
+        // a Check button that is enabled but does nothing -- sitting next to
+        // "Next Clue" as if the question were still open.
+        if (ui.answered()) return;
         e.preventDefault();
         sync();
         if (!check.disabled) check.click();
