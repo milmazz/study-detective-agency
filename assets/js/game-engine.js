@@ -15,6 +15,7 @@
       modes: MODES,
       homeIntro: 'Seven case files. Every case pulls fresh numbers...',
       trailAllFilesWord: 'seven',
+      trailTitle: 'The Trail — Follow the Clues',   // optional, see below
       questionsPerCase: 8,         // optional, defaults to 8
       onCaseStart: fn              // optional, fires when a case or trail starts
     });
@@ -55,6 +56,11 @@ var DetectiveGame = (function(){
   var MODES = [];
   var HOME_INTRO = '';
   var TRAIL_ALL_WORD = '';
+  // The big final case's name. Configurable because the default is about
+  // numbers, and three of the games on this site are not: a Texas geography
+  // trail called "Follow the Numbers" is just wrong copy on the biggest card
+  // on the page.
+  var TRAIL_TITLE = 'The Trail — Follow the Numbers';
   // Clues per case. Was hard-coded at 8, which is why the ELA game -- with item
   // pools of 5-8 -- repeated a passage in every single case it generated.
   var QUESTIONS_PER_CASE = 8;
@@ -115,7 +121,7 @@ var DetectiveGame = (function(){
     html += '</div>';
     html += '<button class="case-card trail-card" id="trailCard" style="margin-top:14px;">' +
       '<span class="case-no">CASE NO. '+trailCaseNo+' · THE BIG ONE</span>' +
-      '<span class="case-title">🗺️ The Trail — Follow the Numbers</span>' +
+      '<span class="case-title">🗺️ '+TRAIL_TITLE+'</span>' +
       '<span class="case-blurb">A winding trail of '+TRAIL_LENGTH+' clues pulled from all '+TRAIL_ALL_WORD+' files. Solve each one to move down the path to the finish.</span>' +
       '<span class="case-cta">Start the trail →</span>' +
       '</button>';
@@ -627,6 +633,7 @@ var DetectiveGame = (function(){
     MODES = config.modes;
     HOME_INTRO = config.homeIntro || '';
     TRAIL_ALL_WORD = config.trailAllFilesWord || String(config.modes.length);
+    TRAIL_TITLE = config.trailTitle || 'The Trail — Follow the Numbers';
     QUESTIONS_PER_CASE = config.questionsPerCase || 8;
     ON_CASE_START = typeof config.onCaseStart === 'function' ? config.onCaseStart : null;
     renderHome();

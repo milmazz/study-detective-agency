@@ -98,6 +98,12 @@ for (const key of GAME_KEYS) {
     assert.equal(typeof cfg.trailAllFilesWord, 'string');
     assert.ok(cfg.trailAllFilesWord.trim().length > 0);
 
+    if (cfg.trailTitle !== undefined) {
+      // Optional: it names the biggest card on the home screen, and an empty
+      // string would render that card with no title at all.
+      assert.equal(typeof cfg.trailTitle, 'string');
+      assert.ok(cfg.trailTitle.trim().length > 0, 'trailTitle names the trail card');
+    }
     if (cfg.questionsPerCase !== undefined) {
       assert.ok(Number.isInteger(cfg.questionsPerCase) && cfg.questionsPerCase > 0,
         'questionsPerCase must be a positive integer');
@@ -106,6 +112,21 @@ for (const key of GAME_KEYS) {
       assert.equal(typeof cfg.onCaseStart, 'function');
       assert.doesNotThrow(() => cfg.onCaseStart(), 'onCaseStart runs at the start of every case');
     }
+  });
+
+  test(`${key}: a game that is not about numbers names its own trail`, () => {
+    // The engine's default trail title is "Follow the Numbers" -- right for the
+    // math games, wrong copy on the biggest card on the page for any other
+    // subject. That is how Words Division shipped: trailTitle was added for
+    // exactly this reason and then only two of the three prose games set it.
+    // Nothing else catches it, because a wrong title renders perfectly.
+    const cfg = loadModes(key);
+    if (cfg.page.startsWith('games/math/')) return;
+    assert.equal(typeof cfg.trailTitle, 'string',
+      `${cfg.page} is not a math game, so it has to name its own trail rather ` +
+      `than fall back to the engine's "Follow the Numbers"`);
+    assert.doesNotMatch(cfg.trailTitle, /Numbers/,
+      'a trail on a non-math game should not be named after numbers');
   });
 
   test(`${key}: every case file is fully described`, () => {
@@ -140,6 +161,32 @@ for (const key of GAME_KEYS) {
 /* ================= the page/stylesheet wiring ================= */
 
 for (const key of GAME_KEYS) {
+  test(`${key}: the page declares a subject theme its stylesheets know`, () => {
+    // data-theme on <html> stopped being only an accent colour: game.css keys
+    // the widened options grid off it, so a page that omits the attribute or
+    // misspells the value silently lays sentence-long options out in the math
+    // games' narrow columns. While that rule was copied into each subject
+    // sheet, linking the sheet was the whole opt-in and nothing could drift;
+    // keying it off the theme is what makes this worth asserting.
+    const html = fs.readFileSync(path.join(ROOT, GAMES[key].page), 'utf8');
+    const declared = /<html[^>]*\sdata-theme="([^"]+)"/.exec(html);
+    assert.ok(declared, `${GAMES[key].page} sets no data-theme on <html>`);
+
+    // Read the themes out of the sheets the page actually links, for the same
+    // reason pageModules() does: a list written here goes on passing after the
+    // stylesheets stop defining the theme it names.
+    const pageDir = path.dirname(path.join(ROOT, GAMES[key].page));
+    const css = [...html.matchAll(/<link[^>]+href="([^"]+\.css[^"]*)"/g)]
+      .map((m) => fs.readFileSync(path.resolve(pageDir, m[1].split('?')[0]), 'utf8'))
+      .join('\n');
+    const known = new Set(
+      [...css.matchAll(/\[data-theme="([^"]+)"\]/g)].map((m) => m[1])
+    );
+    assert.ok(known.has(declared[1]),
+      `${GAMES[key].page} declares data-theme="${declared[1]}", which none of ` +
+      `the stylesheets it links define — its subject styling is a no-op`);
+  });
+
   test(`${key}: every class a question emits has a CSS rule behind it`, () => {
     // A generator can invent any class it likes, and an unstyled one renders as
     // plain text that looks almost right -- which is how .q-prompt-lead shipped

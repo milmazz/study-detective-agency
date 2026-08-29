@@ -569,6 +569,27 @@ test('grading a statement shows the answer in every group', { skip }, () => {
     'Check should be disabled once the statement is graded');
 });
 
+test('the trail card is named by the game, not by the engine', { skip }, () => {
+  // The default name talks about numbers, which is wrong on three of the six
+  // games here. It stays the default so the math pages are untouched, and a
+  // game that says otherwise has to actually get its own name onto the card.
+  const MODE = `[{ id:'x', caseNo:'01', title:'T', icon:'i', blurb:'b', gen:function(){
+    return { type:'mcq-simple', prompt:'p', options:[{key:'a',label:'A'}],
+             correctKey:'a', explain:function(){ return 'e'; } };
+  } }]`;
+
+  const win = openPage('math');
+  win.eval(`DetectiveGame.start({ modes: ${MODE} });`);
+  assert.match(win.document.querySelector('#trailCard').textContent, /Follow the Numbers/,
+    'a game that names no trail keeps the default');
+
+  const win2 = openPage('math');
+  win2.eval(`DetectiveGame.start({ modes: ${MODE}, trailTitle: 'The Trail \u2014 Cross the State' });`);
+  assert.match(win2.document.querySelector('#trailCard').textContent, /Cross the State/,
+    'a configured trail title should reach the card');
+  assert.doesNotMatch(win2.document.querySelector('#trailCard').textContent, /Follow the Numbers/);
+});
+
 /* ================= structure ================= */
 
 for (const game of Object.keys(GAMES)) {

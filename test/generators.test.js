@@ -13,7 +13,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { loadModes, stripTags } = require('../test-support/load-game.js');
+const { GAMES, loadModes, stripTags } = require('../test-support/load-game.js');
 
 // Enough draws to catch a fault that shows up in a fraction of a percent.
 // genTrueFalse's bug hit 4.29% of its questions; the digit-zero half of it,
@@ -24,6 +24,25 @@ const { loadModes, stripTags } = require('../test-support/load-game.js');
 // while the comment claimed tens of thousands -- enough for a 4% fault, but a
 // 0.1% one had only a ~94% chance of showing up at all, and a 0.01% one ~25%.
 const DRAWS = 20000;
+
+// Every game on the site, read from the same map the pages are read from, so a
+// game added to test-support/load-game.js is covered by the invariants below
+// without anyone remembering to list it here twice.
+const ALL_GAMES = Object.keys(GAMES);
+
+// The games whose cases deal from fixed item pools rather than generating fresh
+// content each draw. These are the ones that can repeat a clue inside a single
+// case, which is the fault the pool assertions at the bottom of this file exist
+// to catch.
+//
+// Derived, not listed, for the same reason ALL_GAMES is: a hardcoded list keeps
+// the suite green while a newly added pool game quietly skips every no-repeat
+// assertion below. onCaseStart is the marker -- refilling the bags when a case
+// starts is the thing a pool game has to do and a generating game has no use
+// for, so a game that draws from pools cannot ship without it.
+const POOL_GAMES = ALL_GAMES.filter(
+  (g) => typeof loadModes(g).onCaseStart === 'function'
+);
 
 function eachQuestion(game, fn) {
   const cfg = loadModes(game);
@@ -36,7 +55,7 @@ function eachQuestion(game, fn) {
 
 /* ================= invariants every question must hold ================= */
 
-for (const game of ['math', 'ela', 'wordproblems', 'ledger']) {
+for (const game of ALL_GAMES) {
   test(`${game}: every question names a registered type`, () => {
     const cfg = loadModes(game);
     const seen = new Set();
@@ -124,7 +143,7 @@ const unformat = (s) => Number(String(s).replace(/,/g, ''));
 // who finds it, which is the worst possible reviewer to leave it to.
 const COUNT_WORDS = { once: 1, twice: 2, 'three times': 3, 'four times': 4 };
 
-for (const game of ['math', 'ela', 'wordproblems', 'ledger']) {
+for (const game of ALL_GAMES) {
   test(`${game}: a digit count stated in a prompt is true of the number shown`, () => {
     // "In the number 941,445, the digit 4 appears twice" -- it appears three
     // times. 34% of value-compare's same-number questions made a false claim
@@ -332,76 +351,88 @@ test('math: whole-number questions offer whole-number answers', () => {
   });
 });
 
-/* ================= ela: a case must not repeat itself ================= */
+/* ================= pool-driven games: a case must not repeat itself ================= */
 
-test('ela: a case never shows the same item twice', () => {
-  // These generators used to sample with replacement from pools of 5-8 across
-  // 8 clues, so every single case repeated a passage and about three in four
-  // repeated one back to back — answerable from memory rather than by reading.
-  const cfg = loadModes('ela');
-  const perCase = cfg.questionsPerCase || 8;
+for (const game of POOL_GAMES) {
+  test(`${game}: a case never shows the same item twice`, () => {
+    // These generators used to sample with replacement from pools of 5-8 across
+    // 8 clues, so every single case repeated a passage and about three in four
+    // repeated one back to back — answerable from memory rather than by reading.
+    //
+    // Note what this asserts on: the PROMPT. A case that varies only its
+    // options is repeating the item as far as a reader is concerned, and it
+    // fails here — which is how the quotation case ended up putting the line
+    // being punctuated into its prompt rather than leaving it in the options.
+    const cfg = loadModes(game);
+    const perCase = cfg.questionsPerCase || 8;
 
-  for (const mode of cfg.modes) {
-    for (let round = 0; round < 400; round++) {
-      if (cfg.onCaseStart) cfg.onCaseStart();
-      const seen = [];
-      for (let i = 0; i < perCase; i++) seen.push(stripTags(mode.gen().prompt));
-      assert.equal(new Set(seen).size, seen.length,
-        `${mode.id}: a ${perCase}-clue case repeated an item`);
+    for (const mode of cfg.modes) {
+      for (let round = 0; round < 400; round++) {
+        if (cfg.onCaseStart) cfg.onCaseStart();
+        const seen = [];
+        for (let i = 0; i < perCase; i++) seen.push(stripTags(mode.gen().prompt));
+        assert.equal(new Set(seen).size, seen.length,
+          `${mode.id}: a ${perCase}-clue case repeated an item`);
+      }
     }
-  }
-});
+  });
+}
 
-test('ela: a trail never shows the same item back to back', () => {
+for (const game of POOL_GAMES) {
+  test(`${game}: a trail never shows the same item back to back`, () => {
   // A case gets a fresh bag and is capped at the smallest pool, so it can't
   // repeat at all. A trail can: 10 stops over 4 modes means a mode can be drawn
   // more often than its pool holds, and MESSAGE_ITEMS holds 5. Measured at
   // 0.49% of trails. What is ruled out is showing the same passage twice in a
   // row, which is the version a kid answers from position memory.
-  const cfg = loadModes('ela');
-  const TRAIL_LENGTH = 10;
-  const ids = cfg.modes.map((m) => m.id);
-  const genOf = new Map(cfg.modes.map((m) => [m.id, m.gen]));
+    const cfg = loadModes(game);
+    const TRAIL_LENGTH = 10;
+    const ids = cfg.modes.map((m) => m.id);
+    const genOf = new Map(cfg.modes.map((m) => [m.id, m.gen]));
 
-  // Back-to-back arose in ~0.11% of trails before the fix, so a few thousand
-  // rounds would let it slip through a run every so often. This makes missing
-  // it a ~1-in-50,000 event rather than a ~1-in-25 one.
-  for (let trail = 0; trail < 10000; trail++) {
-    if (cfg.onCaseStart) cfg.onCaseStart();
-    // Mirrors the engine's genTrailSequence: every mode once, then random.
-    const seq = [...ids];
-    while (seq.length < TRAIL_LENGTH) seq.push(ids[Math.floor(Math.random() * ids.length)]);
+    // Back-to-back arose in ~0.11% of trails before the fix, so a few thousand
+    // rounds would let it slip through a run every so often. This makes missing
+    // it a ~1-in-50,000 event rather than a ~1-in-25 one.
+    for (let trail = 0; trail < 10000; trail++) {
+      if (cfg.onCaseStart) cfg.onCaseStart();
+      // Mirrors the engine's genTrailSequence: every mode once, then random.
+      const seq = [...ids];
+      while (seq.length < TRAIL_LENGTH) seq.push(ids[Math.floor(Math.random() * ids.length)]);
 
-    let prev = null;
-    for (const id of seq.slice(0, TRAIL_LENGTH)) {
-      const prompt = id + '|' + stripTags(genOf.get(id)().prompt);
-      assert.notEqual(prompt, prev, `${id}: a trail showed the same item twice in a row`);
-      prev = prompt;
+      let prev = null;
+      for (const id of seq.slice(0, TRAIL_LENGTH)) {
+        const prompt = id + '|' + stripTags(genOf.get(id)().prompt);
+        assert.notEqual(prompt, prev, `${id}: a trail showed the same item twice in a row`);
+        prev = prompt;
+      }
     }
-  }
-});
+  });
+}
 
-test('ela: questionsPerCase fits inside the smallest item pool', () => {
-  // The guarantee above only holds while this is true. If someone raises
-  // questionsPerCase, or trims a pool, this is the assertion that says so.
-  const cfg = loadModes('ela');
-  const perCase = cfg.questionsPerCase || 8;
-  for (const mode of cfg.modes) {
-    if (cfg.onCaseStart) cfg.onCaseStart();
-    const distinct = new Set();
-    // Draw well past the pool size; the bag refills, so this converges on the
-    // pool's true size.
-    for (let i = 0; i < 500; i++) distinct.add(stripTags(mode.gen().prompt));
-    assert.ok(distinct.size >= perCase,
-      `${mode.id}: pool holds ${distinct.size} items but a case asks for ${perCase}`);
-  }
-});
+for (const game of POOL_GAMES) {
+  test(`${game}: questionsPerCase fits inside the smallest item pool`, () => {
+    // The guarantee above only holds while this is true. If someone raises
+    // questionsPerCase, or trims a pool, this is the assertion that says so.
+    const cfg = loadModes(game);
+    const perCase = cfg.questionsPerCase || 8;
+    for (const mode of cfg.modes) {
+      if (cfg.onCaseStart) cfg.onCaseStart();
+      const distinct = new Set();
+      // Draw well past the pool size; the bag refills, so this converges on the
+      // pool's true size.
+      for (let i = 0; i < 500; i++) distinct.add(stripTags(mode.gen().prompt));
+      assert.ok(distinct.size >= perCase,
+        `${mode.id}: pool holds ${distinct.size} items but a case asks for ${perCase}`);
+    }
+  });
+}
 
-test('ela: option order varies between draws of the same item', () => {
+for (const game of POOL_GAMES) {
+  test(`${game}: option order varies between draws of the same item`, () => {
   // One generator passed its options straight through without shuffling, so a
   // repeated item came back in the same order every time and could be answered
   // from position memory.
-  const cfg = loadModes('ela');
+  const cfg = loadModes(game);
   for (const mode of cfg.modes) {
     const orders = new Set();
     for (let i = 0; i < 300; i++) {
@@ -412,7 +443,8 @@ test('ela: option order varies between draws of the same item', () => {
     assert.ok(orders.size > 1,
       `${mode.id}: option order never changes — options are not being shuffled`);
   }
-});
+  });
+}
 
 /* ================= word problems: the equation, the diagram, the options ================= */
 
@@ -952,4 +984,192 @@ test('ledger: the answer cannot be picked out by its size', () => {
     });
   }
   assert.ok(measured >= 3, `expected at least three numerically scored cases, measured ${measured}`);
+});
+
+/* ================= kitoto: the ELA cases that can lie quietly ================= */
+
+test('kitoto: the four dialogue options differ only in punctuation', () => {
+  // The whole case rests on this. If a distractor changes a WORD as well as a
+  // comma, the sentence can be picked by meaning without ever reading a
+  // quotation mark — the question stops testing what it claims to test, and
+  // still looks perfectly fine.
+  const cfg = loadModes('kitoto');
+  const mode = cfg.modes.filter((m) => m.id === 'quotes')[0];
+  assert.ok(mode, 'the quotation case should exist');
+
+  // Down to letters and spaces: quotation marks, commas, periods and capitals
+  // are exactly what is allowed to differ.
+  const bare = (s) => stripTags(s).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+
+  let checked = 0;
+  for (let i = 0; i < 4000; i++) {
+    const q = mode.gen();
+    const forms = new Set(q.options.map((o) => bare(o.label)));
+    assert.equal(forms.size, 1,
+      `the options say different things, not the same thing punctuated differently: ` +
+      `${[...forms].join(' | ')}`);
+    checked++;
+  }
+  assert.ok(checked > 100, `expected plenty of quotation questions, saw ${checked}`);
+});
+
+test('kitoto: the retell gap cannot be filled from the list itself', () => {
+  // One gap, and no option that simply repeats a step already printed in the
+  // box. An option that duplicates a visible step is answerable by scanning
+  // rather than by knowing the order of events — and a duplicated CORRECT step
+  // would make the question have two right answers.
+  const cfg = loadModes('kitoto');
+  const mode = cfg.modes.filter((m) => m.id === 'retell')[0];
+  assert.ok(mode, 'the retelling case should exist');
+
+  const bare = (s) => stripTags(s).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  let checked = 0;
+  for (let i = 0; i < 4000; i++) {
+    const q = mode.gen();
+    const blanks = [...q.prompt.matchAll(/<li class="retell-blank">/g)];
+    assert.equal(blanks.length, 1,
+      `expected exactly one gap in the retelling, saw ${blanks.length}`);
+
+    const steps = [...q.prompt.matchAll(/<li>([\s\S]*?)<\/li>/g)].map((m) => bare(m[1]));
+    assert.ok(steps.length >= 3, 'a retelling needs enough steps around the gap to order');
+    for (const o of q.options) {
+      assert.ok(!steps.includes(bare(o.label)),
+        `option "${stripTags(o.label)}" is already printed in the list above it`);
+    }
+    checked++;
+  }
+  assert.ok(checked > 100, `expected plenty of retelling questions, saw ${checked}`);
+});
+
+test('kitoto: the word-part case marks a real prefix or suffix of the word shown', () => {
+  // The highlight IS the question — nothing in the prompt names the letters
+  // otherwise. A slice that runs off the end of the base word would still
+  // render as a perfectly convincing highlighted blob.
+  const cfg = loadModes('kitoto');
+  const mode = cfg.modes.filter((m) => m.id === 'wordparts')[0];
+  assert.ok(mode, 'the prefix/suffix case should exist');
+
+  let checked = 0;
+  for (let i = 0; i < 4000; i++) {
+    const q = mode.gen();
+    const marks = [...q.prompt.matchAll(/<span class="affix">([a-z]+)<\/span>/g)];
+    assert.equal(marks.length, 1, `expected exactly one marked word part: ${q.prompt}`);
+
+    const word = stripTags(/<div class="word-build">([\s\S]*?)<\/div>/.exec(q.prompt)[1]);
+    const affix = marks[0][1];
+    const isPrefix = /prefix/.test(stripTags(q.prompt));
+    assert.ok(isPrefix ? word.startsWith(affix) : word.endsWith(affix),
+      `"${word}" does not ${isPrefix ? 'start' : 'end'} with the marked part "${affix}"`);
+    // The base word has to survive the affix coming off, or the question is
+    // asking about a word part that ate the word.
+    assert.ok(word.length - affix.length >= 3,
+      `"${affix}" leaves too little of "${word}" behind to be a word part`);
+    checked++;
+  }
+  assert.ok(checked > 100, `expected plenty of word-part questions, saw ${checked}`);
+});
+
+/* ================= texas: regions, categories, and trade-offs ================= */
+
+const TEXAS_REGION_CASES = new Set(['region', 'place', 'compare']);
+
+test('texas: every region question offers exactly the four regions', () => {
+  // Three cases score against the same four-region vocabulary. A fifth key, or
+  // a case that quietly drops one region from its options, is a typo that
+  // renders beautifully — and teaches a map of Texas with a hole in it.
+  const cfg = loadModes('texas');
+  const keys = cfg.regionKeys;
+  assert.equal(keys.length, 4, 'Texas is taught as four physical regions');
+
+  let checked = 0;
+  eachQuestion('texas', (q, mode) => {
+    if (!TEXAS_REGION_CASES.has(mode.id)) return;
+    assert.deepEqual(q.options.map((o) => o.key).slice().sort(), keys.slice().sort(),
+      `${mode.id}: the options are not the four regions`);
+    assert.ok(keys.includes(q.correctKey),
+      `${mode.id}: "${q.correctKey}" is not one of the four regions`);
+    checked++;
+  });
+  assert.ok(checked > 100, `expected plenty of region questions, saw ${checked}`);
+});
+
+test('texas: a region explanation names the region it just scored', () => {
+  // The explanation is the sentence the kid reads after answering. If it names
+  // a different region than the key, the game teaches the wrong answer to
+  // whoever got it right — and nothing about the scoring looks wrong.
+  const cfg = loadModes('texas');
+  let checked = 0;
+  eachQuestion('texas', (q, mode) => {
+    if (!TEXAS_REGION_CASES.has(mode.id)) return;
+    const label = q.options.filter((o) => o.key === q.correctKey)[0].label;
+    const name = stripTags(label).replace(/^The\s+/, '');
+    assert.ok(q.explain().includes(name),
+      `${mode.id}: the answer is "${name}" but the explanation never says so: ${q.explain()}`);
+    checked++;
+  });
+  assert.ok(checked > 100, `expected plenty of region questions, saw ${checked}`);
+});
+
+test('texas: adapt-or-modify never gives the category away', () => {
+  // Two options say Adapting and two say Modifying, so naming the category
+  // right is worth half the answer and the reason carries the rest. An item
+  // whose three distractors all sat in the other category would let a kid score
+  // by spotting the odd one out without reading a word after the dash.
+  let checked = 0;
+  eachQuestion('texas', (q, mode) => {
+    if (mode.id !== 'adapt') return;
+    const labels = q.options.map((o) => stripTags(o.label));
+    const adapting = labels.filter((l) => /^Adapting\b/.test(l)).length;
+    const modifying = labels.filter((l) => /^Modifying\b/.test(l)).length;
+    assert.equal(adapting, 2, `expected two Adapting options, saw ${adapting}: ${labels.join(' | ')}`);
+    assert.equal(modifying, 2, `expected two Modifying options, saw ${modifying}: ${labels.join(' | ')}`);
+
+    // And the explanation has to back the category that was scored.
+    const correct = stripTags(q.options.filter((o) => o.key === q.correctKey)[0].label);
+    const wanted = /^Adapting\b/.test(correct) ? /adapt/i : /modif/i;
+    assert.match(q.explain(), wanted,
+      `the answer is "${correct}" but the explanation argues the other way: ${q.explain()}`);
+    checked++;
+  });
+  assert.ok(checked > 100, `expected plenty of adapt/modify questions, saw ${checked}`);
+});
+
+test('texas: every effect offered is sometimes the right answer', () => {
+  // The effects case draws its distractors from the SAME change's other column,
+  // which is what stops it being answerable by spotting the odd topic out. That
+  // only holds while both columns are really in play: an effect that is never
+  // the answer is one a kid learns to strike on sight, and an effect filed in
+  // the wrong column would show up here as one that is always struck.
+  const cfg = loadModes('texas');
+  const mode = cfg.modes.filter((m) => m.id === 'effect')[0];
+  assert.ok(mode, 'the effects case should exist');
+
+  const offered = new Map();   // change -> set of labels ever shown
+  const correct = new Map();   // change -> set of labels ever correct
+  const polarity = new Map();  // change -> set of ('positive'|'negative')
+  const add = (map, key, value) => {
+    if (!map.has(key)) map.set(key, new Set());
+    map.get(key).add(value);
+  };
+
+  for (let i = 0; i < 20000; i++) {
+    const q = mode.gen();
+    const change = stripTags(/<div class="brief-box">([\s\S]*?)<\/div>/.exec(q.prompt)[1]);
+    assert.equal(q.options.length, 4, 'an effects question offers four effects');
+    for (const o of q.options) add(offered, change, stripTags(o.label));
+    add(correct, change, stripTags(q.options.filter((o) => o.key === q.correctKey)[0].label));
+    add(polarity, change, /positive/.test(stripTags(q.prompt)) ? 'positive' : 'negative');
+  }
+
+  assert.ok(offered.size >= 6, `expected several changes in the pool, saw ${offered.size}`);
+  for (const [change, labels] of offered) {
+    const everCorrect = correct.get(change);
+    for (const label of labels) {
+      assert.ok(everCorrect.has(label),
+        `"${change}" offers "${label}" but it is never the answer — ` +
+        `it can be eliminated without reasoning`);
+    }
+    assert.equal(polarity.get(change).size, 2,
+      `"${change}" is only ever asked one way round, so half its effects go unused`);
+  }
 });

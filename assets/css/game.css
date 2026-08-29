@@ -186,10 +186,28 @@ h1.title{
   background:rgba(178,58,72,0.10);
   padding:0 3px; border-radius:3px;
 }
+/* The actual question, when the prompt also carries something to read first --
+   a passage, a word, a field note. It lived in ela.css until a second subject
+   (the social studies game) started asking questions the same way; a rule two
+   subject sheets both need is a shared rule. */
+.q-line{ font-weight:700; }
 
 .options-grid{
   display:grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr));
   gap:10px; margin-top:6px;
+}
+/* The prose subjects ask in sentences, not in numbers: an option is a whole
+   statement rather than "4,000" or "<". The grid above is sized for the math
+   games, where minmax(150px,1fr) fits four short answers across a row -- the
+   same grid turns a sentence into a narrow ribbon five words tall. Widen the
+   minimum column so a long option gets a readable line; auto-fit still falls
+   back to one column on a phone. Keyed off the theme already on <html> rather
+   than copied into each subject sheet: it lived in ela.css and was duplicated
+   byte-for-byte into social-studies.css, and a rule two subject sheets both
+   need is a shared rule. */
+[data-theme="ela"] .options-grid,
+[data-theme="social-studies"] .options-grid{
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
 }
 /* .opt-wrap exists so the strike toggle can be a SIBLING of the option button
    rather than a child: <button> may not contain interactive content, and while
