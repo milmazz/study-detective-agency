@@ -12,18 +12,15 @@
   numeration-types.js gives: a renderer only one game can use shouldn't ship to
   every game that loads the engine.
 
-  Load AFTER game-engine.js and BEFORE the page's own script, so the types are
-  registered by the time DetectiveGame.start() runs.
+  Imports the engine and registers against it as a side effect, so the page
+  (and the tests) just import this file before calling DetectiveGame.start().
 */
+import DetectiveGame from './game-engine.js';
+
 (function(){
   "use strict";
 
-  // Browser: the engine is already a global. Node: pull it in, so the tests can
-  // require() this file and register against the real engine rather than a stub.
-  var DG = (typeof DetectiveGame !== 'undefined') ? DetectiveGame
-         : (typeof require === 'function') ? require('./game-engine.js')
-         : null;
-  if (!DG) throw new Error('ledger-types.js: load game-engine.js first');
+  var DG = DetectiveGame;
 
   /*
     What counts as a typed number.

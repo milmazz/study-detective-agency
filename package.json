@@ -2,6 +2,7 @@
   "name": "study-detective-agency",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "Browser-based 4th grade study games, themed as detective case files.",
   "license": "MIT",
   "scripts": {

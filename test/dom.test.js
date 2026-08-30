@@ -1,4 +1,3 @@
-'use strict';
 // Run with: node --test
 //
 // The rendering and wiring half of the engine, driven through a real DOM.
@@ -13,11 +12,13 @@
 // that matched no CSS rule, elements carried a focus ring but no key handler,
 // and a missing element threw after the last question rather than at load.
 
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { GAMES, openPage, haveJsdom, click, press } = require('../test-support/load-game.js');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { GAMES, openPage, prepareDom, click, press } from '../test-support/load-game.js';
 
-const skip = haveJsdom() ? false : 'jsdom is not installed — run `npm install`';
+// Bundles each page's module graph to a classic script once, up front — jsdom
+// does not execute <script type="module">. Everything below stays synchronous.
+const skip = (await prepareDom()) ? false : 'jsdom is not installed — run `npm install`';
 
 // Controls, in the order a player would reach for them. A single selector list
 // would match by DOCUMENT order instead, which picks up the decorative digit

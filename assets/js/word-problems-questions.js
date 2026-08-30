@@ -10,13 +10,12 @@
   See numeration-questions.js's header for why this lives under assets/js/
   and why it deliberately doesn't call DetectiveGame.start() itself.
 */
+import DetectiveGame from './game-engine.js';
+
 var WORD_PROBLEMS_QUESTIONS = (function(){
   "use strict";
 
-  var DG = (typeof DetectiveGame !== 'undefined') ? DetectiveGame
-         : (typeof require === 'function') ? require('./game-engine.js')
-         : null;
-  if (!DG) throw new Error('assets/js/word-problems-questions.js: load game-engine.js first');
+  var DG = DetectiveGame;
 
   var randInt = DG.randInt, choice = DG.choice, shuffle = DG.shuffle, fmt = DG.fmt;
 
@@ -419,5 +418,4 @@ var WORD_PROBLEMS_QUESTIONS = (function(){
   };
 })();
 
-if (typeof window !== 'undefined') { window.WORD_PROBLEMS_QUESTIONS = WORD_PROBLEMS_QUESTIONS; }
-if (typeof module !== 'undefined' && module.exports) { module.exports = WORD_PROBLEMS_QUESTIONS; }
+export default WORD_PROBLEMS_QUESTIONS;

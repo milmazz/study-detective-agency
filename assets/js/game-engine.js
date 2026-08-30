@@ -650,7 +650,4 @@ var DetectiveGame = (function(){
   };
 })();
 
-// No-op in the browser; lets `node --test` require() this file directly
-// without a bundler. See test/game-engine.test.js.
-if (typeof window !== 'undefined') { window.DetectiveGame = DetectiveGame; }
-if (typeof module !== 'undefined' && module.exports) { module.exports = DetectiveGame; }
+export default DetectiveGame;

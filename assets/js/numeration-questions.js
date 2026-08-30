@@ -14,19 +14,16 @@
   Exports the config object DetectiveGame.start() takes. The page calls start();
   this file deliberately does not, so requiring it has no side effects.
 
-  Load AFTER game-engine.js. Order relative to numeration-types.js does not
+  Order relative to numeration-types.js does not
   matter -- the generators only name types, which the engine resolves at render
   time -- but both must be in place before start() runs.
 */
+import DetectiveGame from './game-engine.js';
+
 var NUMERATION_QUESTIONS = (function(){
   "use strict";
 
-  // Browser: the engine is already a global. Node: pull it in directly, so the
-  // tests get the real randInt/choice/shuffle/fmt rather than stand-ins.
-  var DG = (typeof DetectiveGame !== 'undefined') ? DetectiveGame
-         : (typeof require === 'function') ? require('./game-engine.js')
-         : null;
-  if (!DG) throw new Error('assets/js/numeration-questions.js: load game-engine.js first');
+  var DG = DetectiveGame;
 
   var randInt = DG.randInt, choice = DG.choice,
       shuffle = DG.shuffle, fmt = DG.fmt;
@@ -491,5 +488,4 @@ var NUMERATION_QUESTIONS = (function(){
   };
 })();
 
-if (typeof window !== 'undefined') { window.NUMERATION_QUESTIONS = NUMERATION_QUESTIONS; }
-if (typeof module !== 'undefined' && module.exports) { module.exports = NUMERATION_QUESTIONS; }
+export default NUMERATION_QUESTIONS;

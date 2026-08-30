@@ -22,13 +22,12 @@
   See numeration-questions.js's header for why this lives under assets/js/ and
   why it deliberately doesn't call DetectiveGame.start() itself.
 */
+import DetectiveGame from './game-engine.js';
+
 var LEDGER_QUESTIONS = (function(){
   "use strict";
 
-  var DG = (typeof DetectiveGame !== 'undefined') ? DetectiveGame
-         : (typeof require === 'function') ? require('./game-engine.js')
-         : null;
-  if (!DG) throw new Error('assets/js/ledger-questions.js: load game-engine.js first');
+  var DG = DetectiveGame;
 
   var randInt = DG.randInt, choice = DG.choice, shuffle = DG.shuffle, fmt = DG.fmt;
 
@@ -886,5 +885,4 @@ var LEDGER_QUESTIONS = (function(){
   };
 })();
 
-if (typeof window !== 'undefined') { window.LEDGER_QUESTIONS = LEDGER_QUESTIONS; }
-if (typeof module !== 'undefined' && module.exports) { module.exports = LEDGER_QUESTIONS; }
+export default LEDGER_QUESTIONS;

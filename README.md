@@ -62,10 +62,10 @@ Four suites:
   `#badgeNum`).
 - **`test/question-modules.test.js`** — the wiring rather than the
   content: that each page loads exactly one question module, that the
-  module sits under `assets/js/` where the tests can require it, that
-  every script tag is `type="module"` so Vite actually bundles it, that
-  the page starts from a global its module assigns, and that requiring a
-  module has no side effects.
+  module sits under `assets/js/` where the tests can import it, that the
+  page runs everything through one inline `type="module"` script whose
+  imports Vite bundles, that `start()` is called with the config that
+  script imports, and that importing a module has no side effects.
 
 Both dependencies (`vite`, `jsdom`) are dev-only — **no library code
 ships**; the deployed site is this repo's own HTML/CSS/JS, bundled. The
@@ -119,10 +119,12 @@ scripts/
   subset-fonts.sh                Regenerates assets/fonts/ (run by hand, not
                                   a build step — see assets/fonts/LICENSE.md)
 test-support/
-  load-game.js                   Requires a game page's own modules for tests.
-                                  Outside test/ because `node --test` globs
-                                  everything under it, and a helper is not a
-                                  test
+  load-game.js                   Imports a game page's own modules for tests,
+                                  and bundles each page to a classic script
+                                  for jsdom (which does not run module
+                                  scripts). Outside test/ because `node --test`
+                                  globs everything under it, and a helper is
+                                  not a test
 test/
   game-engine.test.js            Pure helpers
   generators.test.js             Property tests over every question generator
@@ -209,12 +211,13 @@ games/
    under `assets/js/`, not inline in the page. Two reasons: Vite bundles it
    into a content-hashed file served `immutable` for a year, where the
    page's HTML expires in 300s, and the content is the overwhelming
-   majority of a game's bytes; and a module can be `require()`d by the
-   tests directly. Copy the export footer from an existing questions
-   module so it works in both the browser and node.
+   majority of a game's bytes; and a module can be imported by the tests
+   directly. These are plain ES modules: import what you use
+   (`import DetectiveGame from './game-engine.js'`) and end with
+   `export default MY_QUESTIONS;`.
 
-   The module *returns* the config rather than starting the game, so that
-   requiring it has no side effects. The page then calls:
+   The module *exports* the config rather than starting the game, so that
+   importing it has no side effects. The page then calls:
 
    ```js
    DetectiveGame.start({
@@ -248,8 +251,8 @@ games/
    chip groups the Ledger Files needs, and nothing else loads them.
 
    If your cases draw from fixed item pools rather than generating fresh
-   content each time, link `assets/js/question-kit.js` (after the engine,
-   before your module) and build your pools with `QUESTION_KIT.drawers({...})`.
+   content each time, `import QUESTION_KIT from './question-kit.js'` in
+   your module and build your pools with `QUESTION_KIT.drawers({...})`.
    That deals items without replacement; hand its `resetAll` to `onCaseStart`
    and keep `questionsPerCase` at or below your smallest pool, and a case
    cannot repeat an item at all. All three of the ELA and social studies games
@@ -262,16 +265,21 @@ games/
    prompt never changes and varies only its options counts as repeating
    itself — rightly, since that is what a reader sees — so put the thing being
    asked about in the prompt.
-4. Link that module after the engine (and after any type module), and
-   start the game from the global it exports. Every tag — the inline
-   `start()` call included — must be `type="module"`: that's what tells
-   Vite to bundle it, and modules are deferred, so a classic inline script
-   would run before the files it needs.
+4. Wire the page with one inline `type="module"` script: import the
+   engine, any type module the game registers (a side-effect import), and
+   the question config, then start the game. That single block is what
+   Vite bundles into the page's hashed entry chunk — a `<script src>` tag
+   or a classic inline script would ship un-bundled and break in
+   production, and `test/question-modules.test.js` fails the page that
+   tries.
 
    ```html
-   <script type="module" src="../../assets/js/game-engine.js"></script>
-   <script type="module" src="../../assets/js/my-questions.js"></script>
-   <script type="module">DetectiveGame.start(MY_QUESTIONS);</script>
+   <script type="module">
+   import DetectiveGame from '../../assets/js/game-engine.js';
+   import '../../assets/js/my-types.js';        // only if the game registers types
+   import MY_QUESTIONS from '../../assets/js/my-questions.js';
+   DetectiveGame.start(MY_QUESTIONS);
+   </script>
    ```
 
 5. Add one entry to the `GAMES_DATA` array inside `index.html`'s own

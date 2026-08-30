@@ -12,18 +12,14 @@
   - buildOptionsFromPool()  assembles a fixed-vocabulary MCQ, guaranteeing the
                   correct option is in the list and that the list is shuffled.
 
-  Load AFTER game-engine.js and BEFORE the game's own questions module.
-  Exports no game content and registers nothing, so requiring it is free.
+  Exports no game content and registers nothing, so importing it is free.
 */
+import DetectiveGame from './game-engine.js';
+
 var QUESTION_KIT = (function(){
   "use strict";
 
-  // Browser: the engine is already a global. Node: pull it in directly, so the
-  // tests get the real shuffle rather than a stand-in.
-  var DG = (typeof DetectiveGame !== 'undefined') ? DetectiveGame
-         : (typeof require === 'function') ? require('./game-engine.js')
-         : null;
-  if (!DG) throw new Error('assets/js/question-kit.js: load game-engine.js first');
+  var DG = DetectiveGame;
 
   var shuffle = DG.shuffle;
 
@@ -108,5 +104,4 @@ var QUESTION_KIT = (function(){
   };
 })();
 
-if (typeof window !== 'undefined') { window.QUESTION_KIT = QUESTION_KIT; }
-if (typeof module !== 'undefined' && module.exports) { module.exports = QUESTION_KIT; }
+export default QUESTION_KIT;
