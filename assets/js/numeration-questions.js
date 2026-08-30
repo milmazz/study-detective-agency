@@ -4,9 +4,9 @@
   The engine renders these; the place-value renderers they rely on are
   registered by numeration-types.js.
 
-  Lives here rather than inline in the page for two reasons. Assets under
-  /assets/ are served immutable and cached for a year against their ?v= token,
-  where the page's own HTML expires in 300s -- and this file is ~89% of what
+  Lives here rather than inline in the page for two reasons. The build bundles
+  it into a content-hashed file served immutable and cached for a year, where
+  the page's own HTML expires in 300s -- and this file is ~89% of what
   that page used to weigh, so a returning player was re-downloading all of it
   every five minutes. And a module can be require()d directly by the tests
   instead of being regex'd out of the HTML and run in a vm.

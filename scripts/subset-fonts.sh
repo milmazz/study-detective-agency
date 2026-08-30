@@ -13,9 +13,10 @@
 # Monospace is deliberately absent: it's a system stack (--mono in base.css),
 # not a webfont.
 #
-# Fonts are served immutable with no ?v= cache-buster, so if you change what
-# these files CONTAIN you must also change their FILENAME, and update both
-# base.css's url() and the preload href in every page's <head> to match.
+# The build content-hashes the served filenames, so cache-busting is
+# automatic -- but the SOURCE filename encodes the subset, so if you change
+# what these files CONTAIN, rename them and update both base.css's url()
+# and the preload href in every page's <head> to match.
 #
 # Requires fonttools + brotli, which is why this lives outside the site:
 #   python3 -m venv /tmp/fontenv && /tmp/fontenv/bin/pip install fonttools brotli

@@ -5,9 +5,9 @@
 //
 // Game content used to live in an inline <script> in each page. Moving it to
 // assets/js/ is what lets the other suites require() it instead of pulling it
-// out of the HTML with a regex -- and it is what gets that content the
-// year-long immutable cache /assets/* has, where the page's own HTML expires in
-// 300s. Both of those depend on the wiring staying right, and nothing else
+// out of the HTML with a regex -- and it is what lets Vite bundle it into the
+// content-hashed, immutably-cached output, where the page's own HTML expires
+// in 300s. Both of those depend on the wiring staying right, and nothing else
 // checks it: a page that re-inlines its generators, or links a module it does
 // not have, still renders fine right up until it doesn't.
 
@@ -15,7 +15,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { GAMES, loadModes, pageModules, ROOT, ENGINE } = require('../test-support/load-game.js');
+const { GAMES, loadModes, pageModules, pageStylesheets, ROOT, ENGINE } = require('../test-support/load-game.js');
 
 const GAME_KEYS = Object.keys(GAMES);
 
@@ -38,23 +38,27 @@ for (const key of GAME_KEYS) {
       `expected one question module, found: ${exporters.join(', ') || 'none'}`);
   });
 
-  test(`${key}: the question module is served from /assets/`, () => {
-    // This is the whole point of extracting it. Anywhere else -- next to the
-    // page under /games/ -- and _headers gives it max-age=300 instead of a
-    // year, so a returning player re-downloads the generators every 5 minutes.
+  test(`${key}: the question module lives under assets/js/`, () => {
+    // The convention every game follows, and what keeps a page from growing
+    // its content back inline: one place the tests require() from, one place
+    // the build bundles from.
     const cfg = loadModes(key);
     assert.match(cfg.questionModule.split(path.sep).join('/'), /^assets\/js\/.+\.js$/,
-      `${cfg.questionModule} would not get the immutable caching /assets/* has`);
+      `${cfg.questionModule} is outside the assets/js/ convention`);
   });
 
-  test(`${key}: every module the page links carries a ?v= token`, () => {
-    // Assets are immutable for a year, so the token in the HTML is the only
-    // thing that busts a returning visitor's cache.
+  test(`${key}: every script the page links is a module tag Vite bundles`, () => {
+    // Vite only bundles <script type="module">. A classic <script src> ships
+    // un-bundled, still pointing at a source path that does not exist in
+    // dist/ -- the page renders right up until the script 404s in production.
+    // A leftover ?v= token is the same kind of rot: the build's content hash
+    // replaced it, and a query string would just confuse resolution.
     const html = fs.readFileSync(path.join(ROOT, GAMES[key].page), 'utf8');
-    const srcs = [...html.matchAll(/<script src="([^"]+)"><\/script>/g)].map((m) => m[1]);
-    assert.ok(srcs.length > 0, 'the page links no scripts at all');
-    for (const src of srcs) {
-      assert.match(src, /\?v=\d+$/, `${src} has no ?v= cache-buster`);
+    const tags = [...html.matchAll(/<script\b[^>]*\bsrc="([^"]+)"[^>]*>/g)];
+    assert.ok(tags.length > 0, 'the page links no scripts at all');
+    for (const [tag, src] of tags) {
+      assert.match(tag, /type="module"/, `${tag} is not type="module", so Vite will not bundle it`);
+      assert.ok(!src.includes('?'), `${src} carries a query string; the build's content hash replaced ?v=`);
     }
   });
 
@@ -172,12 +176,12 @@ for (const key of GAME_KEYS) {
     const declared = /<html[^>]*\sdata-theme="([^"]+)"/.exec(html);
     assert.ok(declared, `${GAMES[key].page} sets no data-theme on <html>`);
 
-    // Read the themes out of the sheets the page actually links, for the same
-    // reason pageModules() does: a list written here goes on passing after the
-    // stylesheets stop defining the theme it names.
-    const pageDir = path.dirname(path.join(ROOT, GAMES[key].page));
-    const css = [...html.matchAll(/<link[^>]+href="([^"]+\.css[^"]*)"/g)]
-      .map((m) => fs.readFileSync(path.resolve(pageDir, m[1].split('?')[0]), 'utf8'))
+    // Read the themes out of the sheets the page actually loads — the one it
+    // links plus that sheet's @import chain — for the same reason
+    // pageModules() reads the page: a list written here goes on passing after
+    // the stylesheets stop defining the theme it names.
+    const css = pageStylesheets(GAMES[key].page)
+      .map((f) => fs.readFileSync(path.join(ROOT, f), 'utf8'))
       .join('\n');
     const known = new Set(
       [...css.matchAll(/\[data-theme="([^"]+)"\]/g)].map((m) => m[1])
@@ -195,13 +199,11 @@ for (const key of GAME_KEYS) {
     // same shape ("classes were added that matched no CSS rule") but only ever
     // checked the two grading classes by hand.
     //
-    // The stylesheets are read from the page rather than listed here, for the
-    // reason pageModules() gives: a hardcoded list keeps passing after the page
-    // stops linking a sheet.
+    // The stylesheets are read from the page (and the linked sheet's @import
+    // chain) rather than listed here, for the reason pageModules() gives: a
+    // hardcoded list keeps passing after the page stops linking a sheet.
     const html = fs.readFileSync(path.join(ROOT, GAMES[key].page), 'utf8');
-    const pageDir = path.dirname(path.join(ROOT, GAMES[key].page));
-    const sheets = [...html.matchAll(/<link[^>]+href="([^"]+\.css[^"]*)"/g)]
-      .map((m) => path.relative(ROOT, path.resolve(pageDir, m[1].split('?')[0])));
+    const sheets = pageStylesheets(GAMES[key].page);
     assert.ok(sheets.length > 0, 'the page links no stylesheet at all');
 
     // Inline <style> counts too: the pages carry a deliberate render-blocking

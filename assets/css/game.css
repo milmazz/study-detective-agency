@@ -1,11 +1,13 @@
 /*
   Shared "detective agency" game shell — masthead, case cards, the trail
   map, every question-type layout, and the summary screen. Used by every
-  game page under games/<subject>/. Requires base.css to be loaded first;
-  set data-theme="math" | "ela" | "social-studies" on <html> for accent
-  colors, and add a subject-specific stylesheet (e.g. ela.css) for any
-  question types unique to that subject.
+  game page under games/<subject>/. Imports base.css itself, so a page
+  links only its subject sheet (e.g. ela.css), which imports this one:
+  the @import chain is what fixes the cascade order, because the bundler
+  makes no promise about the order of separate <link> tags it emits. Set
+  data-theme="math" | "ela" | "social-studies" on <html> for accent colors.
 */
+@import './base.css';
 
 body{
   display:flex;

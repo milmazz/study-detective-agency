@@ -9,9 +9,10 @@
      because base.css has to download and parse before the browser would
      otherwise discover it. -->
 <link rel="preload" as="font" type="font/woff2" href="../../assets/fonts/baloo2-latin1.woff2" crossorigin>
-<link rel="stylesheet" href="../../assets/css/base.css?v=4">
-<link rel="stylesheet" href="../../assets/css/game.css?v=9">
-<link rel="stylesheet" href="../../assets/css/ela.css?v=3">
+<!-- ELA question styles. Imports game.css and base.css itself (see its
+     header), so this one link carries the whole chain in the right
+     cascade order. -->
+<link rel="stylesheet" href="../../assets/css/ela.css">
 </head>
 <body>
 <div class="agency">
@@ -38,12 +39,12 @@
   <main id="app"></main>
 </div>
 
-<script src="../../assets/js/game-engine.js?v=8"></script>
+<script type="module" src="../../assets/js/game-engine.js"></script>
 <!-- Shared pool-drawing helpers, then this game's own content. Both live
-     under /assets/ so they are cached for a year against their ?v= token
-     instead of expiring with this page. -->
-<script src="../../assets/js/question-kit.js?v=1"></script>
-<script src="../../assets/js/kitoto-questions.js?v=1"></script>
-<script>DetectiveGame.start(KITOTO_QUESTIONS);</script>
+     under assets/js/ rather than inline so the tests can require() them
+     and the build serves them content-hashed and immutable. -->
+<script type="module" src="../../assets/js/question-kit.js"></script>
+<script type="module" src="../../assets/js/kitoto-questions.js"></script>
+<script type="module">DetectiveGame.start(KITOTO_QUESTIONS);</script>
 </body>
 </html>

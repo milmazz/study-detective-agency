@@ -4,7 +4,8 @@
 
 A small, static website of browser-based study games for 4th grade, themed
 as detective "case files." Built to give my kid another way to
-practice — no build step, no backend, no accounts, just HTML/CSS/JS.
+practice — no backend, no accounts, no framework, just HTML/CSS/JS bundled
+by [Vite](https://vite.dev).
 
 Live divisions:
 - **Numbers Division** (math) — place value, expanded form, comparing,
@@ -22,20 +23,19 @@ Live divisions:
 
 ## Running it locally
 
-The deployed site itself needs no build step, but local tooling (the dev
-server, the test suite) runs on Node. This repo pins Node 24 via
-[mise](https://mise.jdx.dev) in `mise.toml`; with mise installed, `cd`
-into the repo and it picks up the right version automatically.
+This repo pins Node 24 via [mise](https://mise.jdx.dev) in `mise.toml`;
+with mise installed, `cd` into the repo and it picks up the right version
+automatically.
 
 ```bash
-node scripts/dev-server.js
+npm ci
+npm run dev
 ```
 
-Then open `http://localhost:8000/`. This isn't a generic static file
-server — the site is deployed on Cloudflare with clean URLs
-(`/games/math/foo`, no `.html`), so this script mimics that resolution
-locally too (see the script's docstring). Responses are also sent with
-no-cache headers, so edits always show up on refresh.
+Then open the URL Vite prints. The site is deployed on Cloudflare with
+clean URLs (`/games/math/foo`, no `.html`); the `cleanUrls()` plugin in
+`vite.config.mjs` mimics that resolution locally, in both `npm run dev`
+and `npm run preview` (which serves the built `dist/`).
 
 ## Testing
 
@@ -62,47 +62,46 @@ Four suites:
   `#badgeNum`).
 - **`test/question-modules.test.js`** — the wiring rather than the
   content: that each page loads exactly one question module, that the
-  module sits under `/assets/` where the year-long cache actually
-  applies, that every script tag carries a `?v=`, that the page starts
-  from a global its module assigns, and that requiring a module has no
-  side effects.
+  module sits under `assets/js/` where the tests can require it, that
+  every script tag is `type="module"` so Vite actually bundles it, that
+  the page starts from a global its module assigns, and that requiring a
+  module has no side effects.
 
-`jsdom` is the repo's only dependency and is dev-only — **nothing here
-ships**, and `.assetsignore` keeps `package.json`, the lockfile and
-`node_modules` out of what gets deployed. `test/dom.test.js` skips itself
-when jsdom is missing, so `node --test` still works on a fresh clone with
-no install; you just get the other three suites. CI installs it so the DOM
-half always runs.
+Both dependencies (`vite`, `jsdom`) are dev-only — **no library code
+ships**; the deployed site is this repo's own HTML/CSS/JS, bundled. The
+tests run against the sources directly, no build needed first, and
+`test/dom.test.js` skips itself when jsdom is missing, so `node --test`
+still works on a fresh clone with no install; you just get the other three
+suites. CI installs it so the DOM half always runs, then builds, so a
+change that breaks `vite build` fails before merge.
 
 Layout and visual appearance still aren't covered — check those by hand in
-a browser via `scripts/dev-server.js`.
+a browser via `npm run dev`.
 
 ## Deployment
 
 Hosted on Cloudflare (Workers with static assets), deployed automatically
-on push to `main`. A few repo-root files exist only for that and aren't
-part of the site itself:
+on push to `main`. What gets deployed is **`dist/`, the output of
+`npm run build`** — `wrangler.jsonc` points at it, and its `build.command`
+makes wrangler run that build itself before `deploy`/`versions upload`, so
+the deploy cannot see a stale or missing `dist/` no matter what invokes it.
+The only prerequisite is installed dependencies, which Workers Builds'
+automatic `npm clean-install` step already covers.
 
 - `wrangler.jsonc` — deploy config (asset directory, clean-URL handling)
-- `_headers` — Cache-Control rules Cloudflare applies per path
-- `.assetsignore` — repo/tooling files excluded from what gets deployed
-  (this repo's `.git`, `README.md`, `scripts/`, `test/`, etc.) —
-  `scripts/dev-server.js` reads the same file so local dev matches
+- `public/` — files the build copies into `dist/` verbatim: `_headers`
+  (Cache-Control rules Cloudflare applies per path) and the og:image,
+  which needs a stable URL because social scrapers cache by URL
 
-Assets are cached for a year as `immutable`, so **every CSS/JS URL carries a
-hand-bumped `?v=N`**. Bump it in the same commit as the asset change: the
-token lives in the HTML, which expires in 300s, so visitors pick up both
-within five minutes. Fonts are exempt (they version by filename) because a
-preload `href` has to match the `url()` in `base.css` byte-for-byte.
-
-CI enforces this on every pull request: `scripts/check-asset-versions.js`
-diffs the branch against its merge base and fails when a changed asset is
-still linked by the token it had before. It reads which assets are
-versioned from the pages themselves, so an asset no page links with a `?v=`
-opts out by construction — that's how fonts are exempt without being named
-anywhere. Run it by hand with `node scripts/check-asset-versions.js main
-HEAD`. It's a CI step rather than a test because a shallow clone has no
-history to compare against and would fail for the wrong reason.
+Everything under `/assets/` is cached for a year as `immutable`, which is
+safe because Vite content-hashes every filename it emits there
+(`game-engine-D41xyz.js`): changed bytes mean a changed URL, by
+construction. The hashed URL lives in the HTML, which expires in 300s, so
+visitors pick up an asset change within five minutes of a deploy. This
+replaces the hand-bumped `?v=N` token every asset URL used to carry, the
+CI script that policed it, and the fonts' filename-versioning exemption —
+the preload `href` and the `url()` in `base.css` now match because the
+bundler rewrites both from the same source file.
 
 ## Project structure
 
@@ -111,10 +110,12 @@ index.html                       Homepage — the game catalog (GAMES_DATA/
                                   SUBJECTS) and its own layout CSS live
                                   inline (fewer render-blocking requests);
                                   base.css stays linked since it's shared
+vite.config.mjs                  Build config: every page is a Rollup input
+                                  (discovered by scanning games/), plus the
+                                  cleanUrls() dev/preview plugin
+public/                          Copied into dist/ verbatim by the build:
+                                  _headers and the stable-URL og:image
 scripts/
-  dev-server.js                  Local dev server (see "Running it locally")
-  check-asset-versions.js        Fails CI when an asset changed but its ?v=
-                                  token did not (see "Deployment")
   subset-fonts.sh                Regenerates assets/fonts/ (run by hand, not
                                   a build step — see assets/fonts/LICENSE.md)
 test-support/
@@ -128,12 +129,16 @@ test/
   dom.test.js                    Rendering + wiring, via jsdom (see "Testing")
   question-modules.test.js       How each page wires up its modules
 assets/
-  css/
+  css/                           Each game page links ONE sheet — its subject
+                                  sheet — and that sheet @imports the rest of
+                                  its chain (subject -> game.css -> base.css),
+                                  which is what fixes the cascade order in the
+                                  bundled output
     base.css                     Shared tokens (colors, reset) + per-subject
                                   theme, and the @font-face blocks
     game.css                     Shared game shell (masthead, cards, summary,
                                   and the subject-neutral question types)
-                                  used by every game page
+                                  used by every game page; imports base.css
     numeration.css               Math-only question styles (digit boxes,
                                   Number A/B cards, order tiles, </>/=)
     ela.css                      ELA-only question styles (reading passages,
@@ -187,25 +192,23 @@ games/
 ## Adding a new game
 
 1. Drop the new game's HTML file into `games/<subject>/`.
-2. Link `../../assets/css/base.css`, `../../assets/css/game.css`, and
-   `../../assets/js/game-engine.js` in its `<head>`/before its own script,
-   and set `data-theme="math" | "ela" | "social-studies"` on the `<html>`
-   tag to pick up that subject's accent color. If your subject has its own
-   stylesheet — ELA has `ela.css` for reading passages, math has
-   `numeration.css` for its place-value widgets, `word-problems.css` for
-   word-problem furniture and strip diagrams, and `ledger.css` for typed
-   answers and chip groups — link those too,
-   after `game.css`. Copy the `?v=N` on those
-   URLs from an existing page — assets are served `immutable`, so that
-   token is the only thing that busts a returning visitor's cache (see
-   `_headers`). The page also needs a `<div id="app">` for the engine to
-   render into, and an element with `id="badgeNum"` for the closed-case
-   counter. Copying an existing game page gets all of this right.
+2. Link ONE stylesheet — your subject's sheet (ELA has `ela.css` for
+   reading passages, math has `numeration.css` for its place-value widgets,
+   `word-problems.css` for word-problem furniture and strip diagrams, and
+   `ledger.css` for typed answers and chip groups). Each subject sheet
+   `@import`s `game.css`, which imports `base.css`, so that single link
+   carries the whole chain in the right cascade order; a new subject sheet
+   starts with `@import './game.css';`. Set
+   `data-theme="math" | "ela" | "social-studies"` on the `<html>` tag to
+   pick up that subject's accent color. The page also needs a
+   `<div id="app">` for the engine to render into, and an element with
+   `id="badgeNum"` for the closed-case counter. Copying an existing game
+   page gets all of this right.
 3. Put the game's content — its question generators and a `MODES` array
    (`{id, caseNo, title, icon, blurb, gen}` per case) — in its own module
-   under `assets/js/`, not inline in the page. Two reasons: `/assets/*` is
-   served `immutable` and cached for a year against its `?v=` token, where
-   the page's HTML expires in 300s, and the content is the overwhelming
+   under `assets/js/`, not inline in the page. Two reasons: Vite bundles it
+   into a content-hashed file served `immutable` for a year, where the
+   page's HTML expires in 300s, and the content is the overwhelming
    majority of a game's bytes; and a module can be `require()`d by the
    tests directly. Copy the export footer from an existing questions
    module so it works in both the browser and node.
@@ -260,12 +263,15 @@ games/
    itself — rightly, since that is what a reader sees — so put the thing being
    asked about in the prompt.
 4. Link that module after the engine (and after any type module), and
-   start the game from the global it exports:
+   start the game from the global it exports. Every tag — the inline
+   `start()` call included — must be `type="module"`: that's what tells
+   Vite to bundle it, and modules are deferred, so a classic inline script
+   would run before the files it needs.
 
    ```html
-   <script src="../../assets/js/game-engine.js?v=8"></script>
-   <script src="../../assets/js/my-questions.js?v=1"></script>
-   <script>DetectiveGame.start(MY_QUESTIONS);</script>
+   <script type="module" src="../../assets/js/game-engine.js"></script>
+   <script type="module" src="../../assets/js/my-questions.js"></script>
+   <script type="module">DetectiveGame.start(MY_QUESTIONS);</script>
    ```
 
 5. Add one entry to the `GAMES_DATA` array inside `index.html`'s own

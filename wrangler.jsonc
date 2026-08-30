@@ -1,16 +1,27 @@
 {
-  // Tells `wrangler deploy` to publish this repo as a static-assets-only
+  // Tells `wrangler deploy` to publish dist/ as a static-assets-only
   // Worker — no custom script/logic, it just serves the files as-is
-  // (equivalent to what Cloudflare Pages does). `_headers` in the repo
-  // root is picked up automatically from this directory.
+  // (equivalent to what Cloudflare Pages does). dist/ is what
+  // `npm run build` (Vite) writes, so a deploy is always: build, then
+  // deploy. `_headers` is copied into dist/ by the build (from public/)
+  // and picked up automatically from this directory.
   "name": "study-detective-agency",
   "compatibility_date": "2026-08-24",
+  // Wrangler runs this itself before `deploy` / `versions upload`, so the
+  // deploy cannot see a stale or missing dist/ no matter what invokes it —
+  // Cloudflare's Workers Builds, CI, or someone deploying by hand. (Running
+  // it twice, e.g. after a dashboard-configured build command, is a cheap
+  // no-op: the build is a fresh sub-second Vite run either way.)
+  "build": {
+    "command": "npm run build"
+  },
   "assets": {
-    "directory": "./",
+    "directory": "./dist",
     // Clean URLs: /foo.html redirects to /foo, and / still serves
     // index.html. This is already the default, spelled out here so it's
     // not relying on an unstated default. Every internal link in this
-    // site is written extension-less to match, so nothing ever redirects.
+    // site is written extension-less to match, and the cleanUrls()
+    // plugin in vite.config.mjs mimics the same resolution in dev.
     "html_handling": "auto-trailing-slash"
   }
 }

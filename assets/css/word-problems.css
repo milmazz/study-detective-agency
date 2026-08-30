@@ -9,10 +9,12 @@
   numeration-questions.js embeds a <span class="hl"> place name, so this file
   only has to style what that HTML produces.
 
-  Load AFTER game.css, alongside a page's own question module. The Ledger
-  Files loads ledger.css after this for its typed answers, chip groups and
-  miniature diagrams.
+  Imports the shared shell (which imports base.css), so the Missing Evidence
+  Files links only this sheet — the @import chain fixes the cascade order.
+  The Ledger Files links ledger.css, which imports this file in turn for its
+  typed answers, chip groups and miniature diagrams.
 */
+@import './game.css';
 
 /* The lead paragraph of every prompt. Without a rule here it inherited the
    UA default `margin:1em 0` -- base.css resets only html/body, not p -- which
