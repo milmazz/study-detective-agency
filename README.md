@@ -82,9 +82,11 @@ a browser via `npm run dev`.
 
 Hosted on Cloudflare (Workers with static assets), deployed automatically
 on push to `main`. What gets deployed is **`dist/`, the output of
-`npm run build`** — `wrangler.jsonc` points at it, so a deploy is always
-build-then-`wrangler deploy` (Cloudflare's build command must run
-`npm ci && npm run build` before the deploy command).
+`npm run build`** — `wrangler.jsonc` points at it, and its `build.command`
+makes wrangler run that build itself before `deploy`/`versions upload`, so
+the deploy cannot see a stale or missing `dist/` no matter what invokes it.
+The only prerequisite is installed dependencies, which Workers Builds'
+automatic `npm clean-install` step already covers.
 
 - `wrangler.jsonc` — deploy config (asset directory, clean-URL handling)
 - `public/` — files the build copies into `dist/` verbatim: `_headers`

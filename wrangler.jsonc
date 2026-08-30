@@ -7,6 +7,14 @@
   // and picked up automatically from this directory.
   "name": "study-detective-agency",
   "compatibility_date": "2026-08-24",
+  // Wrangler runs this itself before `deploy` / `versions upload`, so the
+  // deploy cannot see a stale or missing dist/ no matter what invokes it —
+  // Cloudflare's Workers Builds, CI, or someone deploying by hand. (Running
+  // it twice, e.g. after a dashboard-configured build command, is a cheap
+  // no-op: the build is a fresh sub-second Vite run either way.)
+  "build": {
+    "command": "npm run build"
+  },
   "assets": {
     "directory": "./dist",
     // Clean URLs: /foo.html redirects to /foo, and / still serves
