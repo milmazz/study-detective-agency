@@ -38,8 +38,13 @@
   <main id="app"></main>
 </div>
 
-<script type="module" src="../../assets/js/game-engine.js"></script>
-<script type="module" src="../../assets/js/word-problems-questions.js"></script>
-<script type="module">DetectiveGame.start(WORD_PROBLEMS_QUESTIONS);</script>
+<script type="module">
+// One entry: the engine and the question content (this game only uses the
+// engine's built-in question types). Vite bundles this block and everything
+// it imports into the page's hashed entry chunk.
+import DetectiveGame from '../../assets/js/game-engine.js';
+import WORD_PROBLEMS_QUESTIONS from '../../assets/js/word-problems-questions.js';
+DetectiveGame.start(WORD_PROBLEMS_QUESTIONS);
+</script>
 </body>
 </html>

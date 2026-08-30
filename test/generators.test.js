@@ -1,4 +1,3 @@
-'use strict';
 // Run with: node --test
 //
 // Property tests over every question generator in every game. No dependencies
@@ -11,9 +10,9 @@
 // Critical bugs were of exactly that shape, and both were found by running
 // these assertions rather than by reading the code.
 
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { GAMES, loadModes, stripTags } = require('../test-support/load-game.js');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { GAMES, loadModes, stripTags } from '../test-support/load-game.js';
 
 // Enough draws to catch a fault that shows up in a fraction of a percent.
 // genTrueFalse's bug hit 4.29% of its questions; the digit-zero half of it,

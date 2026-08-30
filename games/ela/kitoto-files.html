@@ -39,12 +39,13 @@
   <main id="app"></main>
 </div>
 
-<script type="module" src="../../assets/js/game-engine.js"></script>
-<!-- Shared pool-drawing helpers, then this game's own content. Both live
-     under assets/js/ rather than inline so the tests can require() them
-     and the build serves them content-hashed and immutable. -->
-<script type="module" src="../../assets/js/question-kit.js"></script>
-<script type="module" src="../../assets/js/kitoto-questions.js"></script>
-<script type="module">DetectiveGame.start(KITOTO_QUESTIONS);</script>
+<script type="module">
+// One entry: the engine and the question content (which imports the shared
+// pool-drawing question-kit itself). Vite bundles this block and everything
+// it imports into the page's hashed entry chunk.
+import DetectiveGame from '../../assets/js/game-engine.js';
+import KITOTO_QUESTIONS from '../../assets/js/kitoto-questions.js';
+DetectiveGame.start(KITOTO_QUESTIONS);
+</script>
 </body>
 </html>

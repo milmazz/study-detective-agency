@@ -1,13 +1,14 @@
-'use strict';
 // Run with: node --test
 // Covers the pure helpers DetectiveGame exposes for question generators
 // to reuse (randInt/choice/shuffle/fmt). The rendering/DOM-wiring half
 // of the engine isn't covered here — see README's "Running it locally"
 // for manually verifying that in a browser.
 
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { randInt, choice, shuffle, fmt } = require('../assets/js/game-engine.js');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import DetectiveGame from '../assets/js/game-engine.js';
+
+const { randInt, choice, shuffle, fmt } = DetectiveGame;
 
 test('randInt stays within [min, max], inclusive on both ends', () => {
   const seen = new Set();

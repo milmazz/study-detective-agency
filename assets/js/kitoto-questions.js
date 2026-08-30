@@ -19,20 +19,16 @@
   Exports the config object DetectiveGame.start() takes. The page calls start();
   this file deliberately does not, so requiring it has no side effects.
 
-  Load AFTER game-engine.js and question-kit.js.
 */
+import DetectiveGame from './game-engine.js';
+import QUESTION_KIT from './question-kit.js';
+
 var KITOTO_QUESTIONS = (function(){
   "use strict";
 
-  var DG = (typeof DetectiveGame !== 'undefined') ? DetectiveGame
-         : (typeof require === 'function') ? require('./game-engine.js')
-         : null;
-  if (!DG) throw new Error('assets/js/kitoto-questions.js: load game-engine.js first');
+  var DG = DetectiveGame;
 
-  var KIT = (typeof QUESTION_KIT !== 'undefined') ? QUESTION_KIT
-          : (typeof require === 'function') ? require('./question-kit.js')
-          : null;
-  if (!KIT) throw new Error('assets/js/kitoto-questions.js: load question-kit.js first');
+  var KIT = QUESTION_KIT;
 
   var authored = KIT.buildAuthoredOptions;
   var fromPool = KIT.buildOptionsFromPool;
@@ -578,5 +574,4 @@ var KITOTO_QUESTIONS = (function(){
   };
 })();
 
-if (typeof window !== 'undefined') { window.KITOTO_QUESTIONS = KITOTO_QUESTIONS; }
-if (typeof module !== 'undefined' && module.exports) { module.exports = KITOTO_QUESTIONS; }
+export default KITOTO_QUESTIONS;

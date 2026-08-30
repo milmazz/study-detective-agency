@@ -12,24 +12,16 @@
   instead of being regex'd out of the HTML and run in a vm.
 
   Exports the config object DetectiveGame.start() takes. The page calls start();
-  this file deliberately does not, so requiring it has no side effects.
-
-  Load AFTER game-engine.js and question-kit.js.
+  this file deliberately does not, so importing it has no side effects.
 */
+import DetectiveGame from './game-engine.js';
+import QUESTION_KIT from './question-kit.js';
+
 var WORDS_QUESTIONS = (function(){
   "use strict";
 
-  // Browser: the engine is already a global. Node: pull it in directly, so the
-  // tests get the real randInt/choice/shuffle/fmt rather than stand-ins.
-  var DG = (typeof DetectiveGame !== 'undefined') ? DetectiveGame
-         : (typeof require === 'function') ? require('./game-engine.js')
-         : null;
-  if (!DG) throw new Error('assets/js/words-questions.js: load game-engine.js first');
-
-  var KIT = (typeof QUESTION_KIT !== 'undefined') ? QUESTION_KIT
-          : (typeof require === 'function') ? require('./question-kit.js')
-          : null;
-  if (!KIT) throw new Error('assets/js/words-questions.js: load question-kit.js first');
+  var DG = DetectiveGame;
+  var KIT = QUESTION_KIT;
 
   var shuffle = DG.shuffle;
   var buildOptionsFromPool = KIT.buildOptionsFromPool;
@@ -254,5 +246,4 @@ var WORDS_QUESTIONS = (function(){
   };
 })();
 
-if (typeof window !== 'undefined') { window.WORDS_QUESTIONS = WORDS_QUESTIONS; }
-if (typeof module !== 'undefined' && module.exports) { module.exports = WORDS_QUESTIONS; }
+export default WORDS_QUESTIONS;

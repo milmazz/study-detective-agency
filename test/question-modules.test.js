@@ -1,21 +1,23 @@
-'use strict';
 // Run with: node --test
 //
 // The contract between a game page and the question module it loads.
 //
 // Game content used to live in an inline <script> in each page. Moving it to
-// assets/js/ is what lets the other suites require() it instead of pulling it
+// assets/js/ is what lets the other suites import it instead of pulling it
 // out of the HTML with a regex -- and it is what lets Vite bundle it into the
 // content-hashed, immutably-cached output, where the page's own HTML expires
 // in 300s. Both of those depend on the wiring staying right, and nothing else
-// checks it: a page that re-inlines its generators, or links a module it does
-// not have, still renders fine right up until it doesn't.
+// checks it: a page that re-inlines its generators, or imports a module it
+// does not have, still renders fine right up until it doesn't.
 
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
-const { GAMES, loadModes, pageModules, pageStylesheets, ROOT, ENGINE } = require('../test-support/load-game.js');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+import {
+  GAMES, loadModes, pageModules, pageScript, pageStylesheets, siteModules, ROOT, ENGINE,
+} from '../test-support/load-game.js';
 
 const GAME_KEYS = Object.keys(GAMES);
 
@@ -31,7 +33,7 @@ for (const key of GAME_KEYS) {
     const exporters = cfg.modules
       .filter((rel) => rel !== ENGINE)
       .filter((rel) => {
-        const m = require(path.join(ROOT, rel));
+        const m = siteModules.get(rel);
         return m && Array.isArray(m.modes);
       });
     assert.equal(exporters.length, 1,
@@ -40,53 +42,62 @@ for (const key of GAME_KEYS) {
 
   test(`${key}: the question module lives under assets/js/`, () => {
     // The convention every game follows, and what keeps a page from growing
-    // its content back inline: one place the tests require() from, one place
+    // its content back inline: one place the tests import from, one place
     // the build bundles from.
     const cfg = loadModes(key);
-    assert.match(cfg.questionModule.split(path.sep).join('/'), /^assets\/js\/.+\.js$/,
+    assert.match(cfg.questionModule, /^assets\/js\/.+\.js$/,
       `${cfg.questionModule} is outside the assets/js/ convention`);
   });
 
-  test(`${key}: every script the page links is a module tag Vite bundles`, () => {
-    // Vite only bundles <script type="module">. A classic <script src> ships
-    // un-bundled, still pointing at a source path that does not exist in
-    // dist/ -- the page renders right up until the script 404s in production.
-    // A leftover ?v= token is the same kind of rot: the build's content hash
-    // replaced it, and a query string would just confuse resolution.
+  test(`${key}: the page wires its game through one bundleable module script`, () => {
+    // Everything a page runs lives in one inline <script type="module"> whose
+    // imports Vite bundles. A classic script, or a <script src>, ships
+    // un-bundled -- still pointing at a source path that does not exist in
+    // dist/, so the page renders right up until it 404s in production. And an
+    // import of a file that is not there fails the build, but only the build:
+    // nothing else here would name the missing module.
     const html = fs.readFileSync(path.join(ROOT, GAMES[key].page), 'utf8');
-    const tags = [...html.matchAll(/<script\b[^>]*\bsrc="([^"]+)"[^>]*>/g)];
-    assert.ok(tags.length > 0, 'the page links no scripts at all');
-    for (const [tag, src] of tags) {
-      assert.match(tag, /type="module"/, `${tag} is not type="module", so Vite will not bundle it`);
-      assert.ok(!src.includes('?'), `${src} carries a query string; the build's content hash replaced ?v=`);
+    const tags = [...html.matchAll(/<script\b[^>]*>/g)].map((m) => m[0]);
+    assert.equal(tags.length, 1, `expected one script tag, found: ${tags.join(' ')}`);
+    assert.match(tags[0], /type="module"/, 'the page script must be a module for Vite to bundle it');
+    assert.ok(!/\bsrc=/.test(tags[0]), 'the page script should be inline imports, not a src tag');
+
+    const modules = pageModules(GAMES[key].page);
+    assert.ok(modules.length > 0, 'the page imports no modules at all');
+    for (const rel of modules) {
+      assert.match(rel, /^assets\/js\/[^/]+\.js$/, `${rel} is outside assets/js/`);
+      assert.ok(fs.existsSync(path.join(ROOT, rel)), `${rel} is imported but does not exist`);
     }
   });
 
-  test(`${key}: the page starts the game from the module it loaded`, () => {
-    // The page keeps a one-line inline script; if it stops calling start(), or
-    // calls it with something the module doesn't export, the game never renders.
-    const html = fs.readFileSync(path.join(ROOT, GAMES[key].page), 'utf8');
-    const call = html.match(/DetectiveGame\.start\(\s*([A-Z_][A-Z0-9_]*)\s*\)/);
-    assert.ok(call, 'the page never calls DetectiveGame.start(<GLOBAL>)');
+  test(`${key}: the page starts the game from the module it imported`, () => {
+    // If the page stops calling start(), or calls it with a binding that is
+    // not the question module's default import, the game never renders.
+    const script = pageScript(GAMES[key].page);
+    const call = script.match(/DetectiveGame\.start\(\s*([A-Za-z_$][\w$]*)\s*\)/);
+    assert.ok(call, 'the page never calls DetectiveGame.start(<imported config>)');
 
     const cfg = loadModes(key);
-    const source = fs.readFileSync(path.join(ROOT, cfg.questionModule), 'utf8');
-    assert.ok(
-      source.includes(`window.${call[1]} = ${call[1]}`),
-      `the page starts from ${call[1]}, but ${cfg.questionModule} never assigns that global`
-    );
+    const imported = new RegExp(`^import ${call[1]} from '([^']+)';`, 'm').exec(script);
+    assert.ok(imported, `the page starts from ${call[1]}, but never imports a default by that name`);
+    const pageDir = path.dirname(path.join(ROOT, GAMES[key].page));
+    const rel = path.relative(ROOT, path.resolve(pageDir, imported[1])).split(path.sep).join('/');
+    assert.equal(rel, cfg.questionModule,
+      `the page starts from ${rel}, but its question module is ${cfg.questionModule}`);
   });
 
-  test(`${key}: requiring the module has no side effects`, () => {
-    // It must not call start(), touch the DOM, or need the engine to already be
-    // a global -- that is what makes it requirable from a test at all. There is
-    // no document in this process, so anything reaching for one would throw.
+  test(`${key}: importing the question module has no side effects`, async () => {
+    // It must not call start() or touch the DOM -- that is what makes it
+    // importable from a test at all. There is no document in this process, so
+    // anything reaching for one would throw. The ?fresh query forces the
+    // module's own top-level code to run again (its imports stay cached),
+    // which is where any side effect would live.
     assert.equal(typeof globalThis.document, 'undefined');
     assert.equal(typeof globalThis.DetectiveGame, 'undefined');
     const cfg = loadModes(key);
-    const fresh = path.join(ROOT, cfg.questionModule);
-    delete require.cache[require.resolve(fresh)];
-    assert.doesNotThrow(() => require(fresh));
+    const fresh = pathToFileURL(path.join(ROOT, cfg.questionModule)).href + `?fresh=${key}`;
+    await assert.doesNotReject(() => import(fresh));
+    assert.equal(typeof globalThis.document, 'undefined');
   });
 }
 
@@ -244,15 +255,13 @@ test('no two games share a question module or a global', () => {
 test('every question module under assets/js is actually linked by a page', () => {
   // A module nobody loads is dead weight that still gets deployed, and worse,
   // it goes on passing every other assertion in this suite.
-  const linked = new Set(
-    GAME_KEYS.flatMap((key) => pageModules(GAMES[key].page).map((p) => p.split(path.sep).join('/')))
-  );
+  const linked = new Set(GAME_KEYS.flatMap((key) => pageModules(GAMES[key].page)));
   const onDisk = fs.readdirSync(path.join(ROOT, 'assets', 'js'))
     .filter((f) => f.endsWith('.js'))
     .map((f) => `assets/js/${f}`);
 
   for (const file of onDisk) {
-    const mod = require(path.join(ROOT, file));
+    const mod = siteModules.get(file);
     if (mod && Array.isArray(mod.modes)) {
       assert.ok(linked.has(file), `${file} exports a game but no page loads it`);
     }
