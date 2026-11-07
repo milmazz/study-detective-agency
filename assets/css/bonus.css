@@ -101,7 +101,6 @@ ul.tidy li{margin:.25em 0}
 .dot.star{background:var(--pop);border-color:var(--pop);color:#3a2a00;font-size:1rem}
 .dot.done{background:var(--good-soft);border-color:var(--good)}
 .dot.rev{background:var(--oops-soft);border-color:var(--oops)}
-.dot.wr{background:var(--accent-soft);border-color:var(--accent)}
 .dot.cur{outline:3px solid var(--accent);outline-offset:2px}
 .qcard{background:var(--surface);border:2px solid var(--line);border-radius:26px;padding:20px 20px 22px;box-shadow:0 6px 0 var(--line)}
 .qhead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
