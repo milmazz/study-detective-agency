@@ -46,6 +46,7 @@ p{margin:0 0 .8em}
 /* sections */
 .sec{padding:34px 0 10px}
 .sec + .sec{border-top:3px dashed var(--line)}
+.lesson-video{display:block;width:100%;height:auto;aspect-ratio:16/9;margin:16px 0;border:2px solid var(--line);border-radius:22px;background:var(--surface)}
 .panel{background:var(--surface);border:2px solid var(--line);border-radius:22px;padding:18px 20px;margin:16px 0}
 .panel.tint{background:var(--accent-soft);border-color:transparent}
 .panel.sun{background:var(--pop-soft);border-color:transparent}
