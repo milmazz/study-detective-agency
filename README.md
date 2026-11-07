@@ -29,7 +29,9 @@ Bonus pages aren't case files: each pairs a hands-on Learn section with a
 fixed, hand-written quiz, runs on `assets/js/bonus-quiz.js` instead of the
 `DetectiveGame` engine, and keeps its own theme. Their content lives in
 `assets/js/*-content.js`, and `test/bonus-pages.test.js` checks their answer
-keys and wiring.
+keys and wiring. Mochi's Energy Lab and Pepita's Texas Trail also open with
+a **Watch the lesson** video: a narrated cartoon of the teacher's study guide,
+made with the pipeline in `tools/video/` (see [Lesson videos](#lesson-videos)).
 
 ## Running it locally
 
@@ -128,6 +130,8 @@ public/                          Copied into dist/ verbatim by the build:
 scripts/
   subset-fonts.sh                Regenerates assets/fonts/ (run by hand, not
                                   a build step — see assets/fonts/LICENSE.md)
+tools/video/                     The lesson-video pipeline (run by hand, not
+                                  part of the build — see "Lesson videos")
 test-support/
   load-game.js                   Imports a game page's own modules for tests,
                                   and bundles each page to a classic script
@@ -166,6 +170,8 @@ assets/
                                   field-note box a question is asked about)
   fonts/                         Self-hosted woff2 + their licenses; see
                                   fonts/LICENSE.md
+  video/                         The bonus pages' lesson videos (MP4 + poster),
+                                  written by tools/video/make.sh install
   js/
     game-engine.js                Shared game engine (home/play/trail screens,
                                   click-wiring, and the three subject-neutral
@@ -295,6 +301,25 @@ games/
 5. Add one entry to the `GAMES_DATA` array inside `index.html`'s own
    `<script>` (near the top, above `render()`) — the homepage rebuilds
    itself from that array automatically.
+
+## Lesson videos
+
+The "Watch the lesson" videos are made with the pipeline in
+[`tools/video/`](tools/video/README.md). Each video is a script, a voice per
+character (ElevenLabs text-to-speech), and an SVG animation keyed to the
+words as they're spoken. One command narrates, renders and encodes it:
+
+```bash
+tools/video/make.sh tools/video/videos/mochi-energy-lab           # -> build/mochi-energy-lab.mp4
+tools/video/make.sh tools/video/videos/mochi-energy-lab install   # -> assets/video/
+```
+
+The narration is cached in the repo, so re-rendering an existing video,
+for example after an animation tweak, needs no API key and costs nothing.
+A new video needs a script, its voices, and its scenes;
+[tools/video/README.md](tools/video/README.md) walks through setup and those
+steps. The pipeline has its own dependencies (Playwright, numpy, ffmpeg),
+kept out of the site's `package.json` so `npm ci` and CI stay browser-free.
 
 ## License
 

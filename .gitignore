@@ -6,3 +6,8 @@ dist/
 
 # Dev dependency tree (Vite, jsdom). The site itself has no runtime dependencies.
 node_modules/
+
+# Lesson-video pipeline: intermediate renders and its own dev dependencies
+# (tools/video/README.md). The cached narration in videos/*/audio/ IS tracked.
+tools/video/videos/*/build/
+tools/video/node_modules/

@@ -1,0 +1,450 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:'Baloo 2';font-weight:400 800;src:url(../../../../assets/fonts/baloo2-latin1.woff2) format('woff2');}
+html,body{margin:0;background:#F5F0FF;overflow:hidden}
+svg{display:block}
+text{font-family:'Baloo 2','Noto Color Emoji',sans-serif}
+</style>
+<script src="build/timeline.js"></script>
+<script src="../../lib/lib.js"></script>
+</head><body>
+<svg id="v" width="1280" height="720" viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg"></svg>
+<script>
+/* ---------- palette ---------- */
+const C = { ink:'#2C2250', muted:'#62568C', accent:'#6E43F0', soft:'#ECE4FF', pop:'#FFC531', popSoft:'#FFF3C9',
+  good:'#1C9A73', goodSoft:'#D8F4E9', oops:'#E0603F', oopsSoft:'#FFE5DC', line:'#DCD0F7', wire:'#B9A8EE',
+  blush:'#FFB3C7', earin:'#FFC9D8', pip:'#BDB6D3', pipDark:'#8F86AD', water:'#7CC4F2', waterDeep:'#4A9FDB', wood:'#B9773D', metal:'#A9B3C2' };
+
+/* ---------- characters ---------- */
+function mochi(t, x, y, s, o = {}){
+  const m = mouthAt('mochi', t);
+  const blink = (t % 4.1) < .13;
+  const bob = Math.sin(t * 2.2) * 3 - m * 4;
+  const happy = o.happy;
+  const eyes = happy
+    ? `<path d="M38 60q7-8 14 0M68 60q7-8 14 0" stroke="${C.ink}" stroke-width="4" fill="none" stroke-linecap="round"/>`
+    : blink ? `<path d="M39 60h13M69 60h13" stroke="${C.ink}" stroke-width="4" stroke-linecap="round"/>`
+    : `<circle cx="45" cy="60" r="6.5" fill="${C.ink}"/><circle cx="75" cy="60" r="6.5" fill="${C.ink}"/><circle cx="47" cy="58" r="2.2" fill="#fff"/><circle cx="77" cy="58" r="2.2" fill="#fff"/>`;
+  const mouth = m > .12
+    ? `<ellipse cx="60" cy="${76 + m * 2}" rx="${6 + m * 2}" ry="${2 + m * 7}" fill="#7A2D4A" stroke="${C.ink}" stroke-width="2.5"/>`
+    : `<path d="M52 74q4 5 8 0q4 5 8 0" stroke="${C.ink}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+  const paw = o.paw > .02 ? `<g transform="translate(${100 + o.paw * 70} ${92 - o.paw * 10})"><ellipse rx="16" ry="13" fill="#fff" stroke="${C.ink}" stroke-width="3"/><circle cx="-6" cy="-3" r="3" fill="${C.blush}"/><circle cx="2" cy="-6" r="3" fill="${C.blush}"/><circle cx="9" cy="-2" r="3" fill="${C.blush}"/><ellipse cx="1" cy="5" rx="5" ry="4" fill="${C.blush}"/></g>` : '';
+  return `<g transform="translate(${x} ${y + bob}) scale(${s})">
+  <ellipse cx="60" cy="112" rx="40" ry="6" fill="${C.ink}" opacity=".12"/>
+  <path d="M20 46L26 8L52 30Z" fill="#fff" stroke="${C.ink}" stroke-width="3.5" stroke-linejoin="round"/>
+  <path d="M100 46L94 8L68 30Z" fill="#fff" stroke="${C.ink}" stroke-width="3.5" stroke-linejoin="round"/>
+  <path d="M28 36L30 18L44 30Z" fill="${C.earin}"/><path d="M92 36L90 18L76 30Z" fill="${C.earin}"/>
+  <ellipse cx="60" cy="64" rx="48" ry="39" fill="#fff" stroke="${C.ink}" stroke-width="3.5"/>
+  <path d="M63 28l-8 12h7l-5 11 11-14h-7l5-9z" fill="${C.pop}" stroke="${C.ink}" stroke-width="1.5" stroke-linejoin="round"/>
+  ${eyes}
+  <ellipse cx="33" cy="74" rx="8" ry="5" fill="${C.blush}"/><ellipse cx="87" cy="74" rx="8" ry="5" fill="${C.blush}"/>
+  <path d="M58 68h4l-2 3z" fill="${C.ink}"/>
+  ${mouth}
+  <g stroke="${C.ink}" stroke-width="2.2" stroke-linecap="round"><line x1="4" y1="64" x2="22" y2="68"/><line x1="4" y1="76" x2="22" y2="74"/><line x1="116" y1="64" x2="98" y2="68"/><line x1="116" y1="76" x2="98" y2="74"/></g>
+  ${paw}</g>`;
+}
+
+/* Pip: wind-up toy mouse. Drawn facing right; face:-1 flips. Origin = feet centre. */
+function pip(t, x, y, s, o = {}){
+  const m = o.frozen ? 0 : mouthAt('pip', t);
+  const face = o.face || -1;
+  const keyA = o.frozen ? 0.6 : (o.keyAngle ?? t * 7);
+  const kx = Math.cos(keyA);
+  const blink = !o.frozen && ((t + 1.7) % 3.3) < .12;
+  const hop = o.frozen ? 0 : (o.hop ?? Math.abs(Math.sin(t * 6)) * 2) + m * 3;
+  const spikes = o.spiky ? Array.from({length: 16}, (_, i) => { const a = Math.PI * (1.05 + i / 15 * .95); const r1 = 30, r2 = 44 + (i % 2) * 6;
+      return `<line x1="${60 + Math.cos(a) * r1 * 1.4}" y1="${62 + Math.sin(a) * r1}" x2="${60 + Math.cos(a) * r2 * 1.4}" y2="${62 + Math.sin(a) * r2}" stroke="${C.pipDark}" stroke-width="4" stroke-linecap="round"/>`; }).join('') : '';
+  const eye = blink ? `<path d="M93 46h9" stroke="${C.ink}" stroke-width="3" stroke-linecap="round"/>`
+    : o.dizzy ? `<text x="97" y="52" font-size="16" text-anchor="middle" fill="${C.ink}">@</text>`
+    : `<circle cx="98" cy="46" r="5" fill="${C.ink}"/><circle cx="99.5" cy="44.5" r="1.8" fill="#fff"/>`;
+  const mouth = m > .12 ? `<ellipse cx="108" cy="${63 + m}" rx="4" ry="${1.5 + m * 5}" fill="#7A2D4A" stroke="${C.ink}" stroke-width="2"/>`
+    : `<path d="M103 63q4 3 8 0" stroke="${C.ink}" stroke-width="2.5" fill="none" stroke-linecap="round"/>`;
+  return `<g transform="translate(${x} ${y - hop}) rotate(${o.rot || 0}) scale(${s * face} ${s}) translate(-62 -92)">
+  <ellipse cx="62" cy="94" rx="42" ry="5" fill="${C.ink}" opacity=".12"/>
+  <path d="M24 70q-22 4-16 -14q6 -14 -10 -14" stroke="${C.ink}" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  ${spikes}
+  <g transform="translate(46 30) scale(${kx} 1)"><rect x="-3" y="-2" width="6" height="16" fill="${C.pop}" stroke="${C.ink}" stroke-width="2.5"/>
+    <ellipse cx="-9" cy="-8" rx="9" ry="7" fill="${C.pop}" stroke="${C.ink}" stroke-width="2.5"/><ellipse cx="9" cy="-8" rx="9" ry="7" fill="${C.pop}" stroke="${C.ink}" stroke-width="2.5"/></g>
+  <ellipse cx="58" cy="66" rx="40" ry="26" fill="${C.pip}" stroke="${C.ink}" stroke-width="3.5"/>
+  <ellipse cx="40" cy="90" rx="9" ry="5" fill="${C.pipDark}" stroke="${C.ink}" stroke-width="2.5"/><ellipse cx="74" cy="90" rx="9" ry="5" fill="${C.pipDark}" stroke="${C.ink}" stroke-width="2.5"/>
+  <circle cx="80" cy="30" r="16" fill="${C.pip}" stroke="${C.ink}" stroke-width="3.5"/><circle cx="80" cy="30" r="9" fill="${C.earin}"/>
+  <ellipse cx="94" cy="56" rx="24" ry="20" fill="${C.pip}" stroke="${C.ink}" stroke-width="3.5"/>
+  <circle cx="100" cy="34" r="13" fill="${C.pip}" stroke="${C.ink}" stroke-width="3.5"/><circle cx="100" cy="34" r="7" fill="${C.earin}"/>
+  ${eye}
+  <ellipse cx="88" cy="62" rx="6" ry="4" fill="${C.blush}"/>
+  <circle cx="117" cy="56" r="5" fill="#FF7FA3" stroke="${C.ink}" stroke-width="2"/>
+  <g stroke="${C.ink}" stroke-width="1.8" stroke-linecap="round"><line x1="112" y1="60" x2="128" y2="57"/><line x1="112" y1="63" x2="128" y2="66"/></g>
+  ${mouth}
+  ${o.holding || ''}</g>`;
+}
+
+/* ---------- this video's drawing helpers (shared ones are in lib/lib.js) ---------- */
+function arcs(cx, cy, n, t, dir = -1, color = C.accent, spread = 60){   // sound arcs travelling
+  let s = '';
+  for (let i = 0; i < n; i++){ const p = ((t * .9 + i / n) % 1); const x = cx + dir * p * 260, r = 18 + p * spread; const op = 1 - p;
+    s += `<path d="M${x} ${cy - r} q${dir * r * .6} ${r} 0 ${2 * r}" stroke="${color}" stroke-width="6" fill="none" stroke-linecap="round" opacity="${op}"/>`; }
+  return s;
+}
+function bulb(cx, cy, r, lit){
+  return `${lit ? `<circle cx="${cx}" cy="${cy}" r="${r * 1.9}" fill="${C.pop}" opacity=".35"/><circle cx="${cx}" cy="${cy}" r="${r * 1.4}" fill="${C.pop}" opacity=".35"/>` : ''}
+  <circle cx="${cx}" cy="${cy}" r="${r}" fill="${lit ? C.pop : '#EDE8F8'}" stroke="${C.ink}" stroke-width="4"/>
+  <path d="M${cx - r * .3} ${cy + r * .2}l${r * .15} -${r * .35}l${r * .15} ${r * .35}l${r * .15} -${r * .35}l${r * .15} ${r * .35}" stroke="${lit ? '#C47A00' : C.muted}" stroke-width="3" fill="none"/>
+  <rect x="${cx - r * .45}" y="${cy + r * .82}" width="${r * .9}" height="${r * .55}" rx="4" fill="${C.metal}" stroke="${C.ink}" stroke-width="3.5"/>`;
+}
+function chip(cx, cy, s, bg, sc = 1){
+  if (sc <= 0) return '';
+  const w = 230, h = 34;
+  return `<g transform="translate(${cx} ${cy}) scale(${sc})"><rect x="${-w/2}" y="${-h/2}" width="${w}" height="${h}" rx="12" fill="${bg}" stroke="${C.ink}" stroke-width="2.5"/>${txt(0, 8, s, 23, {w: 600})}</g>`;
+}
+
+/* ---------- background + chrome ---------- */
+const VIDEO = { titles: {1: 'Welcome to the lab!', 2: 'Big idea 1 · Energy transfer', 3: 'Big idea 2 · Conductors & insulators', 4: 'Big idea 3 · Circuits', 5: 'Big idea 4 · Energy changes', 6: 'Pop quiz!', 7: 'See you soon!'}, icon: '⚡', label: 'Mochi’s Energy Lab' };
+const SPEAKERS = { mochi: { name: 'Mochi', color: C.accent }, pip: { name: 'Pip', color: '#5B5480' } };
+function background(){
+  return `<defs><pattern id="dots" width="26" height="26" patternUnits="userSpaceOnUse"><circle cx="13" cy="13" r="2.2" fill="#E4D8FF"/></pattern></defs>
+  <rect width="1280" height="720" fill="#F5F0FF"/><rect width="1280" height="720" fill="url(#dots)"/>
+  <rect x="0" y="560" width="1280" height="160" fill="#EAE1FF"/><line x1="0" y1="560" x2="1280" y2="560" stroke="${C.line}" stroke-width="4"/>`;
+}
+
+/* ---------- scenes ---------- */
+const scenes = {};
+
+scenes[1] = t => {
+  const lit = t >= 1.0;
+  let s = `<line x1="760" y1="0" x2="760" y2="110" stroke="${C.ink}" stroke-width="4"/>` + bulb(760, 150, 42, lit);
+  s += txt(760, 290, 'Mochi’s Energy Lab', 76 * pop(t, S('m1') + .2), {w: 800, fill: C.accent});
+  s += banner(760, 380, 'Energy is always on the move!', 34, pop(t, E('m2') + .1));
+  // beaker + Pip's crash
+  const zA = E('m1') + .1, zB = E('m1') + 1.0;
+  const wob = t > zB ? Math.sin((t - zB) * 18) * 14 * Math.exp(-(t - zB) * 2.2) : 0;
+  s += `<g transform="translate(1000 548) rotate(${wob})"><path d="M-22 -110v40l-38 62q-6 12 8 12h104q14 0 8 -12l-38 -62v-40z" fill="#fff" stroke="${C.ink}" stroke-width="4"/>
+    <path d="M-48 -26h96l10 16q4 8 -6 8h-104q-10 0 -6 -8z" fill="#8EE3C2"/><rect x="-28" y="-118" width="56" height="10" rx="5" fill="#fff" stroke="${C.ink}" stroke-width="4"/>
+    <circle cx="-10" cy="-30" r="5" fill="#fff" opacity=".8"/><circle cx="12" cy="-44" r="4" fill="#fff" opacity=".8"/></g>`;
+  if (t >= zA){
+    const p = prog(t, zA, zB);
+    let px = lerp(1420, 1095, ease(p)), rot = p < 1 ? p * 900 : 0, dizzy = false;
+    if (t > zB){ px = 1095 + 80 * ease(prog(t, zB, zB + .5)); dizzy = t < S('p1') - .2; rot = dizzy ? Math.sin(t * 9) * 8 : 0; }
+    s += pip(t, px, 548, 1.15, {face: -1, rot, dizzy});
+    if (t > zB && t < zB + .8){ const q = prog(t, zB, zB + .8); s += burst(1040, 470, 70, backOut(Math.min(1, q * 3)) * (1 - q * .6)) + txt(1040, 482, 'CRASH!', 30 * (1 - q * .4), {w: 800}); }
+  }
+  s += mochi(t, 40, 380, 2.0 * pop(t, 1.2, .5), {});
+  return s;
+};
+
+scenes[2] = t => {
+  let s = '';
+  // A: definition card (m3)
+  const cA = fade(t, S('m3') + .2, S('m4') + .1);
+  if (cA > 0) s += `<g opacity="${cA}"><rect x="360" y="150" width="840" height="300" rx="28" fill="#fff" stroke="${C.ink}" stroke-width="4"/>
+    ${txt(780, 250, 'ENERGY TRANSFER', 60 * pop(t, W('m3', 'transfer')), {w: 800, fill: C.accent})}
+    ${t >= W('m3', 'means') ? wrap('Energy moves from one object or place to another.', 30).map((ln, i) => txt(780, 330 + i * 50, ln, 40, {w: 600})).join('') : ''}</g>`;
+  // B: balls (m4 .. m5)
+  const bOp = fade(t, S('m4'), S('m6') - .2, .4);
+  let pawP = 0;
+  if (bOp > 0){
+    const batT = W('m4', 'bat'), bumpT = W('m4', 'bumps');
+    pawP = Math.sin(Math.PI * prog(t, batT - .1, batT + .5));
+    const p1 = ease(prog(t, batT + .25, bumpT));
+    const x1 = lerp(400, 742, p1) - (t > bumpT ? 14 * ease(prog(t, bumpT, bumpT + .4)) : 0);
+    const p2 = ease(prog(t, bumpT, bumpT + 2.6));
+    const x2 = lerp(810, 1170, p2);
+    const ball = (x, col, rot, yarn) => `<g transform="translate(${x} 506) rotate(${rot})"><circle r="34" fill="${col}" stroke="${C.ink}" stroke-width="4"/>${yarn ? `<path d="M-30 -10q30 -20 60 0M-30 8q30 -20 60 0M-22 -24q10 30 -4 56M6 -32q14 30 -2 64" stroke="#fff" stroke-width="3" fill="none" opacity=".7"/>` : `<path d="M-20 -14a26 26 0 0 1 26 -12" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round" opacity=".7"/>`}</g>`;
+    s += `<g opacity="${bOp}">`;
+    if (t > batT + .25 && t < bumpT) s += `<g stroke="${C.accent}" stroke-width="5" stroke-linecap="round" opacity=".5"><line x1="${x1 - 60}" y1="490" x2="${x1 - 100}" y2="490"/><line x1="${x1 - 56}" y1="512" x2="${x1 - 110}" y2="512"/></g>`;
+    if (t > bumpT && t < bumpT + 2.6) s += `<g stroke="#D9A400" stroke-width="5" stroke-linecap="round" opacity=".6"><line x1="${x2 - 60}" y1="490" x2="${x2 - 100}" y2="490"/><line x1="${x2 - 56}" y1="512" x2="${x2 - 110}" y2="512"/></g>`;
+    s += ball(x1, C.accent, x1 * 1.7, true) + ball(x2, C.pop, x2 * 1.7, false);
+    const bq = prog(t, bumpT, bumpT + .6);
+    if (bq > 0 && bq < 1) s += burst(776, 470, 46, backOut(Math.min(1, bq * 3)) * (1 - bq * .5));
+    s += pill(x1, 420, 'mechanical energy = motion', 24, C.soft, C.accent, pop(t, W('m4', 'mechanical')) * (t < bumpT + .3 ? 1 : 0));
+    s += pill(900, 300, 'Energy TRANSFER!', 34, C.pop, C.ink, pop(t, W('m4', 'transfers')) * (t < S('p2') - .3 ? 1 : 0));
+    s += `</g>`;
+  }
+  // C: Pip says poof, banner
+  const pipIn = S('p2') - .8, pipOut = S('m6') - .2;
+  if (t > pipIn && t < pipOut){
+    const x = lerp(1400, 1150, ease(prog(t, pipIn, pipIn + .7)));
+    s += pip(t, x, 548, 1.05, {face: -1});
+    const pf = pop(t, W('p2', 'poof'));
+    if (pf > 0 && t < S('m6') - .3){
+      s += `<g transform="translate(1110 330) scale(${pf})"><path d="M-90 20q-30 0 -24 -30q4 -26 34 -22q10 -34 50 -26q30 -24 60 0q40 -6 42 30q28 10 10 40q-10 18 -40 12q-20 22 -60 8q-36 16 -60 -6z" fill="#fff" stroke="${C.ink}" stroke-width="3.5"/>${txt(0, 12, 'POOF?', 40, {w: 800, fill: C.muted})}</g>`;
+      if (t >= S('m5')) s += `<g transform="translate(1110 330) scale(${pop(t, S('m5'))})" stroke="${C.oops}" stroke-width="12" stroke-linecap="round"><line x1="-60" y1="-50" x2="60" y2="50"/><line x1="60" y1="-50" x2="-60" y2="50"/></g>`;
+    }
+  }
+  s += banner(720, 160, 'Energy doesn’t disappear. It moves or changes!', 30, pop(t, W('m5', 'never')) * (t < S('m6') - .1 ? 1 : 0));
+  // D: pond (m6)
+  const dOp = fade(t, S('m6') + .1, E('m6') + .9, .4);
+  if (dOp > 0){
+    const splash = W('m6', 'splashes');
+    s += `<g opacity="${dOp}"><ellipse cx="780" cy="500" rx="300" ry="62" fill="${C.water}" stroke="${C.ink}" stroke-width="4"/>`;
+    for (let i = 0; i < 4; i++){ const age = t - splash - i * .45; if (age > 0){ const p = (age % 1.8) / 1.8; s += `<ellipse cx="780" cy="500" rx="${20 + p * 260}" ry="${4 + p * 52}" fill="none" stroke="#fff" stroke-width="${5 - p * 3}" opacity="${1 - p}"/>`; } }
+    const dropA = W('m6', 'pebble') - .3;
+    if (t < splash + .05){ const p = prog(t, dropA, splash); s += `<ellipse cx="780" cy="${lerp(160, 494, p * p)}" rx="20" ry="15" fill="#8C8496" stroke="${C.ink}" stroke-width="3.5"/>`; }
+    const sp = prog(t, splash, splash + .5);
+    if (sp > 0 && sp < 1) for (let i = -2; i <= 2; i++) s += `<circle cx="${780 + i * 30 * sp * 2}" cy="${490 - Math.sin(sp * Math.PI) * (60 - Math.abs(i) * 15)}" r="7" fill="${C.waterDeep}"/>`;
+    s += pill(780, 330, 'waves carry energy through water', 28, '#DDF1FF', '#1D5F8C', pop(t, W('m6', 'waves')));
+    s += `</g>`;
+  }
+  // E: guitar (p3, m7)
+  const gOp = fade(t, E('m6') + .5, E('m7') + .3, .4);
+  if (gOp > 0){
+    const pluck = S('p3') - .15;
+    const vib = t > pluck ? 16 * Math.exp(-(t - pluck) * .8) : 0;
+    let str = ''; for (let i = 0; i <= 40; i++){ const x = 640 + i * 10.5; str += `${i ? 'L' : 'M'}${x} ${438 + Math.sin(i / 40 * Math.PI) * vib * Math.sin(t * 60 + i * .1)}`; }
+    s += `<g opacity="${gOp}"><g transform="translate(600 440)"><circle cx="0" cy="0" r="70" fill="${C.wood}" stroke="${C.ink}" stroke-width="4"/><circle cx="80" cy="0" r="56" fill="${C.wood}" stroke="${C.ink}" stroke-width="4"/><circle cx="56" cy="0" r="22" fill="#5B3A1E"/></g>
+      <rect x="720" y="426" width="360" height="24" rx="6" fill="#8A5A2B" stroke="${C.ink}" stroke-width="4"/><rect x="1068" y="414" width="44" height="48" rx="8" fill="#6B4320" stroke="${C.ink}" stroke-width="4"/>
+      <path d="${str}" stroke="${C.ink}" stroke-width="3" fill="none"/>`;
+    if (t > pluck) s += arcs(560, 440, 4, t, -1);
+    s += pill(860, 300, 'vibrate = shake back and forth fast', 26, C.soft, C.accent, pop(t, W('m7', 'vibrates')));
+    s += pill(860, 220, 'SOUND energy', 34, C.pop, C.ink, pop(t, S('m7') + .3));
+    s += `</g>`;
+    if (t > E('m6') + .4) s += pip(t, lerp(1300, 1170, ease(prog(t, E('m6') + .4, E('m6') + 1))), 548, 1.0, {face: -1});
+  }
+  // F: recap trio
+  const r = pop(t, E('m7') + .3);
+  if (r > 0){ ['🧶 Motion', '🌊 Water waves', '🎸 Sound'].forEach((w, i) => { s += pill(470 + i * 290, 330, w, 34, i === 1 ? '#DDF1FF' : C.popSoft, C.ink, pop(t, E('m7') + .3 + i * .3)); }); }
+  s += mochi(t, 40, 380, 2.0, {paw: pawP});
+  return s;
+};
+
+scenes[3] = t => {
+  let s = '';
+  const binsOp = fade(t, S('m8'), S('m13') + .2, .4);
+  const cond = [['copper', W('m8', 'copper')], ['aluminum', W('m8', 'aluminum')], ['iron', W('m8', 'iron')]];
+  const ins = [['rubber', W('m9', 'rubber')], ['plastic', W('m9', 'plastic')], ['wood', W('m9', 'wood')], ['cloth', W('m9', 'cloth')]];
+  const sortA = E('m11') + .3;
+  const flyers = [['🔩 iron nail', 0], ['👢 rubber boots', 1], ['🍳 steel pan', 0], ['🥤 plastic straw', 1], ['🔑 metal key', 0], ['🧣 wool scarf', 1]];
+  if (binsOp > 0){
+    s += `<g opacity="${binsOp}">`;
+    const bin = (cx, label, bg, sc) => sc > 0 ? `<g transform="translate(${cx} 360) scale(${sc}) translate(${-cx} -360)"><rect x="${cx - 150}" y="170" width="300" height="380" rx="24" fill="#fff" stroke="${C.ink}" stroke-width="4"/>
+      <rect x="${cx - 150}" y="170" width="300" height="60" rx="24" fill="${bg}" stroke="${C.ink}" stroke-width="4"/>${txt(cx, 212, label, 30, {w: 800, fill: bg === C.accent ? '#fff' : C.ink})}</g>` : '';
+    s += bin(500, 'CONDUCTOR', C.pop, pop(t, W('m8', 'conductors')));
+    s += bin(1060, '🧤 INSULATOR', C.accent, pop(t, W('m9', 'insulators')));
+    let cy = [250, 250];
+    const place = (k) => { const y = cy[k]; cy[k] += 37; return y; };
+    cond.forEach(([w, at]) => { const y = place(0); s += chip(500, y, w, C.popSoft, pop(t, at)); });
+    ins.forEach(([w, at]) => { const y = place(1); s += chip(1060, y, w, C.soft, pop(t, at)); });
+    // the spoon joins insulators
+    const spoonA = S('m11') + .5, spoonB = spoonA + .7;
+    const spoonY = place(1);
+    if (t >= spoonA){ const p = ease(prog(t, spoonA, spoonB)); s += chip(lerp(780, 1060, p), lerp(420, spoonY, p), '🥄 wooden spoon', C.soft, 1); }
+    flyers.forEach(([w, k], i) => { const a = sortA + i * .5, y = place(k); if (t >= a){ const p = ease(prog(t, a, a + .55)); s += chip(lerp(780, k ? 1060 : 500, p), lerp(600, y, p) - Math.sin(p * Math.PI) * 120, w, k ? C.soft : C.popSoft, 1); } });
+    s += `</g>`;
+  }
+  // Pip with spoon
+  const pA = S('p4') - 1.0, pB = S('m12') + .2;
+  if (t > pA && t < pB){
+    const x = lerp(1400, 780, ease(prog(t, pA, pA + .8))) + (t > E('m11') ? lerp(0, 600, ease(prog(t, E('m11') + 2.9, pB))) : 0);
+    const holding = t < S('m11') + .5 ? `<g transform="translate(118 64) rotate(-30)"><ellipse cx="0" cy="-34" rx="11" ry="15" fill="${C.wood}" stroke="${C.ink}" stroke-width="3"/><rect x="-4" y="-22" width="8" height="46" rx="4" fill="${C.wood}" stroke="${C.ink}" stroke-width="3"/></g>` : '';
+    s += pip(t, x, 548, 1.0, {face: -1, holding});
+    const tb = pop(t, S('p5') + .2) * (t < S('m11') + .6 ? 1 : 0);
+    if (tb > 0) s += `<g transform="translate(${x + 10} 340) scale(${tb})"><circle cx="-40" cy="80" r="8" fill="#fff" stroke="${C.ink}" stroke-width="3"/><circle cx="-24" cy="58" r="12" fill="#fff" stroke="${C.ink}" stroke-width="3"/><ellipse cx="10" cy="0" rx="62" ry="46" fill="#fff" stroke="${C.ink}" stroke-width="3.5"/>${txt(10, 22, '🌳', 58)}</g>`;
+  }
+  s += banner(780, 115, 'If it’s METAL, it’s a conductor!', 32, pop(t, S('m12')) * (t < S('m13') + .2 ? 1 : 0));
+  // pot + wire (m13)
+  const pOp = fade(t, S('m13') + .3, E('m13') + 1.2, .4);
+  if (pOp > 0){
+    const hot = prog(t, W('m13', 'metal'), W('m13', 'metal') + 1);
+    const f = Math.sin(t * 20) * 4;
+    s += `<g opacity="${pOp}">
+      <rect x="390" y="500" width="300" height="40" rx="8" fill="#5B5480" stroke="${C.ink}" stroke-width="4"/>
+      <path d="M470 500q10 -30 20 -6q8 -24 20 -4q8 -26 20 0q10 -22 20 4q8 -20 18 6z" fill="#FF8A3D" stroke="${C.ink}" stroke-width="2.5" transform="translate(0 ${f * .2})"/>
+      <path d="M420 380h240v90q0 24 -24 24h-192q-24 0 -24 -24z" fill="${C.metal}" stroke="${C.ink}" stroke-width="4"/>
+      <path d="M420 460h240v10q0 24 -24 24h-192q-24 0 -24 -24z" fill="#FF6A2B" opacity="${hot}"/>
+      <rect x="660" y="398" width="110" height="26" rx="13" fill="#3A3448" stroke="${C.ink}" stroke-width="4"/>
+      <path d="M440 380q0 -14 10 -14h180q10 0 10 14" fill="#F2B880" stroke="${C.ink}" stroke-width="3"/>`;
+    if (hot > 0) for (let i = 0; i < 3; i++) s += `<path d="M${480 + i * 60} ${350 - ((t * 40 + i * 20) % 50)}q10 -10 0 -20q-10 -10 0 -20" stroke="${C.oops}" stroke-width="4" fill="none" opacity="${hot * .8}"/>`;
+    s += pill(540, 290, 'metal = conductor (gets hot)', 22, C.popSoft, C.ink, pop(t, W('m13', 'metal')));
+    s += pill(730, 350, 'plastic = insulator (stays cool)', 20, C.soft, C.accent, pop(t, W('m13', 'plastic')));
+    // wire cross-section
+    const wA = W('m13', 'electric');
+    const wo = pop(t, wA);
+    if (wo > 0){
+      s += `<g transform="translate(1040 410) scale(${wo})"><rect x="-170" y="-34" width="340" height="68" rx="34" fill="${C.accent}" stroke="${C.ink}" stroke-width="4"/>
+        <rect x="-170" y="-12" width="380" height="24" rx="12" fill="#D9822B" stroke="${C.ink}" stroke-width="3"/>`;
+      if (t > W('m13', 'flows')) for (let i = 0; i < 8; i++){ const x = -160 + ((t * 120 + i * 48) % 380); s += `<circle cx="${x}" cy="0" r="6" fill="${C.pop}" stroke="${C.ink}" stroke-width="1.5"/>`; }
+      s += `</g>`;
+      s += pill(1060, 320, 'metal inside: electricity flows', 21, C.popSoft, C.ink, pop(t, W('m13', 'metal', 1)));
+      s += pill(1040, 500, 'plastic outside: keeps you safe', 21, C.soft, C.accent, pop(t, W('m13', 'plastic', 1)));
+    }
+    s += `</g>`;
+  }
+  s += mochi(t, 40, 380, 2.0, {happy: t > S('m11') && t < E('m11') + .3});
+  return s;
+};
+
+scenes[4] = t => {
+  let s = '';
+  const closeT = E('m14') + .45, yankT = E('m15') + .55, stickT = S('p7') - .5, clipOut = E('m17') + .3, clipIn = E('m17') + .9, relit = clipIn + .25;
+  const closed = t >= closeT;
+  const gap = t >= yankT && t < clipIn;
+  const flowing = closed && !gap;
+  const loop = 'M440 200H700M790 200H1060V300M1060 392V500H790M700 500H440V410M440 290V200';
+  const swAng = closed ? 0 : -32;
+  s += `<path d="M440 200H700 M790 200H1060V300 M1060 392V500H${gap ? 780 : 760} M${gap ? 710 : 760} 500H440V410 M440 290V200" stroke="${C.wire}" stroke-width="12" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+  if (!gap) s += `<path d="M700 500H790" stroke="${C.wire}" stroke-width="12" stroke-linecap="round"/>`;
+  if (flowing) s += `<path d="${loop}" stroke="${C.pop}" stroke-width="6" fill="none" stroke-dasharray="10 26" stroke-dashoffset="${-t * 90}" stroke-linecap="round"/>`;
+  // switch
+  s += `<circle cx="700" cy="200" r="9" fill="${C.ink}"/><circle cx="790" cy="200" r="9" fill="${C.ink}"/><line x1="700" y1="200" x2="${700 + 92 * Math.cos(swAng * Math.PI / 180)}" y2="${200 + 92 * Math.sin(swAng * Math.PI / 180)}" stroke="${C.ink}" stroke-width="9" stroke-linecap="round"/>`;
+  s += txt(745, 160 + (closed ? 0 : -14), 'switch', 22, {fill: C.muted});
+  // battery
+  s += `<g transform="translate(440 350)"><rect x="-34" y="-62" width="68" height="124" rx="10" fill="#2E9C77" stroke="${C.ink}" stroke-width="4"/><rect x="-34" y="-62" width="68" height="40" rx="10" fill="#3A3448" stroke="${C.ink}" stroke-width="4"/><rect x="-12" y="-74" width="24" height="12" rx="3" fill="${C.metal}" stroke="${C.ink}" stroke-width="3"/>${txt(0, 30, '+', 40, {fill: '#fff', w: 800})}</g>`;
+  s += bulb(1060, 340, 44, flowing);
+  // gap: bent ends + stick / clip
+  if (gap){
+    s += `<circle cx="710" cy="500" r="7" fill="${C.ink}"/><circle cx="780" cy="500" r="7" fill="${C.ink}"/>`;
+    if (t >= stickT && t < clipOut + .4){ const p = t > clipOut ? ease(prog(t, clipOut, clipOut + .4)) : 0; s += `<rect x="${704 + p * 300}" y="${492 - p * 200}" width="82" height="16" rx="6" fill="${C.wood}" stroke="${C.ink}" stroke-width="3" transform="rotate(${p * 200} ${745 + p * 300} ${500 - p * 200})"/>`; }
+    const qm = pop(t, E('p7') + .2) * (t < E('m17') + .2 ? 1 : 0);
+    if (qm > 0) s += txt(1130, 300, '?', 70 * qm, {w: 800, fill: C.oops});
+  }
+  const cp = pop(t, W('m17', 'paper'));
+  if (cp > 0 && t < clipIn + .5){
+    const p = ease(prog(t, clipOut + .1, clipIn));
+    const cx = lerp(560, 745, p), cy = lerp(420, 500, p);
+    s += `<g transform="translate(${cx} ${cy}) scale(${cp})"><path d="M-40 6h66a8 8 0 0 0 0 -16h-60a6 6 0 0 0 0 12h50" stroke="#7D8796" stroke-width="5" fill="none" stroke-linecap="round"/></g>`;
+  }
+  if (t >= clipIn + .5) s += `<path d="M705 506h66a8 8 0 0 0 0 -16h-60" stroke="#7D8796" stroke-width="5" fill="none" stroke-linecap="round"/>`;
+  // labels
+  s += pill(440, 470, 'battery = energy source', 20, '#D8F4E9', '#11704F', pop(t, W('m14', 'battery')) * (t < S('m15') ? 1 : 0));
+  s += pill(745, 250, 'wires = the path', 22, C.soft, C.accent, pop(t, W('m14', 'wires')) * (t < S('m15') ? 1 : 0));
+  s += pill(1060, 440, 'bulb uses the energy', 20, C.popSoft, C.ink, pop(t, W('m14', 'bulb')) * (t < S('m15') ? 1 : 0));
+  s += pill(760, 350, 'CLOSED circuit ✓ no gaps', 30, C.goodSoft, '#11704F', pop(t, W('m15', 'closed')) * (t < yankT ? 1 : 0));
+  s += pill(760, 350, 'OPEN circuit ✗ there’s a gap', 30, C.oopsSoft, '#B03E20', pop(t, W('m16', 'open')) * (t < E('m16') + .1 ? 1 : 0));
+  s += banner(760, 98, 'Closed = no gaps, it works. Open = a gap, it stops.', 26, pop(t, E('m16') + .1) * (t < S('p7') - .3 ? 1 : 0));
+  s += pill(760, 350, 'Wood = insulator. Still open!', 28, C.oopsSoft, '#B03E20', pop(t, S('m17') + .2) * (t < E('m17') ? 1 : 0));
+  s += pill(760, 350, 'Metal clip = conductor. It works!', 28, C.goodSoft, '#11704F', pop(t, relit) * (t < SC('5') ? 1 : 0));
+  // Pip
+  const pA = yankT - 1.2;
+  if (t > pA){
+    let x = lerp(1400, 860, ease(prog(t, pA, yankT - .3)));
+    if (t > yankT) x += 30 * ease(prog(t, yankT, yankT + .3));
+    const holding = t >= stickT - .6 && t < stickT ? `<rect x="104" y="40" width="70" height="14" rx="6" fill="${C.wood}" stroke="${C.ink}" stroke-width="3"/>` : '';
+    s += pip(t, x, 600, .95, {face: -1, holding, rot: t > yankT && t < yankT + .5 ? -10 : 0});
+  }
+  const pawP = Math.sin(Math.PI * prog(t, closeT - .4, closeT + .2));
+  s += mochi(t, 40, 380, 2.0, {paw: pawP});
+  return s;
+};
+
+scenes[5] = t => {
+  let s = '';
+  s += pill(780, 120, 'electrical energy → other kinds of energy', 28, C.soft, C.accent, pop(t, S('m18') + .3));
+  const buzzA = E('m20') + .3, buzzB = buzzA + 1.1;
+  const station = (cx, sc, body, label) => sc > 0 ? `<g transform="translate(${cx} 340) scale(${sc}) translate(${-cx} -340)"><rect x="${cx - 120}" y="200" width="240" height="300" rx="24" fill="#fff" stroke="${C.line}" stroke-width="4"/>${body}${label}</g>` : '';
+  // bulb
+  const bl = t > S('m19') + .3;
+  s += station(480, pop(t, S('m19')), bulb(480, 320, 50, bl) + (bl ? [0, 1, 2].map(i => `<path d="M${438 + i * 42} ${250 - ((t * 30 + i * 15) % 30)}q8 -8 0 -16q-8 -8 0 -16" stroke="${C.oops}" stroke-width="3.5" fill="none" opacity=".7"/>`).join('') : ''),
+    txt(480, 440, 'light', 28) + txt(480, 474, '+ thermal (warm)', 24, {fill: C.muted}));
+  // buzzer
+  const shake = t > buzzA && t < buzzB ? Math.sin(t * 90) * 5 : 0;
+  s += station(780, pop(t, S('m20')), `<g transform="translate(${780 + shake} 320)"><rect x="-56" y="-46" width="112" height="92" rx="16" fill="#3A3448" stroke="${C.ink}" stroke-width="4"/><circle r="28" fill="#5B5480" stroke="${C.ink}" stroke-width="3"/><circle r="10" fill="${C.ink}"/></g>`
+    + (t > buzzA && t < buzzB + .4 ? arcs(850, 320, 3, t, 1, C.oops, 30) + arcs(710, 320, 3, t, -1, C.oops, 30) + txt(780, 245, 'BZZZT!', 40, {w: 800, fill: C.oops}) : ''),
+    txt(780, 440, 'sound', 28));
+  // fan (blows to the left)
+  const fanOn = t > W('m21', 'fan') + .2;
+  const ang = fanOn ? (t - W('m21', 'fan')) * 900 : 0;
+  s += station(1080, pop(t, S('m21')), `<g transform="translate(1080 320)"><circle r="68" fill="none" stroke="${C.ink}" stroke-width="4"/><g transform="rotate(${ang})">${[0, 120, 240].map(a => `<ellipse cx="0" cy="-34" rx="16" ry="32" fill="#8FD3FF" stroke="${C.ink}" stroke-width="3" transform="rotate(${a})"/>`).join('')}</g><circle r="12" fill="${C.ink}"/></g>`
+    + (fanOn ? [0, 1, 2, 3].map(i => { const p = (t * 1.4 + i / 4) % 1; return `<line x1="${990 - p * 220}" y1="${280 + i * 26}" x2="${950 - p * 220}" y2="${280 + i * 26}" stroke="${C.muted}" stroke-width="4" stroke-linecap="round" opacity="${1 - p}"/>`; }).join('') : ''),
+    txt(1080, 440, 'mechanical', 28) + txt(1080, 474, '(motion)', 24, {fill: C.muted}));
+  // Pip near the buzzer, then blown away
+  const pA = S('m20') - .2;
+  if (t > pA){
+    let x = lerp(1400, 930, ease(prog(t, pA, pA + .8))), y = 600, rot = 0;
+    const blowA = S('p8') - .2;
+    if (t > blowA){ const p = prog(t, blowA, blowA + 2.0); x = lerp(930, -250, ease(p)); y = 600 - Math.sin(p * Math.PI) * 260; rot = -p * 720; }
+    s += pip(t, x, y, .95, {face: -1, spiky: t > buzzA && t < S('m21') + .3, rot});
+  }
+  s += mochi(t, 40, 380, 2.0, {});
+  return s;
+};
+
+scenes[6] = t => {
+  let s = '';
+  s += txt(780, 300, 'POP QUIZ!', 110 * pop(t, S('m22')) * (t < S('m23') - .1 ? 1 : 0), {w: 800, fill: C.accent});
+  s += txt(780, 380, 'Say your answer out loud!', 38 * pop(t, W('m22', 'say')) * (t < S('m23') - .1 ? 1 : 0), {w: 600, fill: C.muted});
+  const QA = [['m23', 'm24'], ['m25', 'm26'], ['m27', 'm28'], ['m29', 'm30']];
+  QA.forEach(([q, a], i) => {
+    const end = i < 3 ? S(QA[i + 1][0]) - .1 : SC('7') - .1;
+    if (t < S(q) - .1 || t >= end) return;
+    const qtext = L[q].caption.replace(/^\w+\.\s*/, '');
+    const sc = pop(t, S(q) - .1);
+    s += `<g transform="translate(780 300) scale(${sc}) translate(-780 -300)"><rect x="350" y="140" width="860" height="330" rx="28" fill="#fff" stroke="${C.ink}" stroke-width="4"/>
+      <circle cx="410" cy="200" r="36" fill="${C.accent}"/>${txt(410, 214, String(i + 1), 40, {w: 800, fill: '#fff'})}
+      ${wrap(qtext, 34).map((ln, j) => txt(800, 215 + j * 50, ln, 40, {w: 700})).join('')}`;
+    if (t >= E(q) && t < S(a)){
+      const rem = S(a) - t, n = Math.ceil(rem / ((S(a) - E(q)) / 3));
+      const frac = (rem % ((S(a) - E(q)) / 3)) / ((S(a) - E(q)) / 3);
+      s += `<circle cx="1120" cy="400" r="44" fill="${C.popSoft}" stroke="${C.line}" stroke-width="8"/><circle cx="1120" cy="400" r="44" fill="none" stroke="${C.pop}" stroke-width="8" stroke-dasharray="${276 * frac} 400" transform="rotate(-90 1120 400)"/>${txt(1120, 416, String(n), 44, {w: 800})}`;
+    }
+    if (t >= S(a) - .05){
+      const ans = wrap(L[a].caption, 40);
+      const ap = pop(t, S(a) - .05);
+      s += `<g transform="translate(780 ${400 - (ans.length - 1) * 20}) scale(${ap})"><rect x="-400" y="${-34}" width="800" height="${54 + ans.length * 38}" rx="20" fill="${C.goodSoft}" stroke="${C.good}" stroke-width="4"/>${ans.map((ln, j) => txt(0, 6 + j * 38, (j === 0 ? '✓ ' : '') + ln, 30, {w: 700, fill: '#11704F'})).join('')}</g>`;
+    }
+    s += `</g>`;
+  });
+  // Pip thinking in the corner during countdowns
+  const thinking = QA.some(([q, a]) => t >= E(q) && t < S(a));
+  s += pip(t, 1190, 600, .8, {face: -1});
+  if (thinking) s += txt(1215, 500, '🤔', 44);
+  s += mochi(t, 40, 380, 2.0, {happy: QA.some(([, a]) => t >= S(a) && t < E(a) + .5)});
+  return s;
+};
+
+scenes[7] = t => {
+  let s = '';
+  const freeze = E('m32') + .3, tap = freeze + 1.3, resume = tap + .35;
+  const bp = pop(t, S('m31'));
+  if (bp > 0){
+    const lvl = ease(prog(t, S('m31') + .2, S('m31') + 1.6));
+    s += `<g transform="translate(800 230) scale(${bp})"><rect x="-110" y="-56" width="210" height="112" rx="18" fill="#fff" stroke="${C.ink}" stroke-width="5"/><rect x="100" y="-24" width="20" height="48" rx="6" fill="${C.ink}"/>
+      ${[0, 1, 2, 3].map(i => `<rect x="${-96 + i * 48}" y="-42" width="40" height="84" rx="8" fill="${C.good}" opacity="${lvl > i / 4 ? 1 : .15}"/>`).join('')}</g>`;
+    s += txt(800, 360, 'You’re fully charged!', 54 * bp, {w: 800, fill: C.accent});
+  }
+  s += pill(800, 440, '⭐ Try the quiz in Mochi’s Energy Lab ⭐', 28, C.popSoft, C.ink, pop(t, W('m31', 'quiz')));
+  for (let i = 0; i < 7; i++){ const a = S('m31') + .4 + i * .2; if (t > a){ const tw = .6 + .4 * Math.sin(t * 4 + i); s += txt(420 + ((i * 173) % 780), 130 + ((i * 97) % 120), '✦', 34 * tw, {fill: C.pop}); } }
+  // Pip next to Mochi; freezes when his key winds down; Mochi taps him
+  const frozen = t > freeze && t < resume;
+  const pipIn = S('m31');
+  const x = lerp(-150, 350, ease(prog(t, pipIn, pipIn + 1)));
+  const hop = t > resume ? Math.abs(Math.sin((t - resume) * 7)) * 18 : undefined;
+  s += pip(t, x, 548, 1.05, {face: 1, frozen, hop, rot: frozen ? 8 : 0});
+  if (frozen && t > freeze + .4) s += txt(x, 410, '…', 40, {fill: C.muted});
+  if (t > resume && t < resume + 1.2) s += txt(x, 400, '!', 50 * pop(t, resume), {w: 800, fill: C.accent});
+  const pawP = Math.sin(Math.PI * prog(t, tap - .3, tap + .35));
+  s += mochi(t, 40, 380, 2.0, {paw: pawP, happy: t > resume});
+  const endP = pop(t, resume + .6);
+  if (endP > 0) s += banner(800, 540, 'The End!', 48, endP);
+  return s;
+};
+
+/* ---------- frame ---------- */
+runVideo({
+  scenes, background, bg: '#F5F0FF',
+  // the lab starts dark; the bulb clicks on at t = 1s
+  overlay: t => t < 1.0 ? `<rect width="1280" height="720" fill="#120E26" opacity=".88"/>` + bulb(760, 150, 42, false).replace(/<path[^>]*>/, '')
+    : t < 1.35 ? `<rect width="1280" height="720" fill="#120E26" opacity="${.88 * (1 - prog(t, 1.0, 1.35))}"/>` : '',
+});
+
+window.SFX = () => {
+  const c = [];
+  c.push({t: 1.0, k: 'click'});
+  c.push({t: E('m1') + .1, k: 'whoosh'}); c.push({t: E('m1') + 1.0, k: 'crash'});
+  c.push({t: W('m4', 'bat'), k: 'boop'}); c.push({t: W('m4', 'bumps'), k: 'knock'});
+  c.push({t: W('p2', 'poof'), k: 'pop'});
+  c.push({t: W('m6', 'splashes'), k: 'splash'});
+  c.push({t: S('p3') - .15, k: 'twang'});
+  for (let i = 0; i < 6; i++) c.push({t: E('m11') + .3 + i * .5 + .5, k: 'pop'});
+  c.push({t: S('m11') + 1.1, k: 'pop'});
+  c.push({t: E('m14') + .45, k: 'click'}); c.push({t: E('m15') + .55, k: 'zap'});
+  c.push({t: E('m17') + .9 + .25, k: 'ding'});
+  c.push({t: E('m20') + .3, k: 'buzz'});
+  c.push({t: S('p8') - .2, k: 'whoosh'});
+  [['m23','m24'],['m25','m26'],['m27','m28'],['m29','m30']].forEach(([q, a]) => { const d = (S(a) - E(q)) / 3; for (let i = 0; i < 3; i++) c.push({t: E(q) + i * d, k: 'tick'}); c.push({t: S(a) - .05, k: 'ding'}); });
+  c.push({t: E('m32') + .3, k: 'winddown'}); c.push({t: E('m32') + 1.6, k: 'boop'}); c.push({t: E('m32') + 1.95, k: 'windup'});
+  c.push({t: E('m32') + 2.55, k: 'tada'});
+  return c;
+};
+seek(0);
+</script>
+</body></html>
