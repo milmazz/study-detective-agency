@@ -1,0 +1,8 @@
+{
+  "name": "study-detective-agency-video-tools",
+  "private": true,
+  "description": "Lesson-video pipeline (see README.md). Separate from the site's package.json so the site build and CI never install a browser.",
+  "devDependencies": {
+    "playwright": "1.63.0"
+  }
+}
