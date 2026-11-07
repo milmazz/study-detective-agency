@@ -153,17 +153,17 @@ const ENERGY_LAB = {
       opts: ['A bell starts ringing after Mochi taps it.', 'A rock sits still on the ground all day.', 'A cold metal spoon gets warm in hot soup.', 'A book stays closed on a shelf.', 'Nothing changes at all.'],
       answers: [0, 2], hint: 'Look for something that starts moving, makes sound, gets warmer, or gives off light.',
       explain: '<p>When energy transfers, you can notice a <b>change</b>: something moves, makes a sound, gets warmer, or gives off light.</p><ul><li>The bell <b>rings</b>: energy from the tap became sound.</li><li>The spoon <b>gets warm</b>: thermal energy moved from the soup into the metal.</li></ul>' },
-    { id: 'e16', tag: 'materials', type: 'sort',
+    { id: 'e16', tag: 'transfer', type: 'sort',
       q: 'True or false?',
       labels: ['True', 'False'],
       items: [
         { t: 'Energy can disappear forever.', a: 1 },
         { t: 'Energy can change from one form to another.', a: 0 },
-        { t: 'Rubber is a good conductor.', a: 1 },
-        { t: 'A closed circuit has no gaps.', a: 0 }
+        { t: 'A rolling ball has no energy.', a: 1 },
+        { t: 'Ripples in a pond carry energy through the water.', a: 0 }
       ],
       hint: 'Remember what Mochi said: energy moves or changes.',
-      explain: '<ul><li>Energy <b>doesn’t disappear</b>. It moves or changes form. (False, then True)</li><li>Rubber is an <b>insulator</b>, not a conductor. (False)</li><li>A closed circuit is a complete path with <b>no gaps</b>. (True)</li></ul>' },
+      explain: '<ul><li>Energy <b>doesn’t disappear</b>. It moves or changes form. (False, then True)</li><li>Anything that is moving has <b>mechanical (motion) energy</b>, so a rolling ball has energy. (False)</li><li>Ripples are <b>energy moving through water</b> as waves. (True)</li></ul>' },
     { id: 'e17', tag: 'changes', type: 'write',
       q: 'Explain how energy changes when you turn on an electric fan. Use the words <i>electrical</i>, <i>mechanical</i>, and <i>closed circuit</i>.',
       checklist: ['say what kind of energy goes into the fan?', 'say what kind of energy comes out?', 'explain why the circuit has to be closed?'],

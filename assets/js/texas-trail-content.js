@@ -86,10 +86,10 @@ const TEXAS_TRAIL = {
         { t: 'Reported about the land, animals, and people he met', a: 0 },
         { t: 'Traveled across the plains of Texas', a: 1 },
         { t: 'Established Fort St. Louis', a: 2 },
-        { t: 'Was shipwrecked on the Texas coast', a: 0 }
+        { t: 'Reached Texas first, back in 1528', a: 0 }
       ],
       hint: 'Only one of them was French. Flip the explorer cards on the Learn page if you need help.',
-      explain: '<ul><li><b>Cabeza de Vaca</b> was shipwrecked, traveled through Texas, and reported on the land, animals, and people.</li><li><b>Coronado</b> crossed the plains and met American Indian groups.</li><li><b>La Salle</b> was French and built Fort St. Louis.</li></ul>' },
+      explain: '<ul><li><b>Cabeza de Vaca</b> was shipwrecked on the Texas coast in 1528, traveled through Texas, and reported on the land, animals, and people.</li><li><b>Coronado</b> crossed the plains and met American Indian groups.</li><li><b>La Salle</b> was French and built Fort St. Louis.</li></ul>' },
     { id: 't4', tag: 'skills', type: 'sort',
       q: 'Primary source or secondary source?',
       labels: ['Primary', 'Secondary'],
