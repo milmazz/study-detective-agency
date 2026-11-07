@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mango’s Fraction Practice — Study Detective Agency</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐱</text></svg>">
+<!-- Bonus page: its own theme, not a detective case file. One sheet, which
+     @imports bonus-fonts.css for the self-hosted Baloo 2. -->
+<link rel="preload" as="font" type="font/woff2" href="../../assets/fonts/baloo2-latin1.woff2" crossorigin>
+<link rel="stylesheet" href="../../assets/css/fractions-mango.css">
+</head>
+<body>
+<main>
+  <a class="home-link" href="../../">← All Divisions</a>
+  <header class="hero">
+    <span id="mascot"></span>
+    <div>
+      <h1>Hi there! Ready for round 2?</h1>
+      <p>Pick your answer and press <b>Check</b>. Tap <b>✕</b> to cross out answers you think are wrong. Stuck? Press <b>Show me how</b> and Mango will explain.</p>
+    </div>
+  </header>
+  <nav class="track" id="track" aria-label="Questions"></nav>
+  <div class="count"><span id="count"></span><button class="link" data-act="reset">Start over</button></div>
+  <section class="card" id="card" aria-live="polite"></section>
+</main>
+
+<script type="module">
+// The page's questions and its renderer live in one module; Vite bundles it
+// into the page's hashed entry chunk.
+import FRACTIONS_MANGO from '../../assets/js/fractions-mango.js';
+FRACTIONS_MANGO.start();
+</script>
+</body>
+</html>

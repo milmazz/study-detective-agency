@@ -12,7 +12,8 @@ Live divisions:
   ordering, rounding, multi-step addition/subtraction word problems solved
   with an equation and a strip (bar model) diagram, and a test-prep set on
   adding and subtracting: typed answers, choosing the equation that models
-  a story, matching a strip diagram to it, and estimating by rounding.
+  a story, matching a strip diagram to it, and estimating by rounding; plus
+  three bonus rounds of fraction practice (Berry, Mango, and Peep).
 - **Words Division** (ELA) — author's purpose, central message, figurative
   language, text formatting clues; plus a second file on *Kitoto the Mighty*
   covering retelling, story elements, theme, author's craft, context clues,

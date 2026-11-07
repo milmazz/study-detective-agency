@@ -10,11 +10,6 @@
   Body text uses the platform's rounded system face, so nothing else is
   downloaded.
 */
-@font-face{
-  font-family:'Baloo 2'; font-style:normal; font-weight:400 800;
-  font-display:swap; src:url(../fonts/baloo2-latin1.woff2) format('woff2');
-  unicode-range:U+0020-007E, U+00A0-00A1, U+00B7, U+00BF, U+00C0-00FF, U+00D7, U+00F7, U+2013-2014, U+2018-2019, U+201C-201D, U+2026;
-}
 .home-link{font-family:var(--display);font-weight:700;text-decoration:none;color:var(--muted);white-space:nowrap;font-size:.95rem}
 .home-link:hover{color:var(--accent-text)}
 *,*::before,*::after{box-sizing:inherit}

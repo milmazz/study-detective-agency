@@ -18,10 +18,18 @@ import { pathToFileURL } from 'node:url';
 const ROOT = path.join(import.meta.dirname, '..');
 const ENGINE = 'assets/js/bonus-quiz.js';
 
+// Two kinds of bonus page. The study pages (Learn section + quiz) run their
+// content through bonus-quiz.js. The fraction rounds are ported stand-alone
+// pages: each module carries its own renderer and exports start() itself.
 const BONUS = {
-  energy: { page: 'games/science/energy-lab.html', content: 'assets/js/energy-lab-content.js', url: 'games/science/energy-lab' },
-  texasTrail: { page: 'games/social-studies/texas-trail.html', content: 'assets/js/texas-trail-content.js', url: 'games/social-studies/texas-trail' },
+  energy: { page: 'games/science/energy-lab.html', content: 'assets/js/energy-lab-content.js', url: 'games/science/energy-lab', engine: ENGINE },
+  texasTrail: { page: 'games/social-studies/texas-trail.html', content: 'assets/js/texas-trail-content.js', url: 'games/social-studies/texas-trail', engine: ENGINE },
+  fractionsBerry: { page: 'games/math/fractions-berry.html', content: 'assets/js/fractions-berry.js', url: 'games/math/fractions-berry' },
+  fractionsMango: { page: 'games/math/fractions-mango.html', content: 'assets/js/fractions-mango.js', url: 'games/math/fractions-mango' },
+  fractionsPeep: { page: 'games/math/fractions-peep.html', content: 'assets/js/fractions-peep.js', url: 'games/math/fractions-peep' },
 };
+const QUIZ_PAGES = Object.entries(BONUS).filter(([, b]) => b.engine);
+const FRACTION_PAGES = Object.entries(BONUS).filter(([, b]) => !b.engine);
 
 const TYPES = new Set(['mc', 'multi', 'sort', 'order', 'write']);
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -37,6 +45,7 @@ test('importing the bonus modules has no side effects', async () => {
     const cfg = await load(content);
     assert.equal(cfg.modes, undefined, `${content} must not export modes`);
   }
+  for (const [, b] of FRACTION_PAGES) assert.equal(typeof (await load(b.content)).start, 'function');
   assert.equal(typeof globalThis.document, 'undefined');
 });
 
@@ -52,21 +61,25 @@ for (const [key, b] of Object.entries(BONUS)) {
     const imports = [...script.matchAll(/^import ([A-Za-z_$][\w$]*) from '([^']+)';/gm)]
       .map((m) => ({ name: m[1], rel: path.relative(ROOT, path.resolve(path.dirname(path.join(ROOT, b.page)), m[2])).split(path.sep).join('/') }));
     for (const { rel } of imports) assert.ok(fs.existsSync(path.join(ROOT, rel)), `${rel} is imported but missing`);
-    const engine = imports.find((i) => i.rel === ENGINE);
     const content = imports.find((i) => i.rel === b.content);
-    assert.ok(engine, `${b.page} does not import ${ENGINE}`);
     assert.ok(content, `${b.page} does not import ${b.content}`);
-    assert.match(script, new RegExp(`${engine.name}\\.start\\(\\s*${content.name}\\s*\\)`),
-      'the page never starts the engine with the content it imported');
+    if (b.engine) {
+      const engine = imports.find((i) => i.rel === b.engine);
+      assert.ok(engine, `${b.page} does not import ${b.engine}`);
+      assert.match(script, new RegExp(`${engine.name}\\.start\\(\\s*${content.name}\\s*\\)`),
+        'the page never starts the engine with the content it imported');
+    } else {
+      assert.match(script, new RegExp(`${content.name}\\.start\\(\\s*\\)`), 'the page never calls start()');
+    }
   });
 
-  test(`${key}: the page links one stylesheet that pulls in bonus.css`, () => {
+  test(`${key}: the page links one stylesheet that pulls in the bonus fonts`, () => {
     const html = read(b.page);
     const links = [...html.matchAll(/<link rel="stylesheet" href="([^"]+)">/g)].map((m) => m[1]);
     assert.equal(links.length, 1);
     const sheet = path.relative(ROOT, path.resolve(path.dirname(path.join(ROOT, b.page)), links[0]));
     assert.ok(fs.existsSync(path.join(ROOT, sheet)), `${sheet} is missing`);
-    assert.match(read(sheet), /^@import '\.\/bonus\.css';/);
+    assert.match(read(sheet), /^@import '\.\/(bonus|bonus-fonts)\.css';/);
     // data-theme is the site's subject switch; the bonus pages theme
     // themselves and must not collide with it.
     assert.doesNotMatch(read(sheet), /data-theme/);
@@ -78,6 +91,9 @@ for (const [key, b] of Object.entries(BONUS)) {
     assert.ok(fs.existsSync(path.join(ROOT, b.url + '.html')));
   });
 
+}
+
+for (const [key, b] of QUIZ_PAGES) {
   test(`${key}: every question has a valid answer key`, async () => {
     const cfg = await load(b.content);
     const qs = cfg.questions;
@@ -142,5 +158,40 @@ for (const [key, b] of Object.entries(BONUS)) {
     }
     for (const m of html.matchAll(/data-sorter="([^"]+)"/g)) assert.ok(cfg.sorters[m[1]], `page uses unknown sorter ${m[1]}`);
     for (const m of html.matchAll(/data-orderer="([^"]+)"/g)) assert.ok(cfg.orderers[m[1]], `page uses unknown orderer ${m[1]}`);
+  });
+}
+
+/* ================= the fraction rounds ================= */
+
+for (const [key, b] of FRACTION_PAGES) {
+  test(`${key}: every question has a valid answer key`, async () => {
+    const { questions } = await load(b.content);
+    assert.ok(Array.isArray(questions) && questions.length > 0);
+    questions.forEach((q, i) => {
+      const where = `question ${i + 1}`;
+      assert.ok(['single', 'multi', 'grid'].includes(q.type), `${where}: unknown type ${q.type}`);
+      assert.ok(typeof q.prompt === 'string' && q.prompt.trim(), `${where}: no prompt`);
+      assert.ok(typeof q.yay === 'string' && q.yay.trim(), `${where}: no success message`);
+      assert.ok(Array.isArray(q.steps) && q.steps.length > 0, `${where}: no "Show me how" steps`);
+
+      if (q.type === 'grid') {
+        const values = new Set(q.cols.map((c) => c.v));
+        for (const [r, row] of q.rows.entries()) {
+          assert.ok(values.has(row.a), `${where}, row ${r + 1}: answer ${row.a} is not a column`);
+          // The hint a wrong row shows is its "why".
+          assert.ok(typeof row.why === 'string' && row.why.trim(), `${where}, row ${r + 1}: no why`);
+        }
+        return;
+      }
+      const keys = q.options.map((o) => o.k);
+      assert.equal(new Set(keys).size, keys.length, `${where}: duplicate option keys`);
+      const need = q.type === 'multi' ? q.pick : 1;
+      assert.equal(q.answer.length, need, `${where}: key has ${q.answer.length} answers, page asks for ${need}`);
+      for (const a of q.answer) assert.ok(keys.includes(a), `${where}: answer ${a} is not an option`);
+      // Picking a wrong option shows its "why", so every wrong option needs one.
+      for (const o of q.options) {
+        if (!q.answer.includes(o.k)) assert.ok(typeof o.why === 'string' && o.why.trim(), `${where}: option ${o.k} has no why`);
+      }
+    });
   });
 }
