@@ -33,6 +33,11 @@ keys and wiring. Mochi's Energy Lab and Pepita's Texas Trail also open with
 a **Watch the lesson** video: a narrated cartoon of the teacher's study guide,
 made with the pipeline in `tools/video/` (see [Lesson videos](#lesson-videos)).
 
+New games are announced in an **RSS feed** at
+[`/feed.xml`](https://studydetectiveagency.com/feed.xml), linked from the
+homepage footer. The build generates it from the homepage catalog, so adding
+a game is all it takes to announce it (see [RSS feed](#rss-feed)).
+
 ## Running it locally
 
 This repo pins Node 24 via [mise](https://mise.jdx.dev) in `mise.toml`;
@@ -56,7 +61,7 @@ npm install   # once, for the DOM tests
 node --test
 ```
 
-Four suites:
+The suites:
 
 - **`test/game-engine.test.js`** — the pure helpers `DetectiveGame` exposes
   (`randInt`/`choice`/`shuffle`/`fmt`) for question generators to reuse.
@@ -78,13 +83,18 @@ Four suites:
   page runs everything through one inline `type="module"` script whose
   imports Vite bundles, that `start()` is called with the config that
   script imports, and that importing a module has no side effects.
+- **`test/bonus-pages.test.js`** — the bonus pages' fixed quizzes: answer
+  keys, question types, and how each page wires up the bonus engine.
+- **`test/rss-feed.test.js`** — the RSS feed: one item per catalog game,
+  newest first, real dates, links to pages that exist, well-formed XML
+  even with `&` or `<` in a title, and the homepage's links to it.
 
 Both dependencies (`vite`, `jsdom`) are dev-only — **no library code
 ships**; the deployed site is this repo's own HTML/CSS/JS, bundled. The
 tests run against the sources directly, no build needed first, and
 `test/dom.test.js` skips itself when jsdom is missing, so `node --test`
-still works on a fresh clone with no install; you just get the other three
-suites. CI installs it so the DOM half always runs, then builds, so a
+still works on a fresh clone with no install; you just get the other
+suites (and the feed's XML-parsing checks skip too). CI installs it so the DOM half always runs, then builds, so a
 change that breaks `vite build` fails before merge.
 
 Layout and visual appearance still aren't covered — check those by hand in
@@ -104,6 +114,8 @@ automatic `npm clean-install` step already covers.
 - `public/` — files the build copies into `dist/` verbatim: `_headers`
   (Cache-Control rules Cloudflare applies per path) and the og:image,
   which needs a stable URL because social scrapers cache by URL
+- `/feed.xml` — not in `public/`: the build writes it from the homepage
+  catalog (see "RSS feed"), and `_headers` caches it for an hour
 
 Everything under `/assets/` is cached for a year as `immutable`, which is
 safe because Vite content-hashes every filename it emits there
@@ -124,12 +136,15 @@ index.html                       Homepage — the game catalog (GAMES_DATA/
                                   base.css stays linked since it's shared
 vite.config.mjs                  Build config: every page is a Rollup input
                                   (discovered by scanning games/), plus the
-                                  cleanUrls() dev/preview plugin
+                                  cleanUrls() dev/preview plugin and the
+                                  rssFeed() plugin that writes feed.xml
 public/                          Copied into dist/ verbatim by the build:
                                   _headers and the stable-URL og:image
 scripts/
   subset-fonts.sh                Regenerates assets/fonts/ (run by hand, not
                                   a build step — see assets/fonts/LICENSE.md)
+  rss-feed.mjs                   Builds /feed.xml from the homepage catalog;
+                                  called by vite.config.mjs, not run by hand
 tools/video/                     The lesson-video pipeline (run by hand, not
                                   part of the build — see "Lesson videos")
 test-support/
@@ -144,6 +159,8 @@ test/
   generators.test.js             Property tests over every question generator
   dom.test.js                    Rendering + wiring, via jsdom (see "Testing")
   question-modules.test.js       How each page wires up its modules
+  bonus-pages.test.js            The bonus pages' quizzes and wiring
+  rss-feed.test.js               The RSS feed built from the catalog
 assets/
   css/                           Each game page links ONE sheet — its subject
                                   sheet — and that sheet @imports the rest of
@@ -300,7 +317,25 @@ games/
 
 5. Add one entry to the `GAMES_DATA` array inside `index.html`'s own
    `<script>` (near the top, above `render()`) — the homepage rebuilds
-   itself from that array automatically.
+   itself from that array automatically. Its `dateAdded` also puts the game
+   at the top of the RSS feed on the next deploy, which is what tells
+   subscribers about it.
+
+## RSS feed
+
+`/feed.xml` is an RSS 2.0 feed with one item per game, newest first. Each
+item has the game's title, page link, blurb, subject and `dateAdded`. It's
+built from `GAMES_DATA` and `SUBJECTS` in `index.html` by
+`scripts/rss-feed.mjs`. The `rssFeed()` plugin in `vite.config.mjs` writes it
+into `dist/` at build time and serves it in `npm run dev`. There's no second
+list to keep in sync, and the same catalog always builds a byte-identical
+feed (its `lastBuildDate` is the newest game's date, not the build time).
+
+The homepage links to it twice: a `<link rel="alternate">` in `<head>`, so
+feed readers find it from the site address, and a visible link in the
+footer. The feed can also drive email: newsletter services such as
+Buttondown or Mailchimp can send subscribers an email whenever the feed gets
+a new item.
 
 ## Lesson videos
 

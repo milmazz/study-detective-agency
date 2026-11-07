@@ -27,6 +27,7 @@
      in base.css exactly, or it is fetched twice. -->
 <link rel="preload" as="font" type="font/woff2" href="assets/fonts/baloo2-latin1.woff2" crossorigin>
 <link rel="stylesheet" href="assets/css/base.css">
+<link rel="alternate" type="application/rss+xml" title="The Study Detective Agency: new games" href="/feed.xml">
 <style>
 /*
   Homepage-only styles, inlined to avoid a render-blocking request
@@ -148,6 +149,7 @@ footer{
   /* #8a7c66 measured 3.90:1 on the page ground at 12px; AA needs 4.5:1. */
   text-align:center; color:#9d8e75; font-size:12px; margin-top:40px;
 }
+footer a{ text-decoration:underline; text-underline-offset:2px; }
 
 @media (prefers-reduced-motion: reduce){ .game-card{ transition:none; } }
 .nojs{ background:rgba(178,58,72,0.10); border:1.5px dashed #B23A48; border-radius:8px;
@@ -182,7 +184,7 @@ footer{
 
   <div class="section" id="categorySections"></div>
 
-  <footer>Open a case file to play. New divisions and cases get added over time.</footer>
+  <footer>Open a case file to play. New divisions and cases get added over time. <a href="/feed.xml">Follow new games by RSS</a>.</footer>
 </main>
 
 <script type="module">

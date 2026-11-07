@@ -14,10 +14,15 @@
      to the clean one). Vite's servers only resolve exact paths, so the
      cleanUrls() plugin below mimics that resolution locally -- the same job
      scripts/dev-server.js did before Vite.
+
+  3. The RSS feed. rssFeed() writes dist/feed.xml from the homepage catalog
+     (GAMES_DATA in index.html; see scripts/rss-feed.mjs) and serves the same
+     feed at /feed.xml in dev.
 */
 import fs from 'node:fs';
 import path from 'node:path';
 import { defineConfig } from 'vite';
+import { buildFeed } from './scripts/rss-feed.mjs';
 
 const ROOT = path.dirname(new URL(import.meta.url).pathname);
 
@@ -81,11 +86,29 @@ function cleanUrls() {
   };
 }
 
+// /feed.xml: emitted into the build, and generated on request in dev so it
+// always reflects the current index.html.
+function rssFeed() {
+  const feed = () => buildFeed(fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8'));
+  return {
+    name: 'rss-feed',
+    generateBundle() {
+      this.emitFile({ type: 'asset', fileName: 'feed.xml', source: feed() });
+    },
+    configureServer(server) {
+      server.middlewares.use('/feed.xml', (req, res) => {
+        res.setHeader('Content-Type', 'application/rss+xml; charset=utf-8');
+        res.end(feed());
+      });
+    },
+  };
+}
+
 export default defineConfig({
   // Never fall back to index.html on a miss -- this is a set of separate
   // pages, and a 404 should look like one in dev too.
   appType: 'mpa',
-  plugins: [cleanUrls()],
+  plugins: [cleanUrls(), rssFeed()],
   build: {
     rollupOptions: { input: pageInputs() },
   },
