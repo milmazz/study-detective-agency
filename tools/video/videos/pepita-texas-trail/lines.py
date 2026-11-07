@@ -103,7 +103,7 @@ SCRIPT = [
 VOICES = {P: "Cq8gMra8w0trADKyB4Hi", D: "87n4zM8Wuy87vFILuKvE"}
 
 # Riley reads slower than the Energy voices; speed her up (pitch-preserving atempo).
-TEMPO = {P: 1.25}
+TEMPO = {P: 1.15}
 
 # Second at which `make.sh <dir> install` grabs the poster frame.
 POSTER_AT = 9
