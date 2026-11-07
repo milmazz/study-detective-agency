@@ -26,6 +26,10 @@ try { const raw = localStorage.getItem(P.key); if (raw) { const o = JSON.parse(r
 if (!(S.cur >= 0 && S.cur < Q.length)) S.cur = 0;
 function save(){ try { localStorage.setItem(P.key, JSON.stringify(S)); } catch (e) {} }
 function R(q){ return S.res[q.id] || (S.res[q.id] = { tries: 0, solved: false, first: false, revealed: false }); }
+/* Every question can earn one star, so the counters agree ("★ n of 17" next to "Question 17 of 17").
+   Auto-graded: right on the first try. Written: answered, then compared with the strong answer
+   (r.write; progress saved before written answers earned stars has it too). */
+function starred(q){ const r = S.res[q.id]; return !!(r && (r.first || r.write)); }
 let W = null;
 
 /* ---------- views ---------- */
@@ -48,9 +52,7 @@ function route(){
 window.addEventListener('hashchange', route);
 
 function updateStars(){
-  const scored = Q.filter(q => q.type !== 'write');
-  const n = scored.filter(q => S.res[q.id] && S.res[q.id].first).length;
-  const el = $('#starcount'); if (el) el.textContent = n + ' of ' + scored.length;
+  const el = $('#starcount'); if (el) el.textContent = Q.filter(starred).length + ' of ' + Q.length;
 }
 
 /* ---------- quiz ---------- */
@@ -183,7 +185,10 @@ function grade(q){
 function check(q){
   const r = R(q);
   if (r.solved) return;
-  if (q.type === 'write') { r.solved = true; r.write = true; save(); showSolved(q, r, true); return; }
+  if (q.type === 'write') {
+    if (!(r.text || '').trim()) { fb('Write your answer in the box first. Then you can compare it with a strong answer.', 'info'); return; }
+    r.solved = true; r.write = true; save(); showSolved(q, r, true); updateStars(); renderDots(); return;
+  }
   const g = grade(q);
   if (g.need) { fb(g.need, 'info'); return; }
   r.tries++;
@@ -219,7 +224,7 @@ function showSolved(q, r, live){
   if (q.type === 'write') { $$('.ck input', box).forEach(c => c.disabled = false); }
 
   let msg;
-  if (q.type === 'write') msg = `<div class="fbrow">${P.mascot('happy')}<div><strong>Compare your answer with this one.</strong> Does yours say the same big idea and give an example?</div></div>`;
+  if (q.type === 'write') msg = `<div class="fbrow">${P.mascot('happy')}<div><strong>⭐ A star for writing it out!</strong> Now compare your answer with this one. Does yours say the same big idea and give an example?</div></div>`;
   else if (r.revealed) msg = `<div class="fbrow">${P.mascot('think')}<div><strong>Here's the answer.</strong> Read the why below, and this one will be easier next time.</div></div>`;
   else msg = `<div class="fbrow">${P.mascot('happy')}<div><strong>${live ? pick(P.cheers) : 'Solved!'}</strong> ${r.first ? '⭐ First try!' : 'You got it on try two.'}</div></div>`;
   fb(msg, r.revealed ? 'oops' : 'good');
@@ -247,8 +252,8 @@ function go(i){
 function renderDots(){
   $('#dots').innerHTML = Q.map((q, i) => {
     const r = S.res[q.id] || {};
-    const st = !r.solved ? '' : q.type === 'write' ? 'wr' : r.first ? 'star' : r.revealed ? 'rev' : 'done';
-    const label = `Question ${i + 1}${st === 'star' ? ', first try' : st === 'done' ? ', solved' : st === 'rev' ? ', answer shown' : st === 'wr' ? ', written' : ''}`;
+    const st = !r.solved ? '' : starred(q) ? 'star' : r.revealed ? 'rev' : 'done';
+    const label = `Question ${i + 1}${st === 'star' ? (q.type === 'write' ? ', written' : ', first try') : st === 'done' ? ', solved' : st === 'rev' ? ', answer shown' : ''}`;
     return `<button type="button" class="dot ${st} ${i === S.cur ? 'cur' : ''}" data-i="${i}" aria-label="${label}" ${i === S.cur ? 'aria-current="step"' : ''}>${st === 'star' ? '★' : i + 1}</button>`;
   }).join('');
   $$('#dots .dot').forEach(d => d.addEventListener('click', () => go(+d.dataset.i)));
@@ -257,16 +262,16 @@ function navState(){ $('#prev').disabled = S.cur === 0; $('#next').textContent =
 
 /* ---------- report ---------- */
 function renderReport(){
-  const scored = Q.filter(q => q.type !== 'write');
+  const scored = Q;
   const solved = scored.filter(q => (S.res[q.id] || {}).solved).length;
-  const stars = scored.filter(q => (S.res[q.id] || {}).first).length;
+  const stars = scored.filter(starred).length;
   const left = Q.filter(q => !(S.res[q.id] || {}).solved);
   const pct = scored.length ? stars / scored.length : 0;
   const head = solved < scored.length && !stars ? P.report.start
     : pct >= .9 ? P.report.great : pct >= .7 ? P.report.good : P.report.keep;
   const rows = Object.keys(P.tags).map(t => {
     const qs = scored.filter(q => q.tag === t); if (!qs.length) return '';
-    const s = qs.filter(q => (S.res[q.id] || {}).first).length;
+    const s = qs.filter(starred).length;
     const d = qs.filter(q => (S.res[q.id] || {}).solved).length;
     const status = d < qs.length ? 'Not finished' : s === qs.length ? 'Got it!' : s >= qs.length / 2 ? 'Almost' : 'Review this';
     const cls = d < qs.length ? 'todo' : s === qs.length ? 'ok' : s >= qs.length / 2 ? 'mid' : 'low';
@@ -275,7 +280,7 @@ function renderReport(){
   }).join('');
   $('#reportbox').innerHTML = `<div class="rhead">${P.mascot(pct >= .7 ? 'happy' : 'idle')}<div>
       <p class="big">${stars} <span>of ${scored.length} stars</span></p><p class="rmsg">${head}</p></div></div>
-    <p class="small">A star means right on the first try. ${left.length ? `${left.length} question${left.length > 1 ? 's' : ''} still to do.` : 'Every question is done.'}</p>
+    <p class="small">A star means right on the first try. Writing questions earn a star when you write your answer and compare it with the strong one. ${left.length ? `${left.length} question${left.length > 1 ? 's' : ''} still to do.` : 'Every question is done.'}</p>
     <div class="tablewrap"><table class="rtable"><thead><tr><th scope="col">Topic</th><th scope="col">Stars</th><th scope="col">How it went</th><th scope="col"><span class="vh">Link</span></th></tr></thead><tbody>${rows}</tbody></table></div>
     <div class="ractions">
       ${left.length ? `<button class="btn primary" id="resume" type="button">Finish the quiz</button>` : ''}
