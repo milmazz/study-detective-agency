@@ -7,6 +7,7 @@
 #
 # WORKERS=4 (default) sets how many browser processes render in parallel.
 set -euo pipefail
+export PYTHONDONTWRITEBYTECODE=1   # importing a video's lines.py must not leave __pycache__/ behind
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$HERE/../.." && pwd)"

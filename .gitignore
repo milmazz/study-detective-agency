@@ -11,3 +11,4 @@ node_modules/
 # (tools/video/README.md). The cached narration in videos/*/audio/ IS tracked.
 tools/video/videos/*/build/
 tools/video/node_modules/
+__pycache__/
