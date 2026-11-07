@@ -1,0 +1,82 @@
+@import './bonus.css';
+
+/* Pepita's Texas Trail: sky blue and sunflower, plus the trail, explorer cards, and map. */
+:root{
+  --display:"Baloo 2","Trebuchet MS",system-ui,sans-serif;
+  --body:ui-rounded,"SF Pro Rounded","Segoe UI","Helvetica Neue",system-ui,sans-serif;
+  --bg:#E8F5FF; --dotc:#D2EAFB; --surface:#FFFFFF; --bar:rgba(232,245,255,.9);
+  --ink:#1D3350; --muted:#55708F; --line:#C6DCF0;
+  --accent:#1F74C9; --accent-ink:#FFFFFF; --accent-soft:#DCEEFF; --accent-text:#165FA8;
+  --pop:#FFBE2E; --pop-soft:#FFF2CC; --pop-text:#835700;
+  --good:#2B9A57; --good-soft:#DAF3E3; --good-text:#1D7240;
+  --oops:#D9543F; --oops-soft:#FDE3DE; --oops-text:#AC3523;
+  --focus:#1F74C9; --chick:#FFD43B; --chickline:#1D3350; --blush:#FF9FB0; --hat:#B9783F; --beak:#FF8A2B;
+  --land:#F7EBC8; --land2:#EAD9A6; --river:#5BB3F0; --trail:#9CC3E6;
+  --pattern:radial-gradient(circle at 50% 50%, var(--dotc) 2px, transparent 2.6px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#10213A; --dotc:#1A2F4F; --surface:#182D4D; --bar:rgba(16,33,58,.9);
+    --ink:#EAF4FF; --muted:#A9C3E0; --line:#2C4669;
+    --accent:#6DB4FF; --accent-ink:#10213A; --accent-soft:#1F3B63; --accent-text:#9CCBFF;
+    --pop:#FFCB57; --pop-soft:#3A3117; --pop-text:#FFD776;
+    --good:#56C985; --good-soft:#173A2A; --good-text:#82DFA8;
+    --oops:#FF8A74; --oops-soft:#43231F; --oops-text:#FFA996;
+    --focus:#9CCBFF; --chick:#FFD43B; --chickline:#10213A; --blush:#FF8FA4; --hat:#C98B52; --beak:#FF9A45;
+    --land:#3A3A2A; --land2:#4A4630; --river:#3E8ED0; --trail:#35577F;
+    color-scheme:dark;
+  }
+}
+
+/* hero trail */
+.hero{padding:30px 0 6px}
+.hero h1{margin-bottom:.15em}
+.trailbox{position:relative;margin:18px 0 4px}
+.trailbox svg{display:block;width:100%;height:auto;overflow:visible}
+.trailpath{fill:none;stroke:var(--trail);stroke-width:7;stroke-dasharray:2 14;stroke-linecap:round}
+.stop circle{fill:var(--surface);stroke:var(--accent);stroke-width:4}
+.stop text{font-family:var(--display);font-size:17px;fill:var(--ink);text-anchor:middle}
+.stop .em{font-size:22px}
+.stop{cursor:pointer}
+.stop:focus{outline:none}
+.stop:focus-visible circle,.stop:hover circle{fill:var(--pop-soft);stroke-width:5}
+#walker{transition:transform .7s cubic-bezier(.4,.1,.3,1)}
+@media (prefers-reduced-motion:reduce){#walker{transition:none}}
+.trailnote{text-align:center;color:var(--muted);font-size:.95rem;margin:4px 0 0}
+
+/* explorers */
+.excard{border-radius:20px;border:2px solid var(--line);background:var(--surface);padding:16px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:6px;min-height:150px}
+.excard .flag{font-size:.82rem;font-weight:800;border-radius:999px;padding:2px 10px;align-self:flex-start}
+.flag.es{background:var(--pop-soft);color:var(--pop-text)}
+.flag.fr{background:var(--accent-soft);color:var(--accent-text)}
+.excard .front{font-family:var(--display);font-size:1.3rem;line-height:1.15}
+.excard .tap{font-size:.85rem;color:var(--muted)}
+.excard .back{display:none;font-size:.97rem;line-height:1.45}
+.excard.flipped{border-color:var(--accent);background:var(--accent-soft)}
+.excard.flipped .back{display:block}
+.excard.flipped .tap{display:none}
+.reason{text-align:center}
+.reason .em{font-size:2.2rem;display:block}
+.reason h3{margin:.2em 0}
+
+/* map */
+.mapbox{background:var(--surface);border:2px solid var(--line);border-radius:22px;padding:14px;margin:14px 0}
+.mapbox svg{display:block;width:100%;max-width:560px;margin:0 auto;height:auto;border-radius:14px}
+.mpart{cursor:pointer}
+.mpart .hlbox{fill:none;stroke:var(--pop);stroke-width:5;opacity:0;transition:opacity .2s}
+.mpart.hl .hlbox{opacity:1}
+.mapinfo{text-align:center;margin:10px auto 0;max-width:32em;min-height:3em;font-weight:600}
+.mapbtns{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:10px}
+.mapbtns button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+
+.icons4{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.icons4 .panel{text-align:center;margin:0;padding:14px 10px}
+.icons4 .em{font-size:2rem;display:block}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.cols .panel{margin:0}
+.chain{display:flex;flex-wrap:wrap;align-items:stretch;gap:8px;margin:12px 0}
+.chain .link{flex:1 1 170px;background:var(--surface);border:2px solid var(--line);border-radius:16px;padding:12px;font-weight:600}
+.chain .arrow{align-self:center;font-size:1.5rem;color:var(--accent-text)}
+.chain .lbl{display:block;font-size:.82rem;color:var(--muted);font-weight:800}
+@media (max-width:560px){.chain .arrow{transform:rotate(90deg);flex-basis:100%;text-align:center}}

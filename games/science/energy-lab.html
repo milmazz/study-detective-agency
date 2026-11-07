@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mochi’s Energy Lab</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐱</text></svg>">
+<!-- Bonus page: its own theme, not a detective case file. One sheet, which
+     @imports bonus.css. Baloo 2 is self-hosted and preloaded like the
+     game pages. -->
+<link rel="preload" as="font" type="font/woff2" href="../../assets/fonts/baloo2-latin1.woff2" crossorigin>
+<link rel="stylesheet" href="../../assets/css/energy-lab.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap">
+    <a class="home-link" href="../../">← All Divisions</a>
+    <nav class="tabs" aria-label="Sections">
+      <a class="tab" id="tab-learn" href="#learn">Learn</a>
+      <a class="tab" id="tab-quiz" href="#quiz">Quiz</a>
+      <a class="tab" id="tab-report" href="#report">Report card</a>
+    </nav>
+    <span class="stars" aria-label="Stars earned">★ <b id="starcount">0</b></span>
+  </div>
+</header>
+
+<main class="wrap">
+<section id="view-learn">
+  <div class="hero">
+    <div>
+      <h1>Mochi’s Energy Lab</h1>
+      <p class="lede">Energy is always on the move. Learn how it travels, what it can pass through, and how circuits make lights, sounds, and fans work. Then take the quiz to earn stars.</p>
+    </div>
+    <div class="hero-lamp" id="lamp">
+      <svg class="lampbulb" viewBox="0 0 100 100" aria-hidden="true">
+        <g class="rays" stroke="var(--pop)" stroke-width="5" stroke-linecap="round">
+          <line x1="50" y1="2" x2="50" y2="12"/><line x1="14" y1="16" x2="21" y2="23"/><line x1="86" y1="16" x2="79" y2="23"/><line x1="2" y1="46" x2="12" y2="46"/><line x1="98" y1="46" x2="88" y2="46"/>
+        </g>
+        <path class="glass" d="M50 18a26 26 0 0 0-15 47c3 2 4 6 4 9h22c0-3 1-7 4-9a26 26 0 0 0-15-47z" stroke="var(--ink)" stroke-width="3.5"/>
+        <rect x="39" y="76" width="22" height="7" rx="2" fill="var(--muted)"/><rect x="41" y="85" width="18" height="6" rx="2" fill="var(--muted)"/>
+      </svg>
+      <div id="heroCat"></div>
+      <button class="btn primary switchbtn" id="lampbtn" type="button" aria-pressed="false">Turn on the light</button>
+      <p class="lampnote" id="lampnote" aria-live="polite">Tap the switch to close the circuit.</p>
+    </div>
+  </div>
+
+  <section class="sec" id="motion">
+    <h2>Energy on the move</h2>
+    <p>Energy can <span class="kw">transfer</span>, which means it moves from one object or place to another. You can see it happen in motion, in water waves, and in sound. Try each one.</p>
+    <div class="grid3">
+      <div class="panel demo" id="demoBall">
+        <svg viewBox="0 0 260 110" aria-hidden="true">
+          <line x1="10" y1="92" x2="250" y2="92" stroke="var(--line)" stroke-width="4" stroke-linecap="round"/>
+          <g class="ballA"><circle cx="40" cy="72" r="20" fill="var(--accent)"/><path d="M24 64q16 10 32 0M24 80q16-10 32 0" stroke="var(--accent-soft)" stroke-width="3" fill="none"/></g>
+          <g class="ballB"><circle cx="180" cy="72" r="20" fill="var(--pop)"/><path d="M164 64q16 10 32 0M164 80q16-10 32 0" stroke="var(--pop-soft)" stroke-width="3" fill="none"/></g>
+        </svg>
+        <h3>Motion</h3>
+        <p class="cap" aria-live="polite">Mochi bats the purple yarn ball. What happens when it bumps the yellow one?</p>
+        <button class="btn small-btn" type="button">Roll it</button>
+      </div>
+      <div class="panel demo" id="demoPond">
+        <svg viewBox="0 0 260 110" aria-hidden="true">
+          <ellipse cx="130" cy="80" rx="118" ry="26" fill="var(--surface)" opacity=".7"/>
+          <ellipse class="ring" cx="130" cy="80" rx="80" ry="18"/><ellipse class="ring" cx="130" cy="80" rx="80" ry="18"/><ellipse class="ring" cx="130" cy="80" rx="80" ry="18"/>
+          <circle class="pebble" cx="130" cy="30" r="9" fill="var(--muted)"/>
+        </svg>
+        <h3>Water waves</h3>
+        <p class="cap" aria-live="polite">Drop a pebble in the pond and watch the water.</p>
+        <button class="btn small-btn" type="button">Drop a pebble</button>
+      </div>
+      <div class="panel demo" id="demoGuitar">
+        <svg viewBox="0 0 260 110" aria-hidden="true">
+          <rect x="20" y="40" width="20" height="40" rx="5" fill="var(--muted)"/><rect x="160" y="40" width="20" height="40" rx="5" fill="var(--muted)"/>
+          <rect class="string" x="40" y="58" width="120" height="4" rx="2" fill="var(--ink)"/>
+          <path class="wave" d="M196 45q10 15 0 30"/><path class="wave" d="M210 38q14 22 0 44"/><path class="wave" d="M224 31q18 29 0 58"/>
+        </svg>
+        <h3>Sound</h3>
+        <p class="cap" aria-live="polite">Pluck the string. Listen and watch.</p>
+        <button class="btn small-btn" type="button">Pluck it</button>
+      </div>
+    </div>
+    <div class="remember"><span id="remCat"></span><span>Energy doesn’t disappear. It moves to something else, or it changes into a different kind of energy.</span></div>
+  </section>
+
+  <section class="sec" id="materials">
+    <h2>Conductors and insulators</h2>
+    <p>Some materials let energy pass through easily. Others slow it down or stop it.</p>
+    <div class="grid2">
+      <div class="panel tint matpanel"><span class="big-emoji" aria-hidden="true">⚡</span><div><h3>Conductor</h3><p>Lets <b>thermal energy</b> (heat) or <b>electrical energy</b> pass through easily. Most conductors are <b>metals</b>: copper, aluminum, iron, and steel.</p></div></div>
+      <div class="panel sun matpanel"><span class="big-emoji" aria-hidden="true">🧤</span><div><h3>Insulator</h3><p>Does <b>not</b> let energy pass through easily. It protects us or slows energy down. Examples: <b>rubber, plastic, wood, and cloth</b>.</p></div></div>
+    </div>
+    <h3 style="margin-top:20px">Where you see both at once</h3>
+    <ul class="tidy">
+      <li><b>Electric wires:</b> the metal inside is a conductor, so electricity flows. The plastic outside is an insulator, so it stays in the wire and keeps you safe.</li>
+      <li><b>A cooking pot:</b> the metal pan is a conductor, so heat reaches the food fast. The plastic handle is an insulator, so your hand doesn’t get burned.</li>
+    </ul>
+    <h3 style="margin-top:20px">Sorting game</h3>
+    <p>Mochi found a pile of stuff. Is each one a conductor or an insulator?</p>
+    <div class="sorter" data-sorter="materials"></div>
+  </section>
+
+  <section class="sec" id="circuits">
+    <h2>Circuits</h2>
+    <p>Electricity travels in a path called a <span class="kw">circuit</span>. When the path is <b>closed</b> (no gaps), electricity flows. When the path is <b>open</b> (there’s a gap), it can’t flow. Build one below.</p>
+    <div class="circuit" id="circuit">
+      <svg viewBox="0 0 400 230" role="img" aria-labelledby="ctitle">
+        <title id="ctitle">A simple circuit with a battery, wires, a switch, and a receiver</title>
+        <path class="wire" d="M70 80V40H150M210 40H330V85M330 145V200H70V160"/>
+        <path class="flow" d="M70 80V40H150M210 40H330V85M330 145V200H70V160"/>
+        <!-- battery -->
+        <rect x="45" y="80" width="50" height="80" rx="8" fill="var(--accent)"/>
+        <rect x="60" y="72" width="20" height="10" rx="3" fill="var(--accent)"/>
+        <text x="70" y="113" text-anchor="middle" font-size="22" font-weight="800" fill="var(--accent-ink)">+</text>
+        <text x="70" y="146" text-anchor="middle" font-size="22" font-weight="800" fill="var(--accent-ink)">−</text>
+        <text x="70" y="182" text-anchor="middle" font-size="13" font-weight="700" fill="var(--muted)" dx="-42">battery</text>
+        <!-- switch -->
+        <circle cx="150" cy="40" r="7" fill="var(--ink)"/><circle cx="210" cy="40" r="7" fill="var(--ink)"/>
+        <line class="lever" x1="150" y1="40" x2="210" y2="40" stroke="var(--ink)" stroke-width="7" stroke-linecap="round"/>
+        <text x="180" y="72" text-anchor="middle" font-size="13" font-weight="700" fill="var(--muted)">switch</text>
+        <!-- receivers -->
+        <g class="recv show" data-r="bulb">
+          <circle class="rglow" cx="330" cy="112" r="40"/>
+          <circle class="cbulb" cx="330" cy="110" r="25"/>
+          <rect x="318" y="133" width="24" height="12" rx="3" fill="var(--muted)"/>
+          <path d="M322 112l5 6 6-10 5 10" stroke="var(--ink)" stroke-width="2.5" fill="none"/>
+        </g>
+        <g class="recv" data-r="buzzer">
+          <rect x="305" y="88" width="50" height="50" rx="10" fill="var(--surface)" stroke="var(--ink)" stroke-width="3"/>
+          <circle cx="330" cy="113" r="11" fill="var(--ink)"/>
+          <path class="barc" d="M365 98q10 15 0 30"/><path class="barc" d="M377 90q16 23 0 46"/>
+        </g>
+        <g class="recv" data-r="fan">
+          <circle cx="330" cy="115" r="30" fill="var(--surface)" stroke="var(--ink)" stroke-width="3"/>
+          <g class="blades" fill="var(--accent)">
+            <ellipse cx="330" cy="98" rx="7" ry="15"/><ellipse cx="330" cy="132" rx="7" ry="15"/>
+            <ellipse cx="313" cy="115" rx="15" ry="7"/><ellipse cx="347" cy="115" rx="15" ry="7"/>
+          </g>
+          <circle cx="330" cy="115" r="5" fill="var(--ink)"/>
+        </g>
+      </svg>
+      <div class="ctrl">
+        <div class="seg" role="group" aria-label="Choose a receiver">
+          <button type="button" data-r="bulb" aria-pressed="true">💡 Bulb</button>
+          <button type="button" data-r="buzzer" aria-pressed="false">🔔 Buzzer</button>
+          <button type="button" data-r="fan" aria-pressed="false">🌀 Fan</button>
+        </div>
+        <button class="btn primary" type="button" id="swbtn" aria-pressed="false">Close the switch</button>
+      </div>
+      <p class="cstatus" id="cstatus" aria-live="polite"></p>
+    </div>
+    <div class="grid2">
+      <div class="panel">
+        <h3>Parts of a simple circuit</h3>
+        <ul class="tidy">
+          <li><b>Battery:</b> the energy source</li>
+          <li><b>Wires:</b> the path electricity travels</li>
+          <li><b>Bulb, buzzer, or motor:</b> the receiver that uses the energy</li>
+          <li><b>No gaps:</b> the path must be closed</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>Energy changes</h3>
+        <ul class="tidy">
+          <li>Light bulb: electrical → <b>light and thermal</b></li>
+          <li>Buzzer: electrical → <b>sound</b></li>
+          <li>Fan: electrical → <b>mechanical</b> (motion)</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="words">
+    <h2>Words to know</h2>
+    <p>Say what you think each word means, then tap the card to check.</p>
+    <div class="flips">
+      <button class="flip" type="button" data-flip aria-pressed="false"><span class="front">Energy transfer</span><span class="tap">Tap to flip</span><span class="back">Energy moving from one object or place to another.</span></button>
+      <button class="flip" type="button" data-flip aria-pressed="false"><span class="front">Vibration</span><span class="tap">Tap to flip</span><span class="back">A quick back-and-forth shake. Vibrations make sound.</span></button>
+      <button class="flip" type="button" data-flip aria-pressed="false"><span class="front">Conductor</span><span class="tap">Tap to flip</span><span class="back">A material that lets heat or electricity pass through easily, like metal.</span></button>
+      <button class="flip" type="button" data-flip aria-pressed="false"><span class="front">Insulator</span><span class="tap">Tap to flip</span><span class="back">A material that slows or stops heat or electricity, like rubber or plastic.</span></button>
+      <button class="flip" type="button" data-flip aria-pressed="false"><span class="front">Closed circuit</span><span class="tap">Tap to flip</span><span class="back">A complete path with no gaps. Electricity flows.</span></button>
+      <button class="flip" type="button" data-flip aria-pressed="false"><span class="front">Open circuit</span><span class="tap">Tap to flip</span><span class="back">A path with a gap or break. Electricity can’t flow.</span></button>
+      <button class="flip" type="button" data-flip aria-pressed="false"><span class="front">Electrical energy</span><span class="tap">Tap to flip</span><span class="back">Energy that flows through a circuit.</span></button>
+      <button class="flip" type="button" data-flip aria-pressed="false"><span class="front">Thermal energy</span><span class="tap">Tap to flip</span><span class="back">Heat energy. Things with more of it feel warmer.</span></button>
+      <button class="flip" type="button" data-flip aria-pressed="false"><span class="front">Sound energy</span><span class="tap">Tap to flip</span><span class="back">Energy made by vibrations that travels to your ears.</span></button>
+      <button class="flip" type="button" data-flip aria-pressed="false"><span class="front">Light energy</span><span class="tap">Tap to flip</span><span class="back">Energy we can see, like from a bulb or the Sun.</span></button>
+      <button class="flip" type="button" data-flip aria-pressed="false"><span class="front">Mechanical energy</span><span class="tap">Tap to flip</span><span class="back">The energy of motion, like a spinning fan or rolling ball.</span></button>
+    </div>
+  </section>
+  <div class="start-quiz"><a class="btn primary" href="#quiz">Start the quiz</a></div>
+</section>
+
+<section id="view-quiz" hidden>
+  <div id="quiztop">
+    <h2 class="vh">Quiz</h2>
+    <div class="dots" id="dots" role="navigation" aria-label="Questions"></div>
+    <div class="qcard" id="qbox"></div>
+    <div class="qnav"><button class="btn" id="prev" type="button">Back</button><button class="btn" id="next" type="button">Skip ahead</button></div>
+  </div>
+</section>
+
+<section id="view-report" hidden>
+  <h2 style="margin-top:26px">Report card</h2>
+  <div id="reportbox"></div>
+</section>
+</main>
+
+<script type="module">
+// The bonus quiz engine and this page's content (questions plus the Learn
+// interactives). Vite bundles both into the page's hashed entry chunk.
+import BonusQuiz from '../../assets/js/bonus-quiz.js';
+import ENERGY_LAB from '../../assets/js/energy-lab-content.js';
+BonusQuiz.start(ENERGY_LAB);
+</script>
+</body>
+</html>

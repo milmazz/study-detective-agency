@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pepita’s Texas Trail</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐣</text></svg>">
+<!-- Bonus page: its own theme, not a detective case file. One sheet, which
+     @imports bonus.css. Baloo 2 is self-hosted and preloaded like the
+     game pages. -->
+<link rel="preload" as="font" type="font/woff2" href="../../assets/fonts/baloo2-latin1.woff2" crossorigin>
+<link rel="stylesheet" href="../../assets/css/texas-trail.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap">
+    <a class="home-link" href="../../">← All Divisions</a>
+    <nav class="tabs" aria-label="Sections">
+      <a class="tab" id="tab-learn" href="#learn">Learn</a>
+      <a class="tab" id="tab-quiz" href="#quiz">Quiz</a>
+      <a class="tab" id="tab-report" href="#report">Report card</a>
+    </nav>
+    <span class="stars" aria-label="Stars earned">★ <b id="starcount">0</b></span>
+  </div>
+</header>
+
+<main class="wrap">
+<section id="view-learn">
+  <div class="hero">
+    <h1>Pepita’s Texas Trail</h1>
+    <p class="lede">Pepita the explorer chick is walking through early Texas history, from the first European explorers to Austin’s Colony. Tap a stop on the trail to jump there, then take the quiz to earn stars.</p>
+    <div class="trailbox">
+      <svg viewBox="0 0 640 170" role="group" aria-label="The trail. Tap a stop to jump to that part.">
+        <path class="trailpath" d="M60 120C140 40 200 40 230 95S330 150 360 95S470 30 520 80S600 120 600 120"/>
+        <g class="stop" data-go="explorers" data-x="80" data-y="105" tabindex="0" role="link" aria-label="Stop 1: Explorers">
+          <circle cx="80" cy="105" r="26"/><text class="em" x="80" y="113">🧭</text><text x="80" y="156">Explorers</text></g>
+        <g class="stop" data-go="missions" data-x="250" data-y="108" tabindex="0" role="link" aria-label="Stop 2: Missions">
+          <circle cx="250" cy="108" r="26"/><text class="em" x="250" y="116">⛪</text><text x="250" y="160">Missions</text></g>
+        <g class="stop" data-go="settlers" data-x="420" data-y="62" tabindex="0" role="link" aria-label="Stop 3: New settlers">
+          <circle cx="420" cy="62" r="26"/><text class="em" x="420" y="70">🐄</text><text x="420" y="114">New settlers</text></g>
+        <g class="stop" data-go="timeline" data-x="585" data-y="112" tabindex="0" role="link" aria-label="Stop 4: Timeline">
+          <circle cx="585" cy="112" r="26"/><text class="em" x="585" y="120">📜</text><text x="585" y="162">Timeline</text></g>
+        <g id="walker" transform="translate(30 30)"><g id="walkerArt" transform="scale(.48)"></g></g>
+      </svg>
+    </div>
+  </div>
+
+  <section class="sec" id="explorers">
+    <h2>Stop 1: European explorers</h2>
+    <p>Why did countries like Spain and France send explorers to Texas? There were three big reasons.</p>
+    <div class="grid3">
+      <div class="panel reason"><span class="em" aria-hidden="true">💰</span><h3>Wealth and trade</h3><p>Countries wanted riches and new things to trade. These are <b>economic</b> opportunities.</p></div>
+      <div class="panel reason"><span class="em" aria-hidden="true">🏁</span><h3>Competition</h3><p>Countries raced each other. If Spain didn’t claim a place, France might.</p></div>
+      <div class="panel reason"><span class="em" aria-hidden="true">🗺️</span><h3>Expansion</h3><p>Countries wanted more power and more land. Claiming more land is called <b>expansion</b>.</p></div>
+    </div>
+    <h3 style="margin-top:22px">Meet the explorers</h3>
+    <p>Tap each card to learn what the explorer did.</p>
+    <div class="grid3">
+      <button class="excard" type="button" data-flip aria-pressed="false"><span class="flag es">Spain</span><span class="front">Cabeza de Vaca</span><span class="tap">Tap to learn more</span>
+        <span class="back">He was shipwrecked on the Texas coast in 1528 and traveled through parts of Texas for years. Later he <b>reported</b> what he saw: the land, the animals, and the American Indian peoples he met.</span></button>
+      <button class="excard" type="button" data-flip aria-pressed="false"><span class="flag es">Spain</span><span class="front">Francisco Coronado</span><span class="tap">Tap to learn more</span>
+        <span class="back">In the 1540s he traveled across the <b>plains</b> of Texas looking for riches. He met American Indian groups, and his journey gave Spain information about the region.</span></button>
+      <button class="excard" type="button" data-flip aria-pressed="false"><span class="flag fr">France</span><span class="front">La Salle</span><span class="tap">Tap to learn more</span>
+        <span class="back">René Robert Cavelier, Sieur de La Salle led a <b>French</b> expedition and built <b>Fort St. Louis</b> in Texas in 1685. A French fort in Texas made Spain worried, so the <b>competition</b> between France and Spain grew.</span></button>
+    </div>
+
+    <h3 style="margin-top:24px">Primary or secondary source?</h3>
+    <div class="grid2">
+      <div class="panel tint"><h3>Primary source</h3><p>Made <b>at the time</b> of the event, or by someone who was <b>there</b>. Examples: a journal, a letter, a map drawn on an expedition, an artifact.</p></div>
+      <div class="panel sun"><h3>Secondary source</h3><p>Made <b>later</b> to explain the past. Examples: a textbook, a historian’s summary, an encyclopedia, a website about history.</p></div>
+    </div>
+    <div class="sorter" data-sorter="sources"></div>
+
+    <h3 style="margin-top:24px">Map skills</h3>
+    <p>Tap a map tool to find it on Pepita’s map.</p>
+    <div class="mapbox" id="mapbox">
+      <svg viewBox="0 0 400 260" role="img" aria-labelledby="maptitle">
+        <title id="maptitle">A pretend map with a river, a mission, a fort, a town, a compass rose, a legend, and a scale</title>
+        <rect x="0" y="0" width="400" height="260" fill="var(--river)" opacity=".35"/>
+        <path d="M0 40C80 20 140 50 220 30S360 10 400 30V260H0Z" fill="var(--land)"/>
+        <path d="M30 230c40-10 60 10 100 0s70-30 110-10" fill="none" stroke="var(--land2)" stroke-width="16" stroke-linecap="round"/>
+        <path d="M150 34C160 90 120 120 160 160S240 200 230 260" fill="none" stroke="var(--river)" stroke-width="10" stroke-linecap="round"/>
+        <g class="mpart" data-part="symbols">
+          <rect class="hlbox" x="76" y="70" width="230" height="110" rx="12"/>
+          <g transform="translate(105 95)"><rect x="-12" y="0" width="24" height="18" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"/><path d="M-14 0L0-12L14 0Z" fill="var(--hat)" stroke="var(--ink)" stroke-width="2"/><path d="M0-22v10M-4-18h8" stroke="var(--ink)" stroke-width="2"/></g>
+          <g transform="translate(260 100)"><rect x="-12" y="-6" width="24" height="20" fill="var(--hat)" stroke="var(--ink)" stroke-width="2"/><path d="M-12-6v-6h5v6M7-6v-6h5v6" fill="var(--hat)" stroke="var(--ink)" stroke-width="2"/><path d="M0-6v-16" stroke="var(--ink)" stroke-width="2"/><path d="M0-22h10l-3 4 3 4H0" fill="var(--oops)"/></g>
+          <circle cx="200" cy="150" r="8" fill="var(--accent)" stroke="var(--ink)" stroke-width="2"/>
+        </g>
+        <g class="mpart" data-part="compass">
+          <rect class="hlbox" x="318" y="44" width="72" height="80" rx="12"/>
+          <g transform="translate(354 86)"><circle r="22" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"/><path d="M0-20L5 0L0 20L-5 0Z" fill="var(--oops)"/><path d="M-20 0L0 5L20 0L0-5Z" fill="var(--ink)" opacity=".7"/>
+            <text y="-26" text-anchor="middle" font-size="13" font-weight="800" fill="var(--ink)">N</text><text y="37" text-anchor="middle" font-size="13" font-weight="800" fill="var(--ink)">S</text>
+            <text x="-30" y="5" text-anchor="middle" font-size="13" font-weight="800" fill="var(--ink)">W</text><text x="30" y="5" text-anchor="middle" font-size="13" font-weight="800" fill="var(--ink)">E</text></g>
+        </g>
+        <g class="mpart" data-part="legend">
+          <rect class="hlbox" x="8" y="168" width="128" height="86" rx="12"/>
+          <rect x="14" y="174" width="116" height="74" rx="8" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"/>
+          <text x="22" y="190" font-size="12" font-weight="800" fill="var(--ink)">Legend</text>
+          <path d="M24 204l6-5 6 5z" fill="var(--hat)"/><text x="44" y="207" font-size="11" fill="var(--ink)">Mission</text>
+          <path d="M30 213v10" stroke="var(--ink)" stroke-width="2"/><path d="M30 213h8l-2 3 2 3h-8" fill="var(--oops)"/><text x="44" y="223" font-size="11" fill="var(--ink)">Fort</text>
+          <circle cx="30" cy="236" r="5" fill="var(--accent)"/><text x="44" y="240" font-size="11" fill="var(--ink)">Town</text>
+        </g>
+        <g class="mpart" data-part="scale">
+          <rect class="hlbox" x="262" y="214" width="130" height="40" rx="10"/>
+          <path d="M272 238h100M272 232v12M322 234v8M372 232v12" stroke="var(--ink)" stroke-width="2.5"/>
+          <text x="272" y="228" font-size="11" fill="var(--ink)" text-anchor="middle">0</text><text x="372" y="228" font-size="11" fill="var(--ink)" text-anchor="middle">50 miles</text>
+        </g>
+      </svg>
+      <div class="mapbtns" role="group" aria-label="Map tools">
+        <button class="btn small-btn" type="button" data-part="compass" aria-pressed="false">Compass rose</button>
+        <button class="btn small-btn" type="button" data-part="legend" aria-pressed="false">Legend</button>
+        <button class="btn small-btn" type="button" data-part="scale" aria-pressed="false">Scale</button>
+        <button class="btn small-btn" type="button" data-part="symbols" aria-pressed="false">Symbols</button>
+      </div>
+      <p class="mapinfo" id="mapinfo" aria-live="polite">Pick a map tool.</p>
+    </div>
+  </section>
+
+  <section class="sec" id="missions">
+    <h2>Stop 2: Spanish missions and settlements</h2>
+    <p>Spain built Catholic <span class="kw">missions</span> in Texas. A mission was a religious settlement. Spain had two big goals for them:</p>
+    <ul class="tidy">
+      <li>Spread the <b>Catholic faith</b>.</li>
+      <li>Support <b>Spanish settlement</b> and Spain’s power in Texas.</li>
+    </ul>
+    <div class="grid3">
+      <div class="panel tint"><h3>Mission Ysleta</h3><p>Recognized as the <b>first mission</b> established in Texas (1682, near today’s El Paso).</p></div>
+      <div class="panel tint"><h3>San Antonio missions</h3><p>Important historic landmarks. One of them is the <b>Alamo</b>.</p></div>
+      <div class="panel tint"><h3>José de Escandón</h3><p>Helped set up settlements in the <b>lower Rio Grande Valley</b> in the 1700s.</p></div>
+    </div>
+    <h3 style="margin-top:22px">Why build near water?</h3>
+    <p>Settlements often grew near rivers because people needed water for…</p>
+    <div class="icons4">
+      <div class="panel"><span class="em" aria-hidden="true">🥤</span><b>Drinking</b></div>
+      <div class="panel"><span class="em" aria-hidden="true">🌽</span><b>Farming</b></div>
+      <div class="panel"><span class="em" aria-hidden="true">🐴</span><b>Animals</b></div>
+      <div class="panel"><span class="em" aria-hidden="true">🛶</span><b>Travel</b></div>
+    </div>
+    <h3 style="margin-top:22px">Cultural interaction</h3>
+    <p>When Spanish settlers and American Indian peoples met, they <b>influenced each other</b>. They exchanged knowledge, resources, crops, animals, and ways of doing things. This helped shape Texas culture.</p>
+    <div class="cols">
+      <div class="panel sun"><h3>Spanish settlers brought</h3><p>Cattle, horses, sheep, ranching skills, the Spanish language, and the Catholic faith.</p></div>
+      <div class="panel tint"><h3>American Indian peoples shared</h3><p>Knowledge of the land, water, and plants, crops like corn, beans, and squash, and trade routes.</p></div>
+    </div>
+    <div class="remember"><span class="pep"></span><span>Not everyone experienced the missions the same way. Some American Indian people came to missions for food and protection. Others did not want to change their ways of life. New diseases also made many people sick.</span></div>
+  </section>
+
+  <section class="sec" id="settlers">
+    <h2>Stop 3: Mexican independence and new settlers</h2>
+    <div class="panel sun"><h3>1821: Mexico wins independence from Spain</h3><p>Texas was now part of Mexico. A new government meant <b>new rules</b> about who could settle in Texas.</p></div>
+    <p>Mexico let <span class="kw">empresarios</span> bring settlers. An empresario was a person given <b>permission or a land grant</b> to bring settlers to Texas and start a colony.</p>
+    <div class="grid2">
+      <div class="panel"><h3>Stephen F. Austin</h3><p>The most famous empresario. He brought <b>hundreds of Anglo-American families</b> to Texas and set up <b>Austin’s Colony</b>.</p></div>
+      <div class="panel"><h3>Martín De León</h3><p>Another empresario. He was a Tejano (a Texan of Mexican heritage) who founded the town of <b>Victoria</b>.</p></div>
+    </div>
+    <h3 style="margin-top:22px">Why did settlers come?</h3>
+    <div class="icons4">
+      <div class="panel"><span class="em" aria-hidden="true">🏞️</span><b>Get land</b></div>
+      <div class="panel"><span class="em" aria-hidden="true">🌾</span><b>Farm</b></div>
+      <div class="panel"><span class="em" aria-hidden="true">🤝</span><b>Trade</b></div>
+      <div class="panel"><span class="em" aria-hidden="true">🏡</span><b>Build a new life</b></div>
+    </div>
+    <p style="margin-top:14px"><b>Farming</b> and <b>raising livestock</b> (cows, pigs, horses) were important jobs for many early settlers.</p>
+  </section>
+
+  <section class="sec" id="timeline">
+    <h2>Stop 4: Timeline and cause and effect</h2>
+    <p>Tap the events in order, from earliest to latest.</p>
+    <div class="panel" data-orderer="eras"></div>
+    <h3 style="margin-top:22px">One thing leads to another</h3>
+    <p>A <b>cause</b> is why something happens. An <b>effect</b> is what happens because of it.</p>
+    <div class="chain">
+      <div class="link"><span class="lbl">Cause</span>La Salle builds a French fort in Texas.</div><span class="arrow" aria-hidden="true">➜</span>
+      <div class="link"><span class="lbl">Effect</span>Spain worries about French competition and builds missions in East Texas.</div>
+    </div>
+    <div class="chain">
+      <div class="link"><span class="lbl">Cause</span>Mexico wins independence in 1821.</div><span class="arrow" aria-hidden="true">➜</span>
+      <div class="link"><span class="lbl">Effect</span>New rules let empresarios like Austin bring settlers to Texas.</div>
+    </div>
+  </section>
+
+  <section class="sec" id="words">
+    <h2>Words to know</h2>
+    <p>Say what you think each word means, then tap the card to check.</p>
+    <div class="flips">
+      <button class="flip" type="button" data-flip aria-pressed="false"><span class="front">Exploration</span><span class="tap">Tap to flip</span><span class="back">Traveling to learn about a place.</span></button>
+      <button class="flip" type="button" data-flip aria-pressed="false"><span class="front">Expansion</span><span class="tap">Tap to flip</span><span class="back">Growing bigger by claiming more land and power.</span></button>
+      <button class="flip" type="button" data-flip aria-pressed="false"><span class="front">Settlement</span><span class="tap">Tap to flip</span><span class="back">A place where people set up a community.</span></button>
+      <button class="flip" type="button" data-flip aria-pressed="false"><span class="front">Mission</span><span class="tap">Tap to flip</span><span class="back">A religious settlement established by Spain.</span></button>
+      <button class="flip" type="button" data-flip aria-pressed="false"><span class="front">Colonial</span><span class="tap">Tap to flip</span><span class="back">Related to a colony controlled by another country.</span></button>
+      <button class="flip" type="button" data-flip aria-pressed="false"><span class="front">Empresario</span><span class="tap">Tap to flip</span><span class="back">A person who helps bring settlers to a region.</span></button>
+      <button class="flip" type="button" data-flip aria-pressed="false"><span class="front">Economy</span><span class="tap">Tap to flip</span><span class="back">How people make, buy, sell, and use goods and services.</span></button>
+      <button class="flip" type="button" data-flip aria-pressed="false"><span class="front">Primary source</span><span class="tap">Tap to flip</span><span class="back">Made at the time, or by someone who was there.</span></button>
+      <button class="flip" type="button" data-flip aria-pressed="false"><span class="front">Secondary source</span><span class="tap">Tap to flip</span><span class="back">Made later to explain or analyze the past.</span></button>
+    </div>
+  </section>
+  <div class="start-quiz"><a class="btn primary" href="#quiz">Start the quiz</a></div>
+</section>
+
+<section id="view-quiz" hidden>
+  <div id="quiztop">
+    <h2 class="vh">Quiz</h2>
+    <div class="dots" id="dots" role="navigation" aria-label="Questions"></div>
+    <div class="qcard" id="qbox"></div>
+    <div class="qnav"><button class="btn" id="prev" type="button">Back</button><button class="btn" id="next" type="button">Skip ahead</button></div>
+  </div>
+</section>
+
+<section id="view-report" hidden>
+  <h2 style="margin-top:26px">Report card</h2>
+  <div id="reportbox"></div>
+</section>
+</main>
+
+<script type="module">
+// The bonus quiz engine and this page's content (questions plus the Learn
+// interactives). Vite bundles both into the page's hashed entry chunk.
+import BonusQuiz from '../../assets/js/bonus-quiz.js';
+import TEXAS_TRAIL from '../../assets/js/texas-trail-content.js';
+BonusQuiz.start(TEXAS_TRAIL);
+</script>
+</body>
+</html>

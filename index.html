@@ -39,6 +39,7 @@
   --math-ink:#16233A;
   --ela-ink:#2A1F3D;
   --social-ink:#5B3A1E;
+  --science-ink:#4B2FA8;
 }
 body{ padding:0 0 50px; }
 .wrap{ max-width:980px; margin:0 auto; padding:0 16px; }
@@ -130,6 +131,8 @@ h1.site-title{
 .game-card.subj-ela .game-cta{ color:var(--ela-ink); }
 .game-card.subj-social-studies{ border-left-color:var(--social-ink); }
 .game-card.subj-social-studies .game-cta{ color:var(--social-ink); }
+.game-card.subj-science{ border-left-color:var(--science-ink); }
+.game-card.subj-science .game-cta{ color:var(--science-ink); }
 
 .empty-card{
   border:1.5px dashed rgba(217,164,65,0.4);
@@ -194,10 +197,34 @@ footer{
     one entry below — the homepage rebuilds the category sections and
     "recently added" row automatically.
 
-    subject must be one of: 'math', 'ela', 'social-studies'
+    subject must be one of: 'math', 'ela', 'social-studies', 'science'
     dateAdded should be 'YYYY-MM-DD' so sorting works correctly.
+    cta is optional: the card's call to action, for pages that aren't
+    case files (the bonus study pages). Defaults to "Open the case".
   */
   var GAMES_DATA = [
+    {
+      id: 'energy-lab',
+      title: 'Science Division: Mochi’s Energy Lab',
+      subject: 'science',
+      icon: '🐱',
+      blurb: 'Bonus study page. Energy transfer in motion, sound, and waves, conductors and insulators, and open and closed circuits, with a circuit you can build. Then a 17-question quiz.',
+      url: 'games/science/energy-lab',
+      dateAdded: '2026-11-07',
+      cta: 'Open the lab →',
+      grade: 4
+    },
+    {
+      id: 'texas-trail',
+      title: 'History Division: Pepita’s Texas Trail',
+      subject: 'social-studies',
+      icon: '🐣',
+      blurb: 'Bonus study page. European explorers, sources and map skills, Spanish missions, Mexican independence, and empresarios like Stephen F. Austin. Then a 20-question quiz.',
+      url: 'games/social-studies/texas-trail',
+      dateAdded: '2026-11-07',
+      cta: 'Hit the trail →',
+      grade: 4
+    },
     {
       id: 'numeration-detective-agency',
       title: 'Numbers Division: The Numeration Files',
@@ -266,7 +293,9 @@ footer{
     { id:'ela', label:'Words Division', shortLabel:'ELA', icon:'📖',
       desc:'Reading closely and figuring out what authors are really doing.' },
     { id:'social-studies', label:'History Division', shortLabel:'Social Studies', icon:'🏛️',
-      desc:'Texas — its land, its regions, and the people who work them.' }
+      desc:'Texas — its land, its regions, and the people who work them.' },
+    { id:'science', label:'Science Division', shortLabel:'Science', icon:'🔬',
+      desc:'Energy, matter, and how things work.' }
   ];
 
   function daysAgo(dateStr){
@@ -283,7 +312,7 @@ footer{
       '</div>' +
       '<div class="game-title">'+game.title+'</div>' +
       '<div class="game-blurb">'+game.blurb+'</div>' +
-      '<div class="game-cta">Open the case →</div>' +
+      '<div class="game-cta">'+(game.cta || 'Open the case →')+'</div>' +
       '</a>';
   }
 

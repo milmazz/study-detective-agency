@@ -19,7 +19,16 @@ Live divisions:
   prefixes and suffixes, and punctuating quotations.
 - **History Division** (social studies) — the four physical regions of Texas,
   the work and traditions the land shapes, and how Texans adapt to and modify
-  their environment.
+  their environment; plus a bonus page, *Pepita's Texas Trail*, on the
+  exploration and settlement of Texas.
+- **Science Division** — a bonus page, *Mochi's Energy Lab*, on energy
+  transfer, conductors and insulators, and circuits.
+
+Bonus pages aren't case files: each pairs a hands-on Learn section with a
+fixed, hand-written quiz, runs on `assets/js/bonus-quiz.js` instead of the
+`DetectiveGame` engine, and keeps its own theme. Their content lives in
+`assets/js/*-content.js`, and `test/bonus-pages.test.js` checks their answer
+keys and wiring.
 
 ## Running it locally
 
