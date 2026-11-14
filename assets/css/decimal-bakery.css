@@ -58,6 +58,12 @@
 .nl .tk{stroke:var(--ink);stroke-width:1.5}
 .nl .pt{stroke:var(--accent);stroke-width:3}
 .nl .ptl{fill:var(--accent-text);font-family:var(--display);font-weight:800}
+/* number lines and rulers keep their drawn size; a narrow screen scrolls the strip */
+.nlwrap{flex:1 1 100%;max-width:100%;overflow-x:auto}
+.fig .nlwrap svg{display:block;margin:0 auto;max-width:none}
+.nlhint{display:none;flex:1 1 100%;margin:-6px 0 0;text-align:center;font-size:.85rem;font-weight:700;color:var(--muted)}
+/* below this width the quiz card is narrower than a 640px drawing (measured: strip = viewport - 108px) */
+@media (max-width:747px){.nlhint{display:block}}
 .money{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center}
 .money svg text{font-family:var(--display);font-weight:800}
 

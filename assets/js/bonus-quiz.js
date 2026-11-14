@@ -15,9 +15,32 @@
   Any question can carry a `fig` (markup drawn under the prompt) or a
   `scene`; a sort can carry its own `howto`.
 
+  readNumber() is the typed-answer parser, exported on its own so the tests
+  can hold it to the cases a kid actually types.
+
   It deliberately exports no `modes` array, so the DetectiveGame wiring tests
   in test/question-modules.test.js treat it as a non-game module.
 */
+/*
+  A typed answer, read the forgiving way: "$2.84", " 2.370 ", "2." and ".5"
+  all count. Returns { value } or { need: what to tell the kid }.
+
+  Commas are the trap on a decimals page. "1,000" groups thousands, but on a
+  phone set to a comma-decimal region, inputmode="decimal" offers only a ","
+  key, so "2,84" means 2.84 -- deleting every comma (as the Ledger's
+  whole-number parser does) would turn it into 284 and mark a right answer
+  wrong. So a comma counts as a thousands separator only in a proper
+  1,234,567 grouping; a single comma anywhere else is the decimal point.
+*/
+export function readNumber(text){
+  let raw = String(text == null ? '' : text).trim().replace(/^\$\s*/, '');
+  if (!raw) return { need: 'Type your answer first.' };
+  if (/^\d{1,3}(,\d{3})+(\.\d*)?$/.test(raw)) raw = raw.replace(/,/g, '');
+  else if (/^\d*,\d*$/.test(raw)) raw = raw.replace(',', '.');
+  if (!/^\d*\.?\d*$/.test(raw) || raw === '.') return { need: 'Type a number, like 1.25.' };
+  return { value: parseFloat(raw) };
+}
+
 export function start(P){
 const Q = P.questions;
 const $ = (s, el) => (el || document).querySelector(s);
@@ -195,11 +218,10 @@ function grade(q){
     return { ok: inPlace === q.items.length, note: `${inPlace} of ${q.items.length} cards are in the right spot.` };
   }
   if (q.type === 'input') {
-    // "$2.84", "2.840" and " 2.84 " all count: only the number has to match.
-    const raw = ($('#ans').value || '').replace(/[$,\s]/g, '');
-    if (!raw) return { need: 'Type your answer first.' };
-    if (!/^\d*\.?\d*$/.test(raw) || raw === '.') return { need: 'Type a number, like 1.25.' };
-    const ok = Math.abs(parseFloat(raw) - q.answer) < 1e-9;
+    // Only the number has to match: "$2.84", "2.840" and "2,84" all count.
+    const n = readNumber($('#ans').value);
+    if (n.need) return n;
+    const ok = Math.abs(n.value - q.answer) < 1e-9;
     if (!ok) $('#inrow').classList.add('wrongin');
     return { ok, note: '' };
   }
@@ -245,7 +267,15 @@ function showSolved(q, r, live){
     });
   }
   if (q.type === 'order') { W.order = q.items.map((_, i) => i); drawOrder(q, true); $('.howto', box) && ($('.howto', box).hidden = true); }
-  if (q.type === 'input') { const inp = $('#ans'); if (r.revealed || !inp.value) inp.value = q.show; inp.disabled = true; $('#inrow').classList.remove('wrongin'); $('.howto', box) && ($('.howto', box).hidden = true); }
+  if (q.type === 'input') {
+    const inp = $('#ans');
+    if (r.revealed || !inp.value) inp.value = q.show;
+    // readOnly, not disabled: a disabled box drops out of the accessibility
+    // tree, and the verdict and explanation are about the number in it.
+    inp.readOnly = true; inp.setAttribute('aria-readonly', 'true');
+    $('#inrow').classList.remove('wrongin');
+    $('.howto', box) && ($('.howto', box).hidden = true);
+  }
   if (q.type === 'write') { $$('.ck input', box).forEach(c => c.disabled = false); }
 
   let msg;
@@ -390,4 +420,4 @@ if (typeof P.setupLearn === 'function') P.setupLearn({ confetti });
 route();
 }
 
-export default { start };
+export default { start, readNumber };

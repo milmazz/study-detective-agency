@@ -39,14 +39,34 @@ const G = {
     if (full) r += `<rect x="0" y="0" width="${s}" height="${full * c}" class="gshade"/>`;
     if (part) r += `<rect x="0" y="${full * c}" width="${part * c}" height="${c}" class="gshade"/>`;
     let d = ''; for (let i = 1; i < 10; i++) d += `M${i * c} 0V${s}M0 ${i * c}H${s}`;
-    return `<svg viewBox="-2 -2 ${s + 4} ${s + 4}" width="${s + 4}" height="${s + 4}" aria-hidden="true"><rect x="0" y="0" width="${s}" height="${s}" fill="var(--surface)"/>${r}<path d="${d}" class="glines"/><rect x="0" y="0" width="${s}" height="${s}" class="gborder"/></svg>`;
+    const shaded = n === 100 ? 'all shaded'
+      : full && part ? `${G.pl(full, 'full row')} and ${G.pl(part, 'more square')} shaded`
+      : full ? `${G.pl(full, 'full row')} shaded`
+      : part ? `${G.pl(part, 'square')} shaded` : 'none shaded';
+    return `<svg viewBox="-2 -2 ${s + 4} ${s + 4}" width="${s + 4}" height="${s + 4}" role="img" aria-label="A grid of 100 squares, ${shaded}"><rect x="0" y="0" width="${s}" height="${s}" fill="var(--surface)"/>${r}<path d="${d}" class="glines"/><rect x="0" y="0" width="${s}" height="${s}" class="gborder"/></svg>`;
   },
-  labeled(label, svg){ return `<div class="gbox">${svg}<span>${label}</span></div>`; },
+  // The caption joins the figure's spoken label, so "Model 1" is read with its grid.
+  labeled(label, svg){ return `<div class="gbox">${svg.replace('aria-label="', `aria-label="${label}: `)}<span aria-hidden="true">${label}</span></div>`; },
   smallSquares(n){
     let r = ''; for (let i = 0; i < n; i++) r += `<rect x="${i * 16}" y="0" width="11" height="11" class="gshade" stroke="var(--gline)" stroke-width="1.5"/>`;
-    return `<svg viewBox="-2 -2 ${n * 16} 15" width="${n * 16}" height="15" aria-hidden="true">${r}</svg>`;
+    return `<svg viewBox="-2 -2 ${n * 16} 15" width="${n * 16}" height="15" role="img" aria-label="${G.pl(n, 'small square')}">${r}</svg>`;
   },
   fmt(v){ return String(+v.toFixed(2)); },
+  pl(n, w){ return n + ' ' + w + (n === 1 ? '' : 's'); },
+  /* Where v sits, said the way a sighted kid reads it off the drawing: "4 small
+     spaces past 0.5", never the value itself, so the label doesn't do the
+     counting for them. per = small spaces between two labeled ticks. */
+  past(v, min, step, per, unit){
+    const k = Math.round((v - min) / step), base = min + Math.floor(k / per) * per * step, extra = k % per;
+    return extra ? `${G.pl(extra, 'small space')} past ${G.fmt(base)}${unit || ''}` : `at ${G.fmt(base)}${unit || ''}`;
+  },
+  /* Number lines and rulers are counted tick by tick, so they never shrink
+     below their drawn size: on a narrow screen the strip scrolls instead, and
+     a hint (shown only on screens that narrow) says so. The hint is
+     aria-hidden; the drawing's own label already describes all of it. */
+  wide(svg, what){
+    return `<div class="nlwrap">${svg}</div><p class="nlhint" aria-hidden="true">← Swipe to see the whole ${what || 'number line'} →</p>`;
+  },
   line(o){
     const w = o.w || 640, pad = 24, h = o.pts && o.pts.length ? 92 : 60, base = h - 30;
     const X = v => pad + (v - o.min) / (o.max - o.min) * (w - 2 * pad);
@@ -60,11 +80,14 @@ const G = {
       t += `<line x1="${x}" y1="${base - len}" x2="${x}" y2="${base + len}" class="tk"/>`;
       if (isLab) t += `<text x="${x}" y="${base + 26}" text-anchor="middle" font-size="${o.fs || 13}">${G.fmt(v)}</text>`;
     }
+    const per = Math.round(o.lab / o.minor);
+    let say = `Number line from ${G.fmt(o.min)} to ${G.fmt(o.max)}, labeled every ${G.fmt(o.lab)}, with ${per} small spaces between labels.`;
+    (o.pts || []).forEach(([l, v]) => { say += ` Point ${l} is ${G.past(v, o.min, o.minor, per)}.`; });
     (o.pts || []).forEach(([l, v]) => {
       const x = X(v).toFixed(1);
       t += `<line x1="${x}" y1="${base - 20}" x2="${x}" y2="${base}" class="pt"/><circle cx="${x}" cy="${base}" r="4.5" fill="var(--accent)"/><text x="${x}" y="${base - 26}" text-anchor="middle" font-size="16" class="ptl">${l}</text>`;
     });
-    return `<svg class="nl" viewBox="0 0 ${w} ${h}" width="${w}" aria-hidden="true">${t}</svg>`;
+    return `<svg class="nl" viewBox="0 0 ${w} ${h}" width="${w}" role="img" aria-label="${say}">${t}</svg>`;
   },
   ruler(max, ribbon){
     const w = 640, pad = 20, X = v => pad + v / max * (w - 2 * pad);
@@ -75,8 +98,9 @@ const G = {
       if (whole) t += `<text x="${x}" y="76" text-anchor="middle" font-size="14" fill="var(--ink)" font-weight="800">${k / 10}</text>`;
     }
     if (ribbon != null) t += `<rect x="${X(0)}" y="16" width="${X(ribbon) - X(0)}" height="12" rx="6" fill="var(--accent)"/><line x1="${X(ribbon)}" y1="12" x2="${X(ribbon)}" y2="44" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="3 3"/>`;
-    t += `<text x="${w - pad}" y="76" text-anchor="end" font-size="12" fill="var(--muted)" dx="0" dy="0"></text>`;
-    return `<svg class="nl" viewBox="0 0 ${w} 92" width="${w}" aria-hidden="true">${t}</svg>`;
+    const say = `Ruler from 0 to ${max} centimeters. Each centimeter is split into 10 small spaces.` +
+      (ribbon != null ? ` A ribbon starts at 0 and ends ${G.past(ribbon, 0, 0.1, 10)}.` : '');
+    return `<svg class="nl" viewBox="0 0 ${w} 92" width="${w}" role="img" aria-label="${say}">${t}</svg>`;
   },
   COIN: {
     bill: { w: 74, h: 38, label: '$1' },
@@ -89,9 +113,12 @@ const G = {
     return `<svg viewBox="0 0 ${s} ${s}" width="${s}" height="${s}" aria-hidden="true"><circle cx="${s / 2}" cy="${s / 2}" r="${c.r}" fill="${c.fill}" stroke="#6A6F78" stroke-width="2"/><text x="${s / 2}" y="${s / 2 + 4}" text-anchor="middle" font-size="${c.r > 15 ? 12 : 10}" fill="#333">${c.label}</text></svg>`;
   },
   money(o){
+    const NAMES = { b: ['one-dollar bill', 'one-dollar bills'], q: ['quarter', 'quarters'], d: ['dime', 'dimes'], n: ['nickel', 'nickels'], p: ['penny', 'pennies'] };
+    const say = Object.keys(NAMES).filter(k => o[k]).map(k => o[k] + ' ' + NAMES[k][o[k] === 1 ? 0 : 1]);
     let r = '';
     [['bill', o.b], ['q', o.q], ['d', o.d], ['n', o.n], ['p', o.p]].forEach(([k, c]) => { for (let i = 0; i < (c || 0); i++) r += G.coin(k); });
-    return `<div class="money">${r}</div>`;
+    // The coins stay aria-hidden; the group says what is in it.
+    return `<div class="money" role="img" aria-label="${say.slice(0, -1).join(', ') + (say.length > 1 ? ' and ' : '') + say[say.length - 1]}">${r}</div>`;
   }
 };
 const F = G.mx, FR = G.fr;
@@ -234,21 +261,21 @@ const DECIMAL_BAKERY = {
 
     { id: 'd13', tag: 'lines', type: 'mc',
       q: 'Dottie has 1 quarter, 4 dimes, and 3 pennies. Which point on the number line shows her total in dollars?',
-      fig: G.money({ q: 1, d: 4, p: 3 }) + G.line({ min: 0, max: 1, minor: 0.02, lab: 0.1, pts: [['A', 0.58], ['B', 0.68], ['C', 0.78], ['D', 0.86]] }),
+      fig: G.money({ q: 1, d: 4, p: 3 }) + G.wide(G.line({ min: 0, max: 1, minor: 0.02, lab: 0.1, pts: [['A', 0.58], ['B', 0.68], ['C', 0.78], ['D', 0.86]] })),
       opts: ['Point A', 'Point B', 'Point C', 'Point D'],
       answer: 1, hint: 'Add the cents: 25 + 40 + 3. Each small tick is 0.02.',
       explain: '<ol><li>25 + 40 + 3 = <b>68 cents = $0.68</b>.</li><li>0.68 is 8 hundredths past 0.6. Each small tick is 0.02, so count 4 ticks past 0.6.</li><li>That’s <b>Point B</b>.</li></ol>' },
 
     { id: 'd14', tag: 'lines', type: 'mc',
       q: 'Dottie lays a ribbon on the ruler, starting at 0 cm. How long is the ribbon?',
-      fig: G.ruler(9, 4.8),
+      fig: G.wide(G.ruler(9, 4.8), 'ruler'),
       opts: ['4.5 cm', '4.08 cm', '8.4 cm', '4.8 cm'],
       answer: 3, hint: 'Count whole centimeters, then the small tenth-spaces after the last number.',
       explain: '<ol><li>The ribbon passes the 4, so it has <b>4 whole cm</b>.</li><li>It goes <b>8 small spaces</b> past 4. Each space is 0.1 cm.</li><li>4 + 0.8 = <b>4.8 cm</b>.</li></ol>' },
 
     { id: 'd15', tag: 'lines', type: 'mc',
       q: 'The number line shows the weights of four cakes, in pounds. Which cake weighs more than 1.7 pounds?',
-      fig: G.line({ min: 0, max: 3, minor: 0.1, major: 0.5, lab: 0.5, pts: [['A', 1.4], ['B', 1.9], ['C', 1.6], ['D', 1.1]] }),
+      fig: G.wide(G.line({ min: 0, max: 3, minor: 0.1, major: 0.5, lab: 0.5, pts: [['A', 1.4], ['B', 1.9], ['C', 1.6], ['D', 1.1]] })),
       opts: ['Cake A', 'Cake B', 'Cake C', 'Cake D'],
       answer: 1, hint: 'Find 1.7 on the line first. Which point is to its right?',
       explain: '<ol><li>Each small tick is 0.1. The cakes are A = 1.4, B = 1.9, C = 1.6, D = 1.1.</li><li>On a number line, bigger numbers are to the <b>right</b>.</li><li>Only <b>Cake B (1.9)</b> is to the right of 1.7.</li></ol>' },
@@ -289,7 +316,7 @@ function setupLearn({ confetti } = {}){
   const ONES = ['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'];
   const TENS = ['','','twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety'];
   const words = n => n < 20 ? ONES[n] : TENS[Math.floor(n / 10)] + (n % 10 ? '-' + ONES[n % 10] : '');
-  const pl = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
+  const pl = G.pl;
 
   /* cookie tray */
   let tray = 34;
@@ -424,7 +451,7 @@ function setupLearn({ confetti } = {}){
     }
   });
   drawHop();
-  $('#rulerDemo').innerHTML = `<div class="fig" style="padding:6px">${G.ruler(5, 3.6)}</div><p class="small" style="margin:0">The ribbon is 3 whole cm and 6 small spaces: <b>3.6 cm</b>.</p>`;
+  $('#rulerDemo').innerHTML = `<div class="fig" style="padding:6px">${G.wide(G.ruler(5, 3.6), 'ruler')}</div><p class="small" style="margin:0">The ribbon is 3 whole cm and 6 small spaces: <b>3.6 cm</b>.</p>`;
 }
 
 DECIMAL_BAKERY.setupLearn = setupLearn;

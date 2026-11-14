@@ -14,7 +14,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { GAMES, openPage, prepareDom, click, press } from '../test-support/load-game.js';
+import { GAMES, openPage, prepareDom, click, press, siteModules } from '../test-support/load-game.js';
 
 // Bundles each page's module graph to a classic script once, up front — jsdom
 // does not execute <script type="module">. Everything below stays synchronous.
@@ -601,3 +601,74 @@ for (const game of Object.keys(GAMES)) {
       'the page renders entirely from JS, so it needs a no-JS message');
   });
 }
+
+/*
+  The bonus study pages' typed answer (bonus-quiz.js, type: 'input'). Same
+  rules as the Ledger's box above, on a different engine: Dottie's Decimal
+  Bakery is the page that asks for typed decimals.
+*/
+const BAKERY = siteModules.get('assets/js/decimal-bakery-content.js');
+
+// Open the bakery's quiz on its first typed-answer question.
+function bakeryTyped() {
+  const i = BAKERY.questions.findIndex((q) => q.type === 'input');
+  assert.ok(i >= 0, 'the bakery should have a typed-answer question');
+  const win = openPage('decimalBakery', { hash: '#quiz' });
+  const doc = win.document;
+  click(win, doc.querySelector(`#dots .dot[data-i="${i}"]`));
+  const input = doc.querySelector('#ans');
+  assert.ok(input, 'the typed-answer box should be on screen');
+  return { win, doc, input, q: BAKERY.questions[i] };
+}
+const graded = (doc) => !doc.querySelector('#explain').hidden;
+
+test('study page: something that is not a number is sent back without costing a try', { skip }, () => {
+  const { win, doc, input, q } = bakeryTyped();
+  type(win, input, 'abc');
+  click(win, doc.querySelector('#check'));
+  assert.ok(!graded(doc), 'letters should not be graded');
+  assert.match(doc.querySelector('#fb').textContent, /Type a number/);
+
+  // Still a first try, so a right answer now earns the star.
+  type(win, input, q.show);
+  click(win, doc.querySelector('#check'));
+  assert.ok(graded(doc), 'the answer should be graded');
+  assert.match(doc.querySelector('#fb').textContent, /First try/);
+});
+
+test('study page: a comma decimal point is read as a decimal point', { skip }, () => {
+  // 2,37 is what a comma-region phone keypad types for 2.37. Read as 237 it
+  // would cost the kid the star for a right answer.
+  const { win, doc, input, q } = bakeryTyped();
+  type(win, input, q.show.replace('.', ','));
+  press(win, input, 'Enter');
+  assert.ok(graded(doc), 'Enter should grade the answer');
+  assert.match(doc.querySelector('#fb').textContent, /First try/, `${input.value} should be right`);
+});
+
+test('study page: a graded typed answer stays readable', { skip }, () => {
+  const { win, doc, input, q } = bakeryTyped();
+  const typed = ' ' + q.show + '0 ';
+  type(win, input, typed);
+  click(win, doc.querySelector('#check'));
+  assert.ok(graded(doc));
+  assert.equal(input.value, typed, 'the answer the kid typed should still be on screen');
+  assert.ok(input.readOnly, 'a graded box should not take another answer');
+  assert.equal(input.getAttribute('aria-readonly'), 'true');
+  assert.ok(!input.disabled, 'but it should stay in the accessibility tree');
+});
+
+test('study page: two wrong tries show the answer in a box that stays readable', { skip }, () => {
+  const { win, doc, input, q } = bakeryTyped();
+  const wrong = String(q.answer + 1);
+  type(win, input, wrong);
+  click(win, doc.querySelector('#check'));
+  assert.ok(!graded(doc), 'one wrong try leaves a second one');
+  assert.ok(!input.readOnly, 'the box should still take the second try');
+
+  type(win, input, wrong);
+  click(win, doc.querySelector('#check'));
+  assert.ok(graded(doc), 'the second wrong try should reveal the answer');
+  assert.equal(input.value, q.show);
+  assert.ok(input.readOnly && !input.disabled);
+});

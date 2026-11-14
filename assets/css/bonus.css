@@ -116,7 +116,7 @@ ul.tidy li{margin:.25em 0}
 .inrow{display:flex;align-items:center;gap:8px;font-family:var(--display);font-size:1.6rem;font-weight:800}
 .inrow input{font:inherit;width:9ch;padding:6px 12px;border-radius:14px;border:2px solid var(--line);background:var(--bg);color:var(--ink)}
 .inrow input:focus{border-color:var(--accent);outline:none}
-.inrow input:disabled{opacity:1;border-color:var(--good);background:var(--good-soft)}
+.inrow input[readonly]{opacity:1;border-color:var(--good);background:var(--good-soft)}
 .inrow.wrongin input{border-color:var(--oops);background:var(--oops-soft)}
 .opts{display:flex;flex-direction:column;gap:9px}
 .opt{display:flex;gap:8px;align-items:stretch}

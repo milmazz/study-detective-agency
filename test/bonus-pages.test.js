@@ -50,6 +50,29 @@ test('importing the bonus modules has no side effects', async () => {
   assert.equal(typeof globalThis.document, 'undefined');
 });
 
+test('a typed answer is read the way a kid types it', async () => {
+  const { readNumber } = await load(ENGINE);
+  const reads = (text, value) => assert.deepEqual(readNumber(text), { value }, `"${text}" should read as ${value}`);
+  const refuses = (text) => assert.ok(readNumber(text).need, `"${text}" should be sent back, not graded`);
+
+  reads('2.84', 2.84);
+  reads('$2.84', 2.84);
+  reads('$ 2.84', 2.84);
+  reads(' 2.370 ', 2.37);
+  reads('2.', 2);
+  reads('.5', 0.5);
+  reads('1,000', 1000);
+  reads('12,345.6', 12345.6);
+  // A phone set to a comma-decimal region only offers "," on the decimal
+  // keypad. Deleting the comma would read 2,84 as 284 and mark it wrong.
+  reads('2,84', 2.84);
+  reads('0,5', 0.5);
+  reads(',5', 0.5);
+
+  for (const text of ['', '   ', '$', '.', ',', 'abc', '2 84', '2.3.4', '1,2,3', '1.000,5', '1e2', '-1', '2.84$']) refuses(text);
+  assert.match(readNumber('').need, /first/, 'an empty box asks for an answer, not a number');
+});
+
 for (const [key, b] of Object.entries(BONUS)) {
   test(`${key}: the page runs one module script that starts its own content`, () => {
     const html = read(b.page);
@@ -97,6 +120,7 @@ for (const [key, b] of Object.entries(BONUS)) {
 for (const [key, b] of QUIZ_PAGES) {
   test(`${key}: every question has a valid answer key`, async () => {
     const cfg = await load(b.content);
+    const engine = await load(b.engine);
     const qs = cfg.questions;
     assert.ok(Array.isArray(qs) && qs.length > 0);
     const ids = qs.map((q) => q.id);
@@ -143,6 +167,16 @@ for (const [key, b] of QUIZ_PAGES) {
         assert.ok(typeof q.answer === 'number' && Number.isFinite(q.answer), `${where}: answer is not a number`);
         assert.ok(typeof q.show === 'string' && /^\d*\.?\d+$/.test(q.show), `${where}: show "${q.show}" is not a plain number`);
         assert.equal(parseFloat(q.show), q.answer, `${where}: show "${q.show}" disagrees with answer ${q.answer}`);
+        assert.equal(engine.readNumber(q.show).value, q.answer, `${where}: typing show "${q.show}" would be marked wrong`);
+      }
+      if (q.fig) {
+        // The figure is often the whole question (count the grid, read the
+        // ruler), so a screen reader needs it in words. Each drawing is
+        // either labeled itself or decoration inside a labeled group.
+        assert.match(q.fig, /role="img" aria-label="[^"]+"/, `${where}: the figure has no text alternative`);
+        for (const [tag] of q.fig.matchAll(/<svg\b[^>]*>/g)) {
+          assert.match(tag, /aria-label="[^"]+"|aria-hidden="true"/, `${where}: an unlabeled drawing: ${tag}`);
+        }
       }
       if (q.type === 'order') {
         assert.ok(q.items.length >= 3);
