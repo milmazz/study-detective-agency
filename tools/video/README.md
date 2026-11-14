@@ -1,7 +1,8 @@
 # Lesson videos
 
 The pipeline behind the narrated cartoon on each bonus study page ("Watch the
-lesson" on Mochi's Energy Lab and Pepita's Texas Trail). A video is:
+lesson" on Mochi's Energy Lab, Pepita's Texas Trail and Dottie's Decimal
+Bakery). A video is:
 
 - a **script**: who says what, with pauses for the animation to breathe
 - **voices**: one ElevenLabs voice per character

@@ -111,10 +111,11 @@ SCRIPT = [
     ("pause", 3.6, 8),
 ]
 
-# ElevenLabs default voices (available on every account): Laura (upbeat, quirky)
-# for Dottie, Will (young, friendly) for Biscuit. To audition others:
+# Laura (an ElevenLabs default voice: upbeat, quirky) for Dottie. Biscuit uses
+# Moxy, the cartoon-mouse voice from the Energy Lab's Pip, which Bianca asked
+# for. To audition others:
 #   python3 tools/video/pipeline/voices.py search "cheerful young woman"
-VOICES = {D: "FGY2WhTYpPnrIDTdsKH5", B: "bIHbv24MWmeRgasZH58o"}
+VOICES = {D: "FGY2WhTYpPnrIDTdsKH5", B: "mdzEgLpu0FjTwYs5oot0"}
 
 # Second at which `make.sh <dir> install` grabs the poster frame.
 POSTER_AT = 8
