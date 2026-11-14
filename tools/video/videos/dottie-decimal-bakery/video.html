@@ -1,0 +1,605 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:'Baloo 2';font-weight:400 800;src:url(../../../../assets/fonts/baloo2-latin1.woff2) format('woff2');}
+html,body{margin:0;background:#FFF4F8;overflow:hidden}
+svg{display:block}
+text{font-family:'Baloo 2','Noto Color Emoji',sans-serif}
+</style>
+<script src="build/timeline.js"></script>
+<script src="../../lib/lib.js"></script>
+</head><body>
+<svg id="v" width="1280" height="720" viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg"></svg>
+<script>
+/* ---------- palette (matches the Decimal Bakery page) ---------- */
+const C = { ink:'#3A2233', muted:'#7A5670', accent:'#D63F86', accentText:'#AE2766', soft:'#FFE4F0', pop:'#FFC531', popSoft:'#FFF3C9', popText:'#8A5A00',
+  good:'#1C9A73', goodSoft:'#D8F4E9', oops:'#E0603F', oopsSoft:'#FFE5DC', line:'#F4CFDF',
+  blush:'#FFB3C7', earin:'#FFC2D8', nose:'#F0609E', shade:'#8ED1DC', mint:'#C9F1E3', mintText:'#17694F',
+  cookie:'#D9955B', chip:'#6B3E26', cake:'#FFB3CF', pup:'#F3D3A6', pupDark:'#B9773D', bill:'#A8DDB0', billInk:'#3E7C4A', silver:'#D7DCE3', copper:'#E3A06E' };
+
+/* ---------- characters ---------- */
+/* Dottie: the bunny baker. Same 120-wide frame as Mochi; ears reach above y=0. */
+function dottie(t, x, y, s, o = {}){
+  const m = mouthAt('dottie', t);
+  const blink = (t % 3.9) < .13;
+  const bob = Math.sin(t * 2.2) * 3 - m * 4;
+  const earW = Math.sin(t * 1.7) * 3;
+  const eyes = o.happy
+    ? `<path d="M38 60q7-8 14 0M68 60q7-8 14 0" stroke="${C.ink}" stroke-width="4" fill="none" stroke-linecap="round"/>`
+    : blink ? `<path d="M39 60h13M69 60h13" stroke="${C.ink}" stroke-width="4" stroke-linecap="round"/>`
+    : `<circle cx="45" cy="59" r="6.5" fill="${C.ink}"/><circle cx="75" cy="59" r="6.5" fill="${C.ink}"/><circle cx="47" cy="57" r="2.2" fill="#fff"/><circle cx="77" cy="57" r="2.2" fill="#fff"/>`;
+  const mouth = m > .12
+    ? `<ellipse cx="60" cy="${77 + m * 2}" rx="${6 + m * 2}" ry="${2 + m * 7}" fill="#7A2D4A" stroke="${C.ink}" stroke-width="2.5"/>`
+    : `<path d="M52 74q4 5 8 0q4 5 8 0" stroke="${C.ink}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+  const paw = o.paw > .02 ? `<g transform="translate(${100 + o.paw * 70} ${92 - o.paw * 10})"><ellipse rx="16" ry="13" fill="#fff" stroke="${C.ink}" stroke-width="3"/><circle cx="-6" cy="-3" r="3" fill="${C.blush}"/><circle cx="2" cy="-6" r="3" fill="${C.blush}"/><circle cx="9" cy="-2" r="3" fill="${C.blush}"/><ellipse cx="1" cy="5" rx="5" ry="4" fill="${C.blush}"/></g>` : '';
+  return `<g transform="translate(${x} ${y + bob}) scale(${s})">
+  <ellipse cx="60" cy="112" rx="40" ry="6" fill="${C.ink}" opacity=".12"/>
+  <g transform="rotate(${-10 + earW} 40 26)"><ellipse cx="40" cy="-4" rx="13" ry="32" fill="#fff" stroke="${C.ink}" stroke-width="3.5"/><ellipse cx="40" cy="-2" rx="6" ry="22" fill="${C.earin}"/></g>
+  <g transform="rotate(${12 - earW} 80 26)"><ellipse cx="80" cy="-4" rx="13" ry="32" fill="#fff" stroke="${C.ink}" stroke-width="3.5"/><ellipse cx="80" cy="-2" rx="6" ry="22" fill="${C.earin}"/></g>
+  <ellipse cx="60" cy="64" rx="48" ry="39" fill="#fff" stroke="${C.ink}" stroke-width="3.5"/>
+  <path d="M84 30q8-8 16-2q-6 2-6 8q-6-6-10-6z" fill="${C.accent}" stroke="${C.ink}" stroke-width="1.5"/><circle cx="92" cy="30" r="3.5" fill="${C.pop}" stroke="${C.ink}" stroke-width="1.2"/>
+  ${eyes}
+  <ellipse cx="33" cy="73" rx="8" ry="5" fill="${C.blush}"/><ellipse cx="87" cy="73" rx="8" ry="5" fill="${C.blush}"/>
+  <circle cx="60" cy="68" r="4.2" fill="${C.nose}" stroke="${C.ink}" stroke-width="1.2"/>
+  ${mouth}
+  ${paw}</g>`;
+}
+
+/* Biscuit: puppy apprentice baker in a chef hat. Drawn facing right; face:-1 flips. Origin = feet centre. */
+function biscuit(t, x, y, s, o = {}){
+  const m = mouthAt('biscuit', t);
+  const face = o.face || -1;
+  const blink = ((t + 1.3) % 3.4) < .12;
+  const wag = Math.sin(t * (o.wagFast ? 26 : 12)) * 18;
+  const hop = (o.hop ?? Math.abs(Math.sin(t * 5)) * 2) + m * 3;
+  const eye = blink ? `<path d="M93 38h9" stroke="${C.ink}" stroke-width="3" stroke-linecap="round"/>`
+    : o.dizzy ? `<text x="98" y="44" font-size="16" text-anchor="middle" fill="${C.ink}">@</text>`
+    : `<circle cx="98" cy="38" r="5.5" fill="${C.ink}"/><circle cx="99.5" cy="36.5" r="2" fill="#fff"/>`;
+  const mouth = m > .12 ? `<ellipse cx="111" cy="${60 + m}" rx="5" ry="${1.5 + m * 6}" fill="#7A2D4A" stroke="${C.ink}" stroke-width="2"/>`
+    : `<path d="M105 59q5 4 10 0" stroke="${C.ink}" stroke-width="2.5" fill="none" stroke-linecap="round"/><path d="M109 61q2 6 5 0" fill="#FF7FA3" stroke="${C.ink}" stroke-width="1.5"/>`;
+  return `<g transform="translate(${x} ${y - hop}) rotate(${o.rot || 0}) scale(${s * face} ${s}) translate(-62 -92)">
+  <ellipse cx="62" cy="94" rx="42" ry="5" fill="${C.ink}" opacity=".12"/>
+  <g transform="rotate(${wag} 22 62)"><path d="M22 62q-18 -6 -16 -26" stroke="${C.ink}" stroke-width="12" fill="none" stroke-linecap="round"/><path d="M22 62q-18 -6 -16 -26" stroke="${C.pup}" stroke-width="6.5" fill="none" stroke-linecap="round"/></g>
+  <ellipse cx="54" cy="66" rx="36" ry="24" fill="${C.pup}" stroke="${C.ink}" stroke-width="3.5"/>
+  <ellipse cx="44" cy="58" rx="12" ry="9" fill="${C.pupDark}" opacity=".55"/>
+  <ellipse cx="36" cy="90" rx="9" ry="5" fill="${C.pup}" stroke="${C.ink}" stroke-width="2.5"/><ellipse cx="72" cy="90" rx="9" ry="5" fill="${C.pup}" stroke="${C.ink}" stroke-width="2.5"/>
+  <circle cx="94" cy="42" r="26" fill="${C.pup}" stroke="${C.ink}" stroke-width="3.5"/>
+  <ellipse cx="108" cy="54" rx="13" ry="10" fill="#FFF1DE" stroke="${C.ink}" stroke-width="2.5"/>
+  <ellipse cx="119" cy="49" rx="5.5" ry="4.5" fill="${C.ink}"/>
+  ${eye}
+  <ellipse cx="90" cy="54" rx="6" ry="4" fill="${C.blush}"/>
+  ${mouth}
+  <path d="M76 26q-14 4 -12 30q2 10 10 4q4 -14 6 -30z" fill="${C.pupDark}" stroke="${C.ink}" stroke-width="3"/>
+  <g transform="translate(92 14) rotate(8)"><rect x="-16" y="-4" width="32" height="12" rx="3" fill="#fff" stroke="${C.ink}" stroke-width="2.5"/><path d="M-16 -2q-10 -10 0 -18q4 -10 16 -6q12 -6 16 6q10 8 0 18z" fill="#fff" stroke="${C.ink}" stroke-width="2.5"/></g>
+  ${o.holding || ''}</g>`;
+}
+
+/* ---------- this video's drawing helpers ---------- */
+function frac(x, y, n, d, size, fill = C.ink, w = 800){
+  const lw = Math.max(String(n).length, String(d).length) * size * .55 + size * .25;
+  return txt(x, y - size * .12, String(n), size, {fill, w}) + `<line x1="${x - lw / 2}" y1="${y + size * .06}" x2="${x + lw / 2}" y2="${y + size * .06}" stroke="${fill}" stroke-width="${Math.max(3, size * .07)}" stroke-linecap="round"/>` + txt(x, y + size * .9, String(d), size, {fill, w});
+}
+/* mixed number, centred on x: whole + stacked fraction */
+function mixed(x, y, w, n, d, size, fill = C.ink){
+  const ww = String(w).length * size * .55, fw = Math.max(String(n).length, String(d).length) * size * .55 * .62 + size * .2;
+  const left = x - (ww + 10 + fw) / 2;
+  return txt(left + ww / 2, y + size * .35, String(w), size, {fill, w: 800}) + frac(left + ww + 10 + fw / 2, y - size * .02, n, d, size * .62, fill);
+}
+function grid(x, y, s, n, sc = 1){
+  if (sc <= 0) return '';
+  const c = s / 10, full = Math.floor(n / 10), part = n % 10;
+  let o = `<rect x="${x}" y="${y}" width="${s}" height="${s}" fill="#fff"/>`;
+  if (full) o += `<rect x="${x}" y="${y}" width="${s}" height="${full * c}" fill="${C.shade}"/>`;
+  if (part) o += `<rect x="${x}" y="${y + full * c}" width="${part * c}" height="${c}" fill="${C.shade}"/>`;
+  let d = ''; for (let i = 1; i < 10; i++) d += `M${x + i * c} ${y}V${y + s}M${x} ${y + i * c}H${x + s}`;
+  o += `<path d="${d}" stroke="${C.ink}" stroke-width="1.3" opacity=".5" fill="none"/><rect x="${x}" y="${y}" width="${s}" height="${s}" fill="none" stroke="${C.ink}" stroke-width="4"/>`;
+  return `<g transform="translate(${x + s / 2} ${y + s / 2}) scale(${sc}) translate(${-x - s / 2} ${-y - s / 2})">${o}</g>`;
+}
+/* cookie tray: 100 spots, the first n filled with cookies; hl = index to ring */
+function tray(x, y, s, n, o = {}){
+  const c = s / 10;
+  let g = `<rect x="${x - 16}" y="${y - 16}" width="${s + 32}" height="${s + 32}" rx="26" fill="${C.popSoft}" stroke="${C.pop}" stroke-width="6"/>`;
+  for (let i = 0; i < 100; i++){
+    const cx = x + (i % 10) * c + c / 2, cy = y + Math.floor(i / 10) * c + c / 2;
+    if (o.rows && Math.floor(i / 10) < o.rows) { if (i % 10 === 0) g += `<rect x="${x + 2}" y="${cy - c / 2 + 2}" width="${s - 4}" height="${c - 4}" rx="8" fill="${C.cake}" stroke="${C.ink}" stroke-width="2.5"/>`; continue; }
+    if (i < n) g += `<circle cx="${cx}" cy="${cy}" r="${c * .42}" fill="${C.cookie}"/><circle cx="${cx - c * .15}" cy="${cy - c * .1}" r="${c * .07}" fill="${C.chip}"/><circle cx="${cx + c * .12}" cy="${cy + c * .13}" r="${c * .07}" fill="${C.chip}"/><circle cx="${cx + c * .16}" cy="${cy - c * .16}" r="${c * .05}" fill="${C.chip}"/>`;
+    else g += `<circle cx="${cx}" cy="${cy}" r="${c * .36}" fill="none" stroke="${C.line}" stroke-width="2" stroke-dasharray="4 4"/>`;
+  }
+  if (o.cut) for (let r = 1; r < 10; r++) g += `<line x1="${x}" y1="${y + r * c}" x2="${x + s}" y2="${y + r * c}" stroke="${C.ink}" stroke-width="2.5" stroke-dasharray="7 6" opacity="${o.cut}"/>`;
+  return g;
+}
+function cake(x, y, s, half){
+  const body = `<ellipse cx="0" cy="38" rx="52" ry="9" fill="#EAD3DF"/>
+    <rect x="-40" y="-10" width="80" height="46" rx="10" fill="${C.cake}" stroke="${C.ink}" stroke-width="3"/>
+    <path d="M-40 0q10 12 20 0t20 0t20 0t20 0v-4q0-10-10-10h-60q-10 0-10 10z" fill="#fff" stroke="${C.ink}" stroke-width="3"/>
+    <circle cx="0" cy="-20" r="8" fill="#E8325F" stroke="${C.ink}" stroke-width="2.5"/><path d="M0 -28q4-8 10-10" stroke="${C.ink}" stroke-width="2.5" fill="none"/>
+    <circle cx="-22" cy="16" r="2.5" fill="${C.pop}"/><circle cx="14" cy="20" r="2.5" fill="${C.shade}"/><circle cx="26" cy="10" r="2.5" fill="${C.pop}"/>`;
+  if (!half) return `<g transform="translate(${x} ${y}) scale(${s})">${body}</g>`;
+  return `<g transform="translate(${x} ${y}) scale(${s})"><clipPath id="hc${Math.round(x)}"><rect x="-60" y="-40" width="60" height="90"/></clipPath><g clip-path="url(#hc${Math.round(x)})">${body}</g><line x1="0" y1="-14" x2="0" y2="36" stroke="${C.ink}" stroke-width="3"/></g>`;
+}
+function bill(x, y, s = 1){ return `<g transform="translate(${x} ${y}) scale(${s})"><rect x="-75" y="-38" width="150" height="76" rx="10" fill="${C.bill}" stroke="${C.billInk}" stroke-width="4"/><rect x="-63" y="-27" width="126" height="54" rx="6" fill="none" stroke="${C.billInk}" stroke-width="2"/><text x="0" y="12" font-size="34" font-weight="800" text-anchor="middle" fill="#245A30">$1</text></g>`; }
+function coin(x, y, r, label, fill){ return `<g><circle cx="${x}" cy="${y}" r="${r}" fill="${fill}" stroke="#6A6F78" stroke-width="3.5"/><text x="${x}" y="${y + r * .32}" font-size="${r * .8}" font-weight="800" text-anchor="middle" fill="#333">${label}</text></g>`; }
+/* place-value boxes: cols = [[header, digit, isDecimal], ...]; '.' column draws the point */
+function pvBoxes(cx, y, cols, o = {}){
+  const bw = o.bw || 118, gap = 14, dotW = 36;
+  const widths = cols.map(c => c[0] === '.' ? dotW : bw);
+  const total = widths.reduce((a, b) => a + b, 0) + gap * (cols.length - 1);
+  let x = cx - total / 2, s = '';
+  cols.forEach((c, i) => {
+    const w = widths[i], mid = x + w / 2;
+    if (c[0] === '.') s += `<circle cx="${mid}" cy="${y + 108}" r="10" fill="${C.accent}"/>`;
+    else {
+      s += txt(mid, y - 12, c[0].toUpperCase(), 21, {fill: C.muted, w: 800});
+      s += `<rect x="${x}" y="${y}" width="${w}" height="130" rx="22" fill="${c[2] ? C.mint : '#fff'}" stroke="${o.hl === i ? C.accent : C.line}" stroke-width="${o.hl === i ? 6 : 4}"/>`;
+      if (c[1] != null && c[1] !== '') s += txt(mid, y + 98, c[1], 96, {w: 800, fill: c[3] || C.ink, op: c[4] ?? 1});
+    }
+    x += w + gap;
+  });
+  return s;
+}
+function pvCenters(cx, cols, o = {}){
+  const bw = o.bw || 118, gap = 14, dotW = 36;
+  const widths = cols.map(c => c === '.' ? dotW : bw);
+  const total = widths.reduce((a, b) => a + b, 0) + gap * (cols.length - 1);
+  let x = cx - total / 2; return widths.map(w => { const m = x + w / 2; x += w + gap; return m; });
+}
+function numberLine(x0, x1, y, min, max, minor, labEvery, o = {}){
+  const X = v => x0 + (v - min) / (max - min) * (x1 - x0);
+  let s = `<line x1="${x0 - 16}" y1="${y}" x2="${x1 + 16}" y2="${y}" stroke="${C.ink}" stroke-width="5" stroke-linecap="round"/>`;
+  const n = Math.round((max - min) / minor);
+  for (let k = 0; k <= n; k++){
+    const v = min + k * minor, lab = Math.abs((v - min) / labEvery - Math.round((v - min) / labEvery)) < 1e-6;
+    s += `<line x1="${X(v)}" y1="${y - (lab ? 20 : 9)}" x2="${X(v)}" y2="${y + (lab ? 20 : 9)}" stroke="${C.ink}" stroke-width="${lab ? 4 : 2}"/>`;
+    if (lab) s += txt(X(v), y + 58, String(+v.toFixed(2)), o.fs || 30, {w: 700});
+  }
+  return s;
+}
+const xMark = (cx, cy, r, sc) => sc > 0 ? `<g transform="translate(${cx} ${cy}) scale(${sc})" stroke="${C.oops}" stroke-width="12" stroke-linecap="round"><line x1="${-r}" y1="${-r * .8}" x2="${r}" y2="${r * .8}"/><line x1="${r}" y1="${-r * .8}" x2="${-r}" y2="${r * .8}"/></g>` : '';
+const enter = (t, a, from, to, d = .7) => lerp(from, to, ease(prog(t, a, a + d)));
+
+/* ---------- background + chrome ---------- */
+const VIDEO = { titles: {1: 'Welcome to the bakery!', 2: 'Big idea 1 · Tenths & hundredths', 3: 'Big idea 2 · Mixed numbers', 4: 'Big idea 3 · Money', 5: 'Big idea 4 · The ×10 pattern', 6: 'Big idea 5 · Decimal pictures', 7: 'Pop quiz!', 8: 'See you soon!'}, icon: '🧁', label: 'Dottie’s Decimal Bakery' };
+const SPEAKERS = { dottie: { name: 'Dottie', color: C.accent }, biscuit: { name: 'Biscuit', color: '#A0612A' } };
+function background(){
+  return `<defs><pattern id="dots" width="26" height="26" patternUnits="userSpaceOnUse"><circle cx="13" cy="13" r="2.2" fill="#FFDDE9"/></pattern>
+    <pattern id="tiles" width="60" height="40" patternUnits="userSpaceOnUse"><rect width="60" height="40" fill="#FFE4EE"/><path d="M0 0H60M0 20H60M30 0V20M0 20V40M60 20V40" stroke="#F8D0DF" stroke-width="2"/></pattern></defs>
+  <rect width="1280" height="720" fill="#FFF4F8"/><rect width="1280" height="720" fill="url(#dots)"/>
+  <rect x="0" y="560" width="1280" height="160" fill="url(#tiles)"/><line x1="0" y1="560" x2="1280" y2="560" stroke="${C.line}" stroke-width="4"/>`;
+}
+
+/* ---------- scenes ---------- */
+const scenes = {};
+
+scenes[1] = t => {
+  let s = '';
+  // awning
+  const aw = pop(t, .2, .5);
+  if (aw > 0){ s += `<g transform="translate(780 96) scale(${aw}) translate(-780 -96)">`;
+    for (let i = 0; i < 10; i++) s += `<path d="M${400 + i * 76} 80h76v40q-38 34 -76 0z" fill="${i % 2 ? '#fff' : C.accent}" stroke="${C.ink}" stroke-width="3"/>`;
+    s += `<rect x="390" y="66" width="780" height="18" rx="9" fill="${C.ink}"/></g>`; }
+  s += txt(780, 230, 'Dottie’s Decimal Bakery', 74 * pop(t, S('d1') + .2), {w: 800, fill: C.accent});
+  // counter with cakes
+  s += `<rect x="420" y="470" width="620" height="90" rx="14" fill="#fff" stroke="${C.ink}" stroke-width="4"/><rect x="420" y="470" width="620" height="22" rx="10" fill="${C.soft}" stroke="${C.ink}" stroke-width="4"/>`;
+  [540, 670, 800].forEach((x, i) => { const sc = pop(t, W('d1', 'tenths') + i * .25 - .6); if (sc > 0) s += cake(x, 420, sc * 1.05); });
+  const cc = pop(t, W('d1', 'money'));
+  if (cc > 0) s += `<g transform="translate(940 432) scale(${cc})">${coin(-30, 0, 24, '10¢', C.silver)}${coin(26, 6, 20, '1¢', C.copper)}</g>`;
+  s += banner(780, 330, 'Decimals = wholes AND parts!', 34, pop(t, E('d2') + .1));
+  // Biscuit skids in
+  const zA = E('d1') + .1;
+  if (t >= zA){
+    const p = prog(t, zA, zA + .9);
+    const x = lerp(1420, 1150, ease(p)), rot = p < 1 ? Math.sin(p * Math.PI) * -14 : 0;
+    s += biscuit(t, x, 560, 1.25, {face: -1, rot, wagFast: t < S('d2')});
+    if (t > zA + .8 && t < zA + 1.4) s += txt(1240, 470, '💨', 50);
+  }
+  s += dottie(t, 40, 380, 2.0 * pop(t, .9, .5), {happy: t < S('d1') + .5});
+  return s;
+};
+
+scenes[2] = t => {
+  let s = '';
+  // A: the decimal point (d3)
+  const aOp = fade(t, S('d3'), S('d4') + .1, .4);
+  if (aOp > 0){
+    s += `<g opacity="${aOp}">`;
+    [450, 560, 670].forEach((x, i) => { const sc = pop(t, W('d3', 'whole') + i * .2); if (sc > 0) s += cake(x, 170, sc * .9); });
+    const hc = pop(t, W('d3', 'parts', 1));
+    if (hc > 0) s += `<g transform="translate(990 170) scale(${hc}) translate(-990 -170)">${cake(990, 170, .9, true)}</g>` + txt(990, 245, 'part of a cake', 26 * hc, {fill: C.accentText});
+    const pulse = 1 + .25 * Math.max(0, Math.sin(t * 6)) * (t > W('d3', 'point') && t < W('d3', 'digits') ? 1 : 0);
+    s += `<circle cx="780" cy="424" r="${32 * pulse}" fill="${C.pop}" opacity="${t > W('d3', 'point') ? .55 : 0}"/>`;
+    s += txt(640, 440, '3', 220, {w: 800}) + txt(780, 440, '.', 220, {w: 800, fill: C.accent}) + txt(950, 440, '45', 220, {w: 800});
+    const l1 = pop(t, W('d3', 'left')), l2 = pop(t, W('d3', 'right'));
+    if (l1 > 0) s += `<g opacity="${Math.min(1, l1)}"><path d="M590 470v14h100v-14" stroke="${C.mintText}" stroke-width="6" fill="none" stroke-linecap="round"/>${txt(640, 528, 'wholes', 36, {w: 800, fill: C.mintText})}</g>`;
+    if (l2 > 0) s += `<g opacity="${Math.min(1, l2)}"><path d="M830 470v14h240v-14" stroke="${C.accent}" stroke-width="6" fill="none" stroke-linecap="round"/>${txt(950, 528, 'parts of a whole', 36, {w: 800, fill: C.accentText})}</g>`;
+    s += `</g>`;
+  }
+  // B: tray cut into tenths, then hundredths (d4 .. d6)
+  const bOp = fade(t, S('d4'), S('d7') + .2, .4);
+  if (bOp > 0){
+    const toCookies = t >= W('d5', 'hundred');
+    const cut = toCookies ? 0 : prog(t, W('d4', 'cut'), W('d4', 'cut') + .8);
+    const oneRow = t >= W('d4', 'tenth') && !toCookies;
+    s += `<g opacity="${bOp}">`;
+    if (!toCookies){
+      s += `<rect x="744" y="124" width="352" height="352" rx="26" fill="${C.popSoft}" stroke="${C.pop}" stroke-width="6"/>`;
+      s += `<rect x="760" y="140" width="320" height="320" rx="14" fill="${C.cake}" stroke="${C.ink}" stroke-width="3"/>`;
+      for (let r = 1; r < 10; r++) s += `<line x1="760" y1="${140 + r * 32}" x2="${760 + 320 * cut}" y2="${140 + r * 32}" stroke="${C.ink}" stroke-width="3" stroke-dasharray="8 6"/>`;
+      if (oneRow) s += `<rect x="754" y="134" width="332" height="44" rx="10" fill="none" stroke="${C.accent}" stroke-width="6"/>`;
+    } else {
+      const n = t >= W('d5', 'cookie') ? 1 : 0;
+      const rowCmp = t >= W('d6', 'ten') && t < S('d7');
+      s += tray(760, 140, 320, rowCmp ? 10 : n);
+      if (n && !rowCmp) s += `<circle cx="776" cy="156" r="24" fill="none" stroke="${C.accent}" stroke-width="5"/>`;
+      if (rowCmp) s += `<rect x="754" y="134" width="332" height="44" rx="10" fill="none" stroke="${C.accent}" stroke-width="6"/>` + pill(920, 520, '10 hundredths = 1 tenth', 26, C.goodSoft, C.mintText, pop(t, W('d6', 'ten')));
+    }
+    // readout on the left
+    const tenthCard = pop(t, W('d4', 'tenth')) * (toCookies ? 0 : 1);
+    if (tenthCard > 0) s += `<g transform="translate(500 290) scale(${tenthCard})">${txt(0, -60, '1 tenth', 44, {w: 800, fill: C.accentText})}${txt(0, 40, '0.1', 110, {w: 800})}${frac(0, 100, 1, 10, 48)}</g>`;
+    const hCard = pop(t, W('d5', 'hundredth')) * (t < W('d6', 'ten') ? 1 : 0);
+    if (hCard > 0) s += `<g transform="translate(500 290) scale(${hCard})">${txt(0, -60, '1 hundredth', 44, {w: 800, fill: C.accentText})}${txt(0, 40, '0.01', 110, {w: 800})}${frac(0, 100, 1, 100, 48)}</g>`;
+    s += `</g>`;
+    // Biscuit's mix-up
+    const bA = S('b2') - .8, bB = S('d7') - .1;
+    if (t > bA && t < bB){
+      const x = enter(t, bA, 1400, 1170);
+      s += biscuit(t, x, 560, 1.0, {face: -1});
+      const bs = pop(t, S('b2') + .2) * (t < W('d6', 'ten') ? 1 : 0);
+      s += bubble(980, 520, '100 > 10, so bigger?', 26, bs, pop(t, S('d6')));
+    }
+  }
+  // C: 56 cookies (d7)
+  const cOp = fade(t, S('d7') + .1, S('d8'), .4);
+  if (cOp > 0){
+    const n = Math.round(56 * ease(prog(t, W('d7', 'bake'), W('d7', 'cookies') + .9)));
+    s += `<g opacity="${cOp}">${tray(760, 140, 320, n)}`;
+    s += txt(500, 260, (n / 100).toFixed(2), 120, {w: 800, fill: C.accentText});
+    s += frac(500, 330, n, 100, 56);
+    s += pill(500, 490, '5 tenths + 6 hundredths', 28, C.mint, C.mintText, pop(t, W('d7', 'five')));
+    s += `</g>`;
+  }
+  // D: 0.5 = 0.50 (d8)
+  const dOp = fade(t, S('d8'), SC('3') + 1, .4);
+  if (dOp > 0){
+    s += `<g opacity="${dOp}">`;
+    s += grid(420, 170, 240, 50, pop(t, W('d8', 'tenths'))) + txt(540, 460, '5 tenths', 34 * pop(t, W('d8', 'tenths')), {w: 800});
+    s += txt(745, 310, '=', 90 * pop(t, W('d8', 'equals')), {w: 800, fill: C.accent});
+    const t2 = pop(t, W('d8', 'fifty'));
+    if (t2 > 0) s += `<g transform="translate(950 290) scale(${t2}) translate(-950 -290)">${tray(830, 170, 240, 50)}</g>` + txt(950, 460, '50 hundredths', 34 * t2, {w: 800});
+    s += banner(745, 120, '0.5 = 0.50', 44, pop(t, W('d8', 'same')));
+    s += `</g>`;
+  }
+  s += dottie(t, 40, 380, 2.0, {happy: t > S('d6') && t < S('d6') + 1.2, paw: Math.sin(Math.PI * prog(t, W('d4', 'cut') - .3, W('d4', 'cut') + .6))});
+  return s;
+};
+
+scenes[3] = t => {
+  let s = '';
+  const heads = [['tens'], ['ones'], ['.'], ['tenths'], ['hundredths']];
+  // A: 18 4/100 -> 18.04 (d9 .. d11)
+  const aOp = fade(t, S('d9'), S('d12'), .4);
+  if (aOp > 0){
+    s += `<g opacity="${aOp}">`;
+    s += `<g transform="translate(560 200) scale(${pop(t, W('d9', 'eighteen'))}) translate(-560 -200)">${mixed(530, 190, 18, 4, 100, 120)}</g>`;
+    const res = pop(t, W('d11', 'eighteen'));
+    if (res > 0) s += txt(745, 232, '=', 100 * res, {w: 800}) + txt(965, 232, '18.04', 120 * res, {w: 800, fill: C.accentText});
+    const ch = pop(t, W('d11', 'trick'));
+    if (ch > 0){
+      const d1 = t > W('d11', 'trick') + .3 ? '1' : '', d8 = t > W('d11', 'trick') + .6 ? '8' : '';
+      const d4 = t > W('d11', 'two') ? '4' : '', d0 = t > W('d11', 'zero') ? '0' : '';
+      const glow = t > W('d11', 'zero') && t < W('d11', 'zero') + 2.5;
+      const cols = [['tens', d1], ['ones', d8], ['.'], ['tenths', d0, true, C.accent], ['hundredths', d4, true]];
+      s += `<g transform="translate(780 380) scale(${ch}) translate(-780 -380)">`;
+      if (glow){ const cx = pvCenters(780, ['t', 'o', '.', 'te', 'h'], {bw: 150})[3]; s += `<circle cx="${cx}" cy="385" r="${84 + 6 * Math.sin(t * 8)}" fill="${C.pop}" opacity=".5"/>`; }
+      s += pvBoxes(780, 320, cols, {bw: 150}) + `</g>`;
+      s += pill(560, 500 + 0, 'out of 10 → 1 place', 22, C.popSoft, C.popText, pop(t, W('d11', 'ten')) * (t < W('d11', 'zero') ? 1 : 0));
+      s += pill(1000, 500, 'out of 100 → 2 places', 22, C.popSoft, C.popText, pop(t, W('d11', 'hundred')) * (t < W('d11', 'zero') ? 1 : 0));
+      s += pill(780, 535, 'a 0 holds the tenths place!', 28, C.pop, C.ink, pop(t, W('d11', 'zero') + .2));
+    }
+    s += `</g>`;
+    // Biscuit says 18.4
+    const bA = S('b3') - .9, bB = S('d11') + .6;
+    if (t > bA && t < bB){
+      s += biscuit(t, enter(t, bA, 1400, 1170), 560, 1.0, {face: -1});
+      s += bubble(1010, 400, '18.4!', 34, pop(t, S('b3') + .3) * (t < S('d11') ? 1 : 0), pop(t, S('d10')));
+    }
+  }
+  // B: 36 7/10 -> 36.7 (d12)
+  const bOp = fade(t, S('d12'), S('b4') - .2, .4);
+  if (bOp > 0){
+    s += `<g opacity="${bOp}">${mixed(560, 190, 36, 7, 10, 120)}`;
+    const res = pop(t, W('d12', 'thirtysix', 1));
+    if (res > 0) s += txt(720, 232, '=', 100 * res, {w: 800}) + txt(910, 232, '36.7', 120 * res, {w: 800, fill: C.accentText});
+    const dd = t > W('d12', 'one') ? '7' : '';
+    s += pvBoxes(780, 320, [['tens', '3'], ['ones', '6'], ['.'], ['tenths', dd, true]], {bw: 150});
+    s += pill(780, 535, 'out of 10 → 1 place', 28, C.popSoft, C.popText, pop(t, W('d12', 'ten')));
+    s += `</g>`;
+  }
+  // C: 3.4 (b4, d13)
+  const cOp = fade(t, S('b4') - .2, SC('4') + 1, .4);
+  if (cOp > 0){
+    s += `<g opacity="${cOp}">`;
+    s += pvBoxes(700, 150, [['ones', '3'], ['.'], ['tenths', '4', true, C.accent]], {bw: 150});
+    const hl = t > W('d13', 'tenths');
+    if (hl) s += `<rect x="${pvCenters(700, ['o', '.', 'te'], {bw: 150})[2] - 82}" y="142" width="164" height="146" rx="26" fill="none" stroke="${C.accent}" stroke-width="6"/>`;
+    const e1 = pop(t, W('d13', 'three')), e2 = pop(t, W('d13', 'forty'));
+    if (e1 > 0) s += `<g transform="translate(560 400) scale(${e1}) translate(-560 -400)">${txt(430, 435, '3.4 =', 64, {w: 800})}${mixed(620, 400, 3, 4, 10, 90, C.accentText)}</g>`;
+    if (e2 > 0) s += `<g transform="translate(880 400) scale(${e2}) translate(-880 -400)">${txt(760, 435, '=', 64, {w: 800})}${mixed(890, 400, 3, 40, 100, 90, C.accentText)}</g>`;
+    s += pill(700, 535, '4 tenths = 40 hundredths', 28, C.mint, C.mintText, pop(t, W('d13', 'same')));
+    s += `</g>`;
+    const bA = S('b4') - .9;
+    if (t > bA){
+      s += biscuit(t, enter(t, bA, 1400, 1170), 560, 1.0, {face: -1});
+      const bs = pop(t, S('b4') + .3) * (t < W('d13', 'three') ? 1 : 0);
+      if (bs > 0) s += `<g transform="translate(1050 380) scale(${bs})"><rect x="-120" y="-60" width="240" height="120" rx="50" fill="#fff" stroke="${C.ink}" stroke-width="3.5"/>${mixed(0, -4, 3, 4, 100, 64, C.muted)}${t > S('d13') ? xMark(0, 0, 80, pop(t, S('d13'))) : ''}</g>`;
+    }
+  }
+  s += dottie(t, 40, 380, 2.0, {happy: t > W('d11', 'eighteen') && t < S('d12')});
+  return s;
+};
+
+scenes[4] = t => {
+  let s = '';
+  // A: dollar, dime, penny (d14, d15)
+  const aOp = fade(t, S('d14'), S('d16'), .4);
+  if (aOp > 0){
+    s += `<g opacity="${aOp}">`;
+    const b = pop(t, W('d14', 'dollar'));
+    if (b > 0) s += `<g transform="translate(520 300) scale(${b * 1.3})">${bill(0, 0)}</g>` + txt(520, 420, '1 whole', 38 * b, {w: 800, fill: C.mintText}) + txt(520, 470, '$1.00', 46 * b, {w: 800});
+    const d = pop(t, W('d15', 'dime'));
+    if (d > 0) s += `<g transform="translate(820 300) scale(${d})">${coin(0, 0, 52, '10¢', C.silver)}</g>` + txt(820, 420, '1 tenth', 38 * d, {w: 800, fill: C.accentText}) + txt(820, 470, '$0.10', 46 * d, {w: 800});
+    const p = pop(t, W('d15', 'penny'));
+    if (p > 0) s += `<g transform="translate(1080 300) scale(${p})">${coin(0, 0, 44, '1¢', C.copper)}</g>` + txt(1080, 420, '1 hundredth', 38 * p, {w: 800, fill: C.accentText}) + txt(1080, 470, '$0.01', 46 * p, {w: 800});
+    s += `</g>`;
+  }
+  // B: count Maya's money (d16, b5, d17)
+  const bOp = fade(t, S('d16'), SC('5') + 1, .4);
+  if (bOp > 0){
+    s += `<g opacity="${bOp}">`;
+    let cents = 0;
+    const billsAt = W('d16', 'four', 1);
+    for (let i = 0; i < 4; i++){ const a = billsAt + i * .18; if (t >= a){ s += bill(420 + i * 160, enter(t, a, 80, 190, .35)); cents += 100; } }
+    const coins = [['ten', '10¢', C.silver, 34, 10], ['twenty', '10¢', C.silver, 34, 10], ['twentyfive', '5¢', '#C9CFD6', 38, 5], ['twentysix', '1¢', C.copper, 30, 1], ['twentyseven', '1¢', C.copper, 30, 1], ['twentyeight', '1¢', C.copper, 30, 1]];
+    coins.forEach(([w, lab, col, r, v], i) => { const a = W('d16', w); if (t >= a){ s += coin(420 + i * 92, enter(t, a, 240, 320, .3), r, lab, col); cents += v; } });
+    if (t < W('d16', 'four', 1)) s += txt(720, 220, '4 bills · 2 dimes · 1 nickel · 3 pennies', 34 * pop(t, S('d16') + .3), {w: 700, fill: C.muted});
+    s += `<rect x="1000" y="250" width="250" height="160" rx="30" fill="#fff" stroke="${C.line}" stroke-width="4"/>`;
+    s += txt(1125, 292, 'Total', 28, {w: 700, fill: C.muted});
+    s += txt(1125, 372, '$' + (cents / 100).toFixed(2), 70, {w: 800, fill: C.accentText});
+    const eq = pop(t, W('d17', 'four', 2));
+    if (eq > 0) s += `<g transform="translate(620 450) scale(${eq}) translate(-620 -450)">${txt(470, 480, '$4.28 =', 64, {w: 800})}${mixed(690, 446, 4, 28, 100, 92, C.accentText)}</g>`;
+    s += `</g>`;
+    const bA = S('b5') - .9, bB = W('d17', 'four', 2);
+    if (t > bA && t < bB + .4){
+      s += biscuit(t, enter(t, bA, 1420, 1180), 560, 1.0, {face: -1});
+      const bs = pop(t, S('b5') + .3) * (t < bB ? 1 : 0);
+      if (bs > 0) s += `<g transform="translate(700 470) scale(${bs})"><rect x="-120" y="-62" width="240" height="124" rx="50" fill="#fff" stroke="${C.ink}" stroke-width="3.5"/>${mixed(0, -6, 4, 28, 10, 66, C.muted)}${xMark(0, 0, 80, pop(t, S('d17')))}</g>`;
+    }
+    s += pill(780, 100, 'cents are hundredths!', 32, C.pop, C.ink, pop(t, S('d17') + .3) * (t < SC('5') ? 1 : 0));
+  }
+  s += dottie(t, 40, 380, 2.0, {happy: t > S('d17') && t < S('d17') + 1.4});
+  return s;
+};
+
+scenes[5] = t => {
+  let s = '';
+  // A: hopping 4 (d18 .. d20)
+  const aOp = fade(t, S('d18'), S('d21'), .4);
+  if (aOp > 0){
+    s += `<g opacity="${aOp}">`;
+    const cols = [['ones', ''], ['.'], ['tenths', '', true], ['hundredths', '', true]];
+    const cx = pvCenters(720, ['o', '.', 'te', 'h'], {bw: 170});
+    s += pvBoxes(720, 220, cols, {bw: 170});
+    const h1 = W('d19', 'hop', 1), h2 = W('d19', 'hop', 2);
+    const p1 = ease(prog(t, h1, h1 + .7)), p2 = ease(prog(t, h2, h2 + .7));
+    const x = lerp(lerp(cx[3], cx[2], p1), cx[0], p2);
+    const arc = Math.sin(Math.PI * prog(t, h1, h1 + .7)) * 130 + Math.sin(Math.PI * prog(t, h2, h2 + .7)) * 160;
+    // placeholder zeros
+    if (p1 < 1) s += txt(cx[2], 318, '0', 96, {w: 800, fill: '#D9BFCC'});
+    if (p2 < 1) s += txt(cx[0], 318, '0', 96, {w: 800, fill: '#D9BFCC'});
+    const four = pop(t, W('d19', 'four'));
+    if (four > 0) s += `<g transform="translate(${x} ${285 - arc}) scale(${four})"><circle r="64" fill="${C.accent}" stroke="${C.ink}" stroke-width="4"/>${txt(0, 36, '4', 104, {w: 800, fill: '#fff'})}</g>`;
+    if (t > h1) s += `<g opacity="${prog(t, h1, h1 + .3)}"><path d="M${cx[3] - 10} 182q-${(cx[3] - cx[2]) / 2} -80 -${cx[3] - cx[2] - 20} 0" stroke="${C.pop}" stroke-width="7" fill="none" stroke-linecap="round"/>${txt((cx[3] + cx[2]) / 2, 124, '×10', 40, {w: 800, fill: C.popText})}</g>`;
+    if (t > h2) s += `<g opacity="${prog(t, h2, h2 + .3)}"><path d="M${cx[2] - 10} 182q-${(cx[2] - cx[0]) / 2} -100 -${cx[2] - cx[0] - 20} 0" stroke="${C.pop}" stroke-width="7" fill="none" stroke-linecap="round"/>${txt((cx[2] + cx[0]) / 2, 106, '×10', 40, {w: 800, fill: C.popText})}</g>`;
+    const val = t > h2 + .5 ? '4' : t > h1 + .5 ? '0.4' : '0.04';
+    if (four > 0) s += `<rect x="530" y="420" width="380" height="84" rx="42" fill="${C.popSoft}" stroke="${C.pop}" stroke-width="3"/>` + txt(720, 476, 'worth ' + val, 50, {w: 800, fill: C.popText});
+    s += banner(720, 120, 'Each place = 10 × the place to its right', 28, pop(t, S('d18') + .3) * (t < W('d19', 'four') ? 1 : 0));
+    // Biscuit gets it backwards
+    const bA = S('b6') - .9;
+    if (t > bA){
+      s += biscuit(t, enter(t, bA, 1420, 1180), 560, 1.0, {face: -1});
+      s += bubble(1080, 420, 'hundredths = 10 × tenths?', 22, pop(t, S('b6') + .3) * (t < E('d20') ? 1 : 0), pop(t, S('d20')));
+    }
+    s += pill(720, 545, 'The LEFT place is always worth more', 28, C.goodSoft, C.mintText, pop(t, W('d20', 'left')));
+    s += `</g>`;
+  }
+  // B: expanded notation 24.7 (d21)
+  const bOp = fade(t, S('d21'), S('d22'), .4);
+  if (bOp > 0){
+    s += `<g opacity="${bOp}">`;
+    s += txt(780, 200, '📦 24.7 pounds', 76 * pop(t, W('d21', 'twentyfour')), {w: 800});
+    const parts = [['(2 × 10)', 'two', 0], ['+ (4 × 1)', 'four', 0], ['+ (7 × 0.1)', 'seven', 1]];
+    parts.forEach(([p, w, k], i) => { const sc = pop(t, W('d21', w, k)); s += txt(520 + i * 260, 360, p, 58 * sc, {w: 800, fill: i === 2 ? C.accentText : C.ink}); });
+    s += pill(780, 470, 'expanded notation', 30, C.mint, C.mintText, pop(t, W('d21', 'expanded')));
+    s += `</g>`;
+  }
+  // C: $53.47 (d22)
+  const cOp = fade(t, S('d22'), SC('6') + 1, .4);
+  if (cOp > 0){
+    s += `<g opacity="${cOp}">`;
+    s += pvBoxes(780, 160, [['tens', '5'], ['ones', '3'], ['.'], ['tenths', '4', true, t > W('d22', 'tenths') ? C.accent : C.ink], ['hundredths', '7', true]], {bw: 140, hl: t > W('d22', 'tenths') ? 3 : -1});
+    const v = pop(t, W('d22', 'worth'));
+    if (v > 0) s += txt(780, 430, '4 × 0.1 = 0.40', 70 * v, {w: 800, fill: C.accentText});
+    s += pill(780, 520, '= 40 cents', 34, C.pop, C.ink, pop(t, W('d22', 'forty', 1)));
+    s += `</g>`;
+  }
+  s += dottie(t, 40, 380, 2.0, {});
+  return s;
+};
+
+scenes[6] = t => {
+  let s = '';
+  // A: flats and little squares (d23 .. d25)
+  const aOp = fade(t, S('d23'), S('d26'), .4);
+  if (aOp > 0){
+    s += `<g opacity="${aOp}">`;
+    const f = pop(t, W('d23', 'flat'));
+    s += grid(470, 150, 280, 100, f);
+    if (t < S('d24')) s += txt(610, 480, '1 whole', 40 * f, {w: 800, fill: C.mintText});
+    const sq = pop(t, W('d23', 'little'));
+    if (sq > 0 && t < S('d24')) s += `<g transform="translate(900 290) scale(${sq})"><rect x="-22" y="-22" width="44" height="44" fill="${C.shade}" stroke="${C.ink}" stroke-width="3"/></g>` + txt(900, 380, '0.01', 44 * sq, {w: 800, fill: C.accentText});
+    if (t >= S('d24')) for (let i = 0; i < 6; i++){ const a = W('d24', 'six') + i * .12; if (t >= a) s += `<rect x="${800 + i * 48}" y="${enter(t, a, 200, 400, .3)}" width="36" height="36" fill="${C.shade}" stroke="${C.ink}" stroke-width="3"/>`; }
+    const ans = pop(t, W('d25', 'one', 1));
+    if (ans > 0) s += txt(900, 520, '1.06', 90 * ans, {w: 800, fill: C.accentText});
+    s += pill(940, 300, '6 hundredths, 0 tenths', 26, C.mint, C.mintText, pop(t, W('d25', 'zero')) * (ans > 0 ? 1 : 0));
+    const bA = S('b7') - .9;
+    if (t > bA){
+      s += biscuit(t, enter(t, bA, 1420, 1180), 560, 1.0, {face: -1});
+      s += bubble(1040, 210, '1.6!', 36, pop(t, S('b7') + .2) * (t < W('d25', 'one', 1) ? 1 : 0), pop(t, S('d25')));
+    }
+    s += `</g>`;
+  }
+  // B: compare 0.56 vs 0.6 (d26, b8, d27)
+  const bOp = fade(t, S('d26'), S('d28'), .4);
+  if (bOp > 0){
+    s += `<g opacity="${bOp}">`;
+    const g1 = pop(t, W('d26', 'zero')), g2 = pop(t, W('d26', 'zero', 1));
+    s += grid(400, 150, 220, 56, g1) + txt(510, 420, '0.56', 60 * g1, {w: 800});
+    s += grid(700, 150, 220, 60, g2) + txt(810, 420, t > W('d27', 'same') ? '0.60' : '0.6', 60 * g2, {w: 800, fill: t > W('d27', 'same') ? C.accentText : C.ink});
+    const big = pop(t, W('d27', 'bigger'));
+    if (big > 0) s += txt(660, 520, '0.60 > 0.56', 66 * big, {w: 800, fill: C.accentText});
+    const bA = S('b8') - .9;
+    if (t > bA){
+      s += biscuit(t, enter(t, bA, 1420, 1180), 560, 1.0, {face: -1});
+      s += bubble(1065, 430, '0.56 > 0.6?', 30, pop(t, S('b8') + .3) * (t < W('d27', 'bigger') ? 1 : 0), pop(t, S('d27')));
+    }
+    s += `</g>`;
+  }
+  // C: number line, then ruler (d28)
+  const cOp = fade(t, S('d28'), SC('7') + 1, .4);
+  if (cOp > 0){
+    s += `<g opacity="${cOp}">`;
+    const rulerT = W('d28', 'ruler');
+    if (t < rulerT + .2){
+      const o = fade(t, S('d28'), rulerT + .2, .3);
+      s += `<g opacity="${o}">` + numberLine(380, 1180, 330, 0, 1, .1, .1) ;
+      const X = v => 380 + v * 800;
+      s += `<line x1="${X(.56)}" y1="270" x2="${X(.56)}" y2="330" stroke="${C.shade}" stroke-width="7"/><circle cx="${X(.56)}" cy="330" r="11" fill="${C.shade}" stroke="${C.ink}" stroke-width="2"/>${txt(X(.56), 255, '0.56', 34, {w: 800, fill: '#2B7884'})}`;
+      s += `<line x1="${X(.6)}" y1="200" x2="${X(.6)}" y2="330" stroke="${C.accent}" stroke-width="7"/><circle cx="${X(.6)}" cy="330" r="11" fill="${C.accent}" stroke="${C.ink}" stroke-width="2"/>${txt(X(.6), 186, '0.6', 34, {w: 800, fill: C.accentText})}`;
+      s += pill(780, 470, 'farther right = bigger →', 30, C.popSoft, C.popText, pop(t, W('d28', 'right')));
+      s += `</g>`;
+    }
+    if (t >= rulerT + .25){
+      const r = pop(t, rulerT + .25);
+      const X = v => 360 + v * 92;
+      s += `<g transform="translate(780 300) scale(${r}) translate(-780 -300)">
+        <rect x="340" y="260" width="868" height="110" rx="10" fill="${C.popSoft}" stroke="${C.pop}" stroke-width="4"/>`;
+      for (let k = 0; k <= 90; k++){ const whole = k % 10 === 0, half = k % 5 === 0; s += `<line x1="${X(k / 10)}" y1="260" x2="${X(k / 10)}" y2="${260 + (whole ? 40 : half ? 28 : 16)}" stroke="${C.ink}" stroke-width="${whole ? 3 : 1.6}"/>`; if (whole) s += txt(X(k / 10), 345, String(k / 10), 28, {w: 800}); }
+      const len = 6.7 * ease(prog(t, rulerT + .4, W('d28', 'six') + .3));
+      s += `<rect x="${X(0)}" y="214" width="${X(len) - X(0)}" height="26" rx="13" fill="${C.accent}" stroke="${C.ink}" stroke-width="3"/>`;
+      s += `</g>`;
+      const ans = pop(t, W('d28', 'six', 1));
+      if (ans > 0) s += txt(780, 480, '6 whole cm + 7 tenths = 6.7 cm', 46 * ans, {w: 800, fill: C.accentText});
+    }
+    s += `</g>`;
+  }
+  s += dottie(t, 40, 380, 2.0, {happy: (t > W('d25', 'one', 1) && t < S('d26')) || (t > W('d27', 'bigger') && t < S('d28'))});
+  return s;
+};
+
+scenes[7] = t => {
+  let s = '';
+  s += txt(780, 300, 'POP QUIZ!', 110 * pop(t, S('d29')) * (t < S('d30') - .1 ? 1 : 0), {w: 800, fill: C.accent});
+  s += txt(780, 380, 'Say your answer out loud!', 38 * pop(t, W('d29', 'say')) * (t < S('d30') - .1 ? 1 : 0), {w: 600, fill: C.muted});
+  const QA = [['d30', 'd31'], ['d32', 'd33'], ['d34', 'd35'], ['d36', 'd37']];
+  const PIC = { d30: s => mixed(780, 330, 18, 4, 100, 74), d32: s => `<g transform="translate(0 6)">${coin(620, 340, 30, '25¢', C.silver)}${coin(690, 340, 30, '25¢', C.silver)}${coin(752, 344, 24, '10¢', C.silver)}${coin(806, 344, 24, '10¢', C.silver)}${coin(860, 344, 24, '10¢', C.silver)}${[0, 1, 2, 3].map(i => coin(910 + i * 46, 346, 21, '1¢', C.copper)).join('')}</g>`,
+    d34: s => txt(780, 360, '53.47', 84, {w: 800}), d36: s => txt(780, 360, '0.56  or  0.6', 74, {w: 800}) };
+  QA.forEach(([q, a], i) => {
+    const end = i < 3 ? S(QA[i + 1][0]) - .1 : SC('8') - .1;
+    if (t < S(q) - .1 || t >= end) return;
+    const qtext = L[q].caption.replace(/^\w+\.\s*/, '');
+    const sc = pop(t, S(q) - .1);
+    s += `<g transform="translate(780 300) scale(${sc}) translate(-780 -300)"><rect x="350" y="120" width="860" height="350" rx="28" fill="#fff" stroke="${C.ink}" stroke-width="4"/>
+      <circle cx="410" cy="180" r="36" fill="${C.accent}"/>${txt(410, 194, String(i + 1), 40, {w: 800, fill: '#fff'})}
+      ${wrap(qtext, 36).map((ln, j) => txt(800, 192 + j * 46, ln, 36, {w: 700})).join('')}`;
+    if (t < S(a) - .05) s += PIC[q]();
+    if (t >= E(q) && t < S(a)){
+      const rem = S(a) - t, n = Math.ceil(rem / ((S(a) - E(q)) / 3));
+      const fr = (rem % ((S(a) - E(q)) / 3)) / ((S(a) - E(q)) / 3);
+      s += `<circle cx="1130" cy="410" r="40" fill="${C.popSoft}" stroke="${C.line}" stroke-width="8"/><circle cx="1130" cy="410" r="40" fill="none" stroke="${C.pop}" stroke-width="8" stroke-dasharray="${251 * fr} 400" transform="rotate(-90 1130 410)"/>${txt(1130, 425, String(n), 42, {w: 800})}`;
+    }
+    if (t >= S(a) - .05){
+      const ans = wrap(L[a].caption, 40);
+      const ap = pop(t, S(a) - .05);
+      s += `<g transform="translate(780 ${370 - (ans.length - 1) * 20}) scale(${ap})"><rect x="-400" y="-34" width="800" height="${54 + ans.length * 38}" rx="20" fill="${C.goodSoft}" stroke="${C.good}" stroke-width="4"/>${ans.map((ln, j) => txt(0, 6 + j * 38, (j === 0 ? '✓ ' : '') + ln, 30, {w: 700, fill: '#11704F'})).join('')}</g>`;
+    }
+    s += `</g>`;
+  });
+  const thinking = QA.some(([q, a]) => t >= E(q) && t < S(a));
+  s += biscuit(t, 1180, 600, .85, {face: -1, wagFast: thinking});
+  if (thinking) s += txt(1200, 500, '🤔', 44);
+  s += dottie(t, 40, 380, 2.0, {happy: QA.some(([, a]) => t >= S(a) && t < E(a) + .5)});
+  return s;
+};
+
+scenes[8] = t => {
+  let s = '';
+  const cp = pop(t, S('d38'));
+  if (cp > 0){
+    s += `<g transform="translate(800 210) scale(${cp})">${cake(0, 0, 1.6)}<text x="0" y="-62" font-size="56" text-anchor="middle">⭐</text></g>`;
+    s += txt(800, 360, 'You’re a decimal chef!', 58 * cp, {w: 800, fill: C.accent});
+  }
+  s += pill(800, 440, '⭐ Try the quiz for stars! ⭐', 28, C.popSoft, C.ink, pop(t, W('d38', 'quiz')));
+  for (let i = 0; i < 8; i++){ const a = S('d38') + .4 + i * .2; if (t > a){ const tw = .6 + .4 * Math.sin(t * 4 + i); s += txt(400 + ((i * 173) % 800), 110 + ((i * 97) % 120), '✦', 34 * tw, {fill: C.pop}); } }
+  // Biscuit: proud line, then a happy spin when Dottie notices
+  const x = lerp(1420, 1170, ease(prog(t, S('d38') + .6, S('d38') + 1.4)));
+  const spinA = E('d39') + .2;
+  const rot = t > spinA ? 360 * ease(prog(t, spinA, spinA + .8)) : 0;
+  const hop = t > spinA ? Math.abs(Math.sin((t - spinA) * 6)) * 22 : undefined;
+  s += biscuit(t, x, 560, 1.15, {face: -1, rot, hop, wagFast: t > S('b9')});
+  s += pill(1060, 270, 'a zero can hold a place!', 24, C.mint, C.mintText, pop(t, W('b9', 'zero')) * (t < spinA ? 1 : 0));
+  s += dottie(t, 40, 380, 2.0, {happy: t > E('d39')});
+  const endP = pop(t, spinA + 1.0);
+  if (endP > 0) s += banner(780, 540, 'The End!', 48, endP);
+  return s;
+};
+
+/* ---------- frame ---------- */
+runVideo({ scenes, background, bg: '#FFF4F8' });
+
+window.SFX = () => {
+  const c = [];
+  c.push({t: .2, k: 'whoosh'}); c.push({t: S('d1') + .2, k: 'ding'});
+  [0, 1, 2].forEach(i => c.push({t: W('d1', 'tenths') + i * .25 - .6, k: 'pop'}));
+  c.push({t: W('d1', 'money'), k: 'coin'});
+  c.push({t: E('d1') + .1, k: 'whoosh'});
+  c.push({t: E('d2') + .1, k: 'boop'});
+  c.push({t: W('d3', 'point'), k: 'pop'});
+  c.push({t: W('d4', 'cut'), k: 'whoosh'}); c.push({t: W('d4', 'tenth'), k: 'pop'});
+  c.push({t: W('d5', 'cookie'), k: 'pop'});
+  c.push({t: S('d6'), k: 'wrong'});
+  for (let i = 0; i < 8; i++) c.push({t: W('d7', 'bake') + i * ((W('d7', 'cookies') + .9 - W('d7', 'bake')) / 8), k: 'tick'});
+  c.push({t: W('d8', 'same'), k: 'ding'});
+  c.push({t: S('d10'), k: 'wrong'});
+  c.push({t: W('d11', 'zero'), k: 'pop'}); c.push({t: W('d11', 'eighteen'), k: 'ding'});
+  c.push({t: W('d12', 'thirtysix', 1), k: 'ding'});
+  c.push({t: S('d13'), k: 'wrong'});
+  c.push({t: W('d15', 'dime'), k: 'coin'}); c.push({t: W('d15', 'penny'), k: 'coin'});
+  for (let i = 0; i < 4; i++) c.push({t: W('d16', 'four', 1) + i * .18, k: 'click'});
+  ['ten', 'twenty', 'twentyfive', 'twentysix', 'twentyseven', 'twentyeight'].forEach(w => c.push({t: W('d16', w), k: 'coin'}));
+  c.push({t: S('d17'), k: 'wrong'}); c.push({t: W('d17', 'four', 2), k: 'ding'});
+  c.push({t: W('d19', 'hop', 1), k: 'windup'}); c.push({t: W('d19', 'hop', 2), k: 'windup'});
+  c.push({t: S('d20'), k: 'wrong'});
+  [['two', 0], ['four', 0], ['seven', 1]].forEach(([w, k]) => c.push({t: W('d21', w, k), k: 'pop'}));
+  c.push({t: W('d22', 'worth'), k: 'ding'});
+  for (let i = 0; i < 6; i++) c.push({t: W('d24', 'six') + i * .12, k: 'pop'});
+  c.push({t: S('d25'), k: 'wrong'}); c.push({t: W('d25', 'one', 1), k: 'ding'});
+  c.push({t: S('d27'), k: 'wrong'}); c.push({t: W('d27', 'bigger'), k: 'ding'});
+  c.push({t: W('d28', 'ruler'), k: 'whoosh'});
+  [['d30','d31'],['d32','d33'],['d34','d35'],['d36','d37']].forEach(([q, a]) => { const d = (S(a) - E(q)) / 3; for (let i = 0; i < 3; i++) c.push({t: E(q) + i * d, k: 'tick'}); c.push({t: S(a) - .05, k: 'ding'}); });
+  c.push({t: S('d38') + .1, k: 'tada'});
+  c.push({t: E('d39') + .2, k: 'whoosh'});
+  c.push({t: E('d39') + 1.2, k: 'tada'});
+  return c;
+};
+seek(0);
+</script>
+</body></html>

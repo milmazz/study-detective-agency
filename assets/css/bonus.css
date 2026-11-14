@@ -1,5 +1,5 @@
 /*
-  Shared layout for the bonus study pages (energy-lab, texas-trail). Each
+  Shared layout for the bonus study pages (energy-lab, texas-trail, decimal-bakery). Each
   page links its own sheet, which @imports this one first.
 
   These pages carry their own playful themes (light and dark, from
@@ -110,6 +110,14 @@ ul.tidy li{margin:.25em 0}
 .qtext{font-size:1.32rem;font-family:var(--display);line-height:1.3;margin:0 0 10px}
 .qtext:focus{outline:none}
 .howto{font-size:.92rem;color:var(--muted);margin:0 0 10px}
+/* a question's figure (q.fig) and the typed-number answer (type: 'input') */
+.fig{margin:4px 0 14px;display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;justify-content:center;background:var(--bg);border-radius:18px;padding:14px}
+.fig svg{max-width:100%;height:auto}
+.inrow{display:flex;align-items:center;gap:8px;font-family:var(--display);font-size:1.6rem;font-weight:800}
+.inrow input{font:inherit;width:9ch;padding:6px 12px;border-radius:14px;border:2px solid var(--line);background:var(--bg);color:var(--ink)}
+.inrow input:focus{border-color:var(--accent);outline:none}
+.inrow input[readonly]{opacity:1;border-color:var(--good);background:var(--good-soft)}
+.inrow.wrongin input{border-color:var(--oops);background:var(--oops-soft)}
 .opts{display:flex;flex-direction:column;gap:9px}
 .opt{display:flex;gap:8px;align-items:stretch}
 .pick{flex:1;display:flex;gap:12px;align-items:center;text-align:left;padding:11px 14px;border-radius:16px;border:2px solid var(--line);background:var(--surface);cursor:pointer;min-height:52px;line-height:1.35}

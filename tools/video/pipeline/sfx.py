@@ -56,6 +56,7 @@ def make(k):
     if k == 'winddown': return .3 * tone(np.linspace(900, 150, int(.8 * SR)), .8, r=.5, shape='tri')
     if k == 'windup':   return .25 * np.concatenate([tone(700 + i * 90, .05, r=.02, shape='tri') for i in range(6)])
     if k == 'tada':   return mix(*[.18 * np.pad(tone(f, .9, r=.35, shape='tri'), (int(i * .09 * SR), 0)) for i, f in enumerate([523, 659, 784, 1047])])
+    if k == 'coin':   return mix(.22 * tone(1976, .35, r=.09), .16 * np.pad(tone(2637, .5, r=.14), (int(.06 * SR), 0)))
     if k == 'wrong':  return mix(.25 * tone(330, .18, r=.12, shape='tri'), .25 * np.pad(tone(247, .3, r=.15, shape='tri'), (int(.16 * SR), 0)))
     raise KeyError(k)
 

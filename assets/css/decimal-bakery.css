@@ -1,0 +1,108 @@
+@import './bonus.css';
+
+/* Dottie's Decimal Bakery: frosting pink and sprinkle yellow, plus the bakery stations
+   (cookie tray, mixed-number chart, tip jar, place-value chart, carrot hop) and the
+   figures the quiz draws (decimal grids, coins, number lines, rulers). */
+:root{
+  --display:"Baloo 2","Trebuchet MS",system-ui,sans-serif;
+  --body:ui-rounded,"SF Pro Rounded","Segoe UI","Helvetica Neue",system-ui,sans-serif;
+  --bg:#FFF4F8; --dotc:#FFDDE9; --surface:#FFFFFF; --bar:rgba(255,244,248,.9);
+  --ink:#3A2233; --muted:#7A5670; --line:#F4CFDF;
+  --accent:#D63F86; --accent-ink:#FFFFFF; --accent-soft:#FFE4F0; --accent-text:#AE2766;
+  --pop:#FFC531; --pop-soft:#FFF3C9; --pop-text:#8A5A00;
+  --good:#1C9A73; --good-soft:#D8F4E9; --good-text:#11704F;
+  --oops:#E0603F; --oops-soft:#FFE5DC; --oops-text:#B03E20;
+  --focus:#D63F86; --bun:#FFFFFF; --bunline:#3A2233; --blush:#FFB3C7; --earin:#FFC2D8; --nose:#F0609E;
+  --shade:#8ED1DC; --gline:#3A2233; --cookie:#D9955B; --chip:#6B3E26; --mint:#C9F1E3; --mint-text:#17694F;
+  --pattern:radial-gradient(circle at 50% 50%, var(--dotc) 2px, transparent 2.6px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#24131E; --dotc:#3A2030; --surface:#30192A; --bar:rgba(36,19,30,.9);
+    --ink:#FFEFF6; --muted:#E2B6CC; --line:#523046;
+    --accent:#FF7DB5; --accent-ink:#24131E; --accent-soft:#4A2140; --accent-text:#FFA6CB;
+    --pop:#FFD45C; --pop-soft:#3D3318; --pop-text:#FFD970;
+    --good:#4FCB9F; --good-soft:#173B31; --good-text:#7BE3BE;
+    --oops:#FF8B6B; --oops-soft:#442520; --oops-text:#FFAA90;
+    --focus:#FFA6CB; --bun:#FFF6FA; --bunline:#24131E; --blush:#FF9DB8; --earin:#FFB3CC; --nose:#F0609E;
+    --shade:#3E8C99; --gline:#E2B6CC; --cookie:#C98549; --chip:#4A2615; --mint:#1D3F35; --mint-text:#86E3C2;
+    color-scheme:dark;
+  }
+}
+
+/* hero */
+.hero{display:grid;grid-template-columns:1fr 190px;gap:18px;align-items:center;padding:30px 0 6px}
+.hero h1{margin-bottom:.15em}
+.hero .mascot{width:170px}
+@media (max-width:560px){.hero{grid-template-columns:1fr}.hero .mascot{width:130px;order:-1}}
+.mascot{display:block}
+.toc{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 4px}
+.toc a{background:var(--surface);border:2px solid var(--line);border-radius:999px;padding:6px 14px;text-decoration:none;font-weight:700;color:var(--ink);font-size:.95rem}
+.toc a:hover{border-color:var(--accent)}
+
+/* fractions */
+.fr{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;font-size:.78em;line-height:1.08;margin:0 .12em}
+.fr>span:first-child{border-bottom:2px solid currentColor;padding:0 .2em}
+.mx{white-space:nowrap}
+.bignum{font-family:var(--display);font-weight:800;font-size:clamp(2rem,7vw,2.8rem);line-height:1.1;color:var(--accent-text)}
+.eq{font-family:var(--display);font-size:1.35rem;font-weight:700}
+.sbtn .fr,.otext .fr{font-size:.85em}
+
+/* figures: decimal grids, number lines, rulers, money */
+.gshade{fill:var(--shade)}
+.glines{stroke:var(--gline);stroke-width:.8;fill:none;opacity:.65}
+.gborder{fill:none;stroke:var(--gline);stroke-width:2}
+.gbox{display:flex;flex-direction:column;align-items:center;gap:4px;font-weight:800;font-family:var(--display)}
+.nl text{fill:var(--ink);font-family:var(--body);font-weight:700}
+.nl .tk{stroke:var(--ink);stroke-width:1.5}
+.nl .pt{stroke:var(--accent);stroke-width:3}
+.nl .ptl{fill:var(--accent-text);font-family:var(--display);font-weight:800}
+/* number lines and rulers keep their drawn size; a narrow screen scrolls the strip */
+.nlwrap{flex:1 1 100%;max-width:100%;overflow-x:auto}
+.fig .nlwrap svg{display:block;margin:0 auto;max-width:none}
+.nlhint{display:none;flex:1 1 100%;margin:-6px 0 0;text-align:center;font-size:.85rem;font-weight:700;color:var(--muted)}
+/* below this width the quiz card is narrower than a 640px drawing (measured: strip = viewport - 108px) */
+@media (max-width:747px){.nlhint{display:block}}
+.money{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center}
+.money svg text{font-family:var(--display);font-weight:800}
+
+/* bakery stations */
+.widget{background:var(--surface);border:2px solid var(--line);border-radius:22px;padding:16px;margin:14px 0}
+.wrow{display:flex;flex-wrap:wrap;gap:18px;align-items:center;justify-content:center}
+.ctrl{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:12px 0 4px}
+.readout{flex:1 1 220px;min-width:200px}
+.readout p{margin:.25em 0}
+.tray svg{width:min(300px,82vw);height:auto;cursor:pointer;touch-action:manipulation}
+.tray .ck{fill:none;stroke:var(--line);stroke-width:1.5;stroke-dasharray:3 3}
+.tray .on{fill:var(--cookie);stroke:none}
+.tray .chipdot{fill:var(--chip)}
+.trayframe{fill:var(--pop-soft);stroke:var(--pop);stroke-width:4}
+.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.chipbtn{border:2px solid var(--line);background:var(--surface);border-radius:14px;padding:8px 14px;cursor:pointer;font-family:var(--display);font-weight:700;font-size:1.15rem;min-height:46px;color:var(--ink)}
+.chipbtn[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.pvtable{border-collapse:separate;border-spacing:4px;margin:10px auto}
+.pvtable th{font-size:.72rem;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.02em;padding:2px 4px;text-align:center;max-width:90px;line-height:1.15}
+.pvtable td{text-align:center}
+.pvtable .dig{font-family:var(--display);font-weight:800;font-size:1.7rem;width:52px;height:56px;border-radius:14px;border:2px solid var(--line);background:var(--surface);cursor:pointer;color:var(--ink)}
+.pvtable .dig.static{cursor:default}
+.pvtable .dig[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.pvtable .dig.nbr{border-color:var(--pop);background:var(--pop-soft)}
+.pvtable .pvdot{font-family:var(--display);font-weight:800;font-size:2.2rem;color:var(--accent-text);width:auto;padding:0 2px}
+.pvtable .dec{background:var(--mint)}
+.pvinfo{text-align:center;min-height:4.5em;font-weight:600;max-width:36em;margin:6px auto 0}
+.expanded{text-align:center;font-family:var(--display);font-weight:600;font-size:1.05rem;line-height:1.8;margin:6px 0 0}
+.expanded span{border-radius:8px;padding:1px 4px;white-space:nowrap}
+.expanded span.hl{background:var(--accent);color:var(--accent-ink)}
+.coinbtns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.coinbtn{border:2px solid var(--line);background:var(--surface);border-radius:16px;padding:6px 10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;font-weight:700;font-size:.85rem;min-width:84px;color:var(--ink)}
+.coinbtn:hover{border-color:var(--accent)}
+.pile{min-height:64px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center;background:var(--bg);border-radius:16px;padding:10px;margin:12px 0}
+.pile .empty{color:var(--muted)}
+.hop input[type=range]{width:100%;accent-color:var(--accent);height:34px}
+.hop .target{font-family:var(--display);font-size:1.4rem;font-weight:800}
+.hopfb{min-height:3em;font-weight:600;text-align:center}
+.hopfb.good{color:var(--good-text)}
+.hopfb.oops{color:var(--oops-text)}
+.tip{background:var(--mint);color:var(--ink);border-radius:16px;padding:12px 14px;margin:12px 0}
+.tip b{color:var(--mint-text)}

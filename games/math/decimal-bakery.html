@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dottie’s Decimal Bakery</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐰</text></svg>">
+<!-- Bonus page: its own theme, not a detective case file. One sheet, which
+     @imports bonus.css. Baloo 2 is self-hosted and preloaded like the
+     game pages. -->
+<link rel="preload" as="font" type="font/woff2" href="../../assets/fonts/baloo2-latin1.woff2" crossorigin>
+<link rel="stylesheet" href="../../assets/css/decimal-bakery.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap">
+    <a class="home-link" href="../../">← All Divisions</a>
+    <nav class="tabs" aria-label="Sections">
+      <a class="tab" id="tab-learn" href="#learn">Learn</a>
+      <a class="tab" id="tab-quiz" href="#quiz">Quiz</a>
+      <a class="tab" id="tab-report" href="#report">Report card</a>
+    </nav>
+    <span class="stars" aria-label="Stars earned">★ <b id="starcount">0</b></span>
+  </div>
+</header>
+
+<main class="wrap">
+<section id="view-learn">
+  <div class="hero">
+    <div>
+      <h1>Dottie’s Decimal Bakery</h1>
+      <p class="lede">Dottie the bunny bakes cakes in wholes, tenths, and hundredths. Watch the lesson, try each bakery station, then take the quiz to earn stars.</p>
+    </div>
+    <div id="heroBun"></div>
+  </div>
+  <section class="sec" id="video">
+    <h2>Watch the lesson</h2>
+    <p>A 6½-minute cartoon with Dottie and Biscuit the puppy that bakes its way through the whole study guide, from tenths and hundredths to number lines, and ends with a pop quiz. Captions are built in.</p>
+    <!-- preload="none": the video downloads only when someone presses play. -->
+    <video class="lesson-video" controls playsinline preload="none" width="1280" height="720"
+      poster="../../assets/video/dottie-decimal-bakery-poster.jpg"
+      src="../../assets/video/dottie-decimal-bakery.mp4"
+      aria-label="Dottie’s Decimal Bakery: a cartoon lesson on tenths and hundredths, mixed numbers, money, place value, and number lines"></video>
+  </section>
+
+  <nav class="toc" aria-label="Bakery stations">
+    <a href="#tenths">🍪 Tenths &amp; hundredths</a>
+    <a href="#mixed">🎂 Mixed numbers</a>
+    <a href="#money">🪙 Money</a>
+    <a href="#places">🏠 Place value</a>
+    <a href="#lines">🥕 Number lines</a>
+    <a href="#words">📖 Words</a>
+  </nav>
+
+  <section class="sec" id="tenths">
+    <h2>Tenths and hundredths</h2>
+    <p>Dottie’s cookie tray holds <b>100 cookies</b>. The whole tray is <b>1 whole</b>.</p>
+    <div class="grid2">
+      <div class="panel tint"><h3>1 row = 1 tenth</h3><p>The tray has 10 rows. One row is <span class="mx"><span class="fr"><span>1</span><span>10</span></span></span> = <b>0.1</b></p></div>
+      <div class="panel sun"><h3>1 cookie = 1 hundredth</h3><p>The tray has 100 cookies. One cookie is <span class="mx"><span class="fr"><span>1</span><span>100</span></span></span> = <b>0.01</b></p></div>
+    </div>
+    <div class="widget tray">
+      <h3 style="text-align:center">Fill the cookie tray</h3>
+      <p class="small" style="text-align:center;margin:0">Tap a spot on the tray, or use the buttons.</p>
+      <div class="wrow">
+        <div id="traySvg"></div>
+        <div class="readout" aria-live="polite" id="trayOut"></div>
+      </div>
+      <div class="ctrl">
+        <button class="btn" type="button" data-tray="10">+ 1 tenth (a row)</button>
+        <button class="btn" type="button" data-tray="1">+ 1 hundredth (a cookie)</button>
+        <button class="btn" type="button" data-tray="-1">− 1 cookie</button>
+        <button class="btn" type="button" data-tray="0">Empty the tray</button>
+      </div>
+    </div>
+    <div class="remember"><span id="remBun1"></span><span>10 hundredths make 1 tenth, so <b>0.5 = 0.50</b>. Adding a zero at the end doesn’t change the amount.</span></div>
+  </section>
+
+  <section class="sec" id="mixed">
+    <h2>Mixed numbers and decimals</h2>
+    <p>A <span class="kw">mixed number</span> has a whole number and a fraction, like <span class="mx">18<span class="fr"><span>4</span><span>100</span></span></span>. The <span class="kw">decimal point</span> sits between the wholes and the parts. Pick one and see where each digit goes.</p>
+    <div class="widget">
+      <div class="chips" id="mixChips" role="group" aria-label="Pick a mixed number"></div>
+      <div id="mixOut" aria-live="polite"></div>
+    </div>
+    <div class="tip"><b>The denominator tells you how many places.</b> Out of <b>10</b> → 1 digit after the point (tenths). Out of <b>100</b> → 2 digits after the point (hundredths). If the fraction is only a few hundredths, put a <b>0 in the tenths place</b>: <span class="mx">18<span class="fr"><span>4</span><span>100</span></span></span> = 18.04, not 18.4.</div>
+  </section>
+
+  <section class="sec" id="money">
+    <h2>Money is decimals</h2>
+    <p>One dollar is one whole. Coins are parts of a dollar.</p>
+    <div class="grid3">
+      <div class="panel"><h3>Dime = 0.10</h3><p>10 dimes make $1, so a dime is <b>1 tenth</b> of a dollar.</p></div>
+      <div class="panel"><h3>Penny = 0.01</h3><p>100 pennies make $1, so a penny is <b>1 hundredth</b> of a dollar.</p></div>
+      <div class="panel"><h3>Quarter = 0.25</h3><p>A quarter is 25 cents, which is <b>25 hundredths</b> of a dollar.</p></div>
+    </div>
+    <div class="widget">
+      <h3 style="text-align:center">Dottie’s tip jar</h3>
+      <p class="small" style="text-align:center;margin:0 0 10px">Tap money to drop it in the jar.</p>
+      <div class="coinbtns" id="coinBtns"></div>
+      <div class="pile" id="pile"></div>
+      <div id="bankOut" aria-live="polite" style="text-align:center"></div>
+      <div class="ctrl"><button class="btn" type="button" id="bankClear">Empty the jar</button></div>
+    </div>
+  </section>
+
+  <section class="sec" id="places">
+    <h2>Place value: the ×10 pattern</h2>
+    <p>Each place is worth <b>10 times</b> the place to its right. Moving right, each place is <b>one tenth</b> of the place to its left. Tap any digit to find its value.</p>
+    <div class="widget">
+      <div class="chips" id="pvChips" role="group" aria-label="Pick a number"></div>
+      <div id="pvChart" style="overflow-x:auto"></div>
+      <p class="pvinfo" id="pvInfo" aria-live="polite"></p>
+      <p class="small" style="text-align:center;margin:10px 0 0">Expanded notation</p>
+      <p class="expanded" id="pvExp"></p>
+    </div>
+    <div class="remember"><span id="remBun2"></span><span>Same digit, one place to the left = <b>10 times</b> as much. In 4.44, the 4 in the ones place (4) is 10 times the 4 in the tenths place (0.4), which is 10 times the 4 in the hundredths place (0.04).</span></div>
+  </section>
+
+  <section class="sec" id="lines">
+    <h2>Number lines, rulers, and comparing</h2>
+    <p>On a number line, find what each small tick is worth first. Between 0 and 1 there are 10 tenths, and each tenth can split into 10 hundredths.</p>
+    <div class="widget hop">
+      <h3 style="text-align:center">Carrot hop</h3>
+      <p style="text-align:center;margin:0">Slide Dottie to <span class="target" id="hopTarget"></span>, then tap <b>Hop!</b></p>
+      <div id="hopLine" class="fig" style="background:transparent;padding:4px 0"></div>
+      <label class="vh" for="hopRange">Dottie’s spot on the number line</label>
+      <input type="range" id="hopRange" min="0" max="100" step="1" value="0">
+      <p style="text-align:center;margin:4px 0 0">Dottie is at <b id="hopNow">0</b></p>
+      <div class="ctrl"><button class="btn primary" type="button" id="hopBtn">Hop!</button></div>
+      <p class="hopfb" id="hopFb" aria-live="polite"></p>
+    </div>
+    <div class="grid2">
+      <div class="panel"><h3>Reading a ruler</h3><p>A centimeter ruler has 10 small spaces between each number, so each small space is <b>0.1 cm</b>. Count the whole centimeters, then the tenths.</p><div id="rulerDemo"></div></div>
+      <div class="panel"><h3>Comparing decimals</h3><p><b>Line up the decimal points.</b> Fill empty places with zeros, then compare from left to right.</p><p class="eq" style="text-align:center">0.6 → 0.6<b style="color:var(--accent-text)">0</b><br>0.60 &gt; 0.56</p></div>
+    </div>
+    <h3 style="margin-top:20px">Sorting game</h3>
+    <p>Is each cake heavier or lighter than <b>0.5 pound</b>?</p>
+    <div class="sorter" data-sorter="half"></div>
+  </section>
+
+  <section class="sec" id="words">
+    <h2>Words to know</h2>
+    <p>Say what you think each word means, then tap the card to check.</p>
+    <div class="flips">
+      <button class="flip" type="button" data-flip aria-pressed="false"><span class="front">Decimal</span><span class="tap">Tap to flip</span><span class="back">A number with a decimal point, like 3.45. It shows wholes and parts of a whole.</span></button>
+      <button class="flip" type="button" data-flip aria-pressed="false"><span class="front">Decimal point</span><span class="tap">Tap to flip</span><span class="back">The dot that separates the wholes (left) from the parts (right). Say it as “and.”</span></button>
+      <button class="flip" type="button" data-flip aria-pressed="false"><span class="front">Tenth</span><span class="tap">Tap to flip</span><span class="back">1 of 10 equal parts. 0.1 = 1/10. First place after the point.</span></button>
+      <button class="flip" type="button" data-flip aria-pressed="false"><span class="front">Hundredth</span><span class="tap">Tap to flip</span><span class="back">1 of 100 equal parts. 0.01 = 1/100. Second place after the point.</span></button>
+      <button class="flip" type="button" data-flip aria-pressed="false"><span class="front">Mixed number</span><span class="tap">Tap to flip</span><span class="back">A whole number and a fraction together, like 3 4/10.</span></button>
+      <button class="flip" type="button" data-flip aria-pressed="false"><span class="front">Equivalent</span><span class="tap">Tap to flip</span><span class="back">Equal in value. 0.5 and 0.50 are equivalent.</span></button>
+      <button class="flip" type="button" data-flip aria-pressed="false"><span class="front">Expanded notation</span><span class="tap">Tap to flip</span><span class="back">Each digit times its place: 24.7 = (2 × 10) + (4 × 1) + (7 × 0.1)</span></button>
+      <button class="flip" type="button" data-flip aria-pressed="false"><span class="front">Place value</span><span class="tap">Tap to flip</span><span class="back">What a digit is worth because of where it sits. Each place is 10 times the place to its right.</span></button>
+    </div>
+  </section>
+  <div class="start-quiz"><a class="btn primary" href="#quiz">Start the quiz</a></div>
+</section>
+
+<section id="view-quiz" hidden>
+  <div id="quiztop">
+    <h2 class="vh">Quiz</h2>
+    <div class="dots" id="dots" role="navigation" aria-label="Questions"></div>
+    <div class="qcard" id="qbox"></div>
+    <div class="qnav"><button class="btn" id="prev" type="button">Back</button><button class="btn" id="next" type="button">Skip ahead</button></div>
+  </div>
+</section>
+
+<section id="view-report" hidden>
+  <h2 style="margin-top:26px">Report card</h2>
+  <div id="reportbox"></div>
+</section>
+</main>
+
+<script type="module">
+// The bonus quiz engine and this page's content (questions plus the Learn
+// interactives). Vite bundles both into the page's hashed entry chunk.
+import BonusQuiz from '../../assets/js/bonus-quiz.js';
+import DECIMAL_BAKERY from '../../assets/js/decimal-bakery-content.js';
+BonusQuiz.start(DECIMAL_BAKERY);
+</script>
+</body>
+</html>

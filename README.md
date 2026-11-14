@@ -13,7 +13,9 @@ Live divisions:
   with an equation and a strip (bar model) diagram, and a test-prep set on
   adding and subtracting: typed answers, choosing the equation that models
   a story, matching a strip diagram to it, and estimating by rounding; plus
-  three bonus rounds of fraction practice (Berry, Mango, and Peep).
+  three bonus rounds of fraction practice (Berry, Mango, and Peep), and a
+  bonus page, *Dottie's Decimal Bakery*, on tenths and hundredths, mixed
+  numbers, money, place value and the ×10 pattern, and number lines.
 - **Words Division** (ELA) — author's purpose, central message, figurative
   language, text formatting clues; plus a second file on *Kitoto the Mighty*
   covering retelling, story elements, theme, author's craft, context clues,
@@ -29,8 +31,9 @@ Bonus pages aren't case files: each pairs a hands-on Learn section with a
 fixed, hand-written quiz, runs on `assets/js/bonus-quiz.js` instead of the
 `DetectiveGame` engine, and keeps its own theme. Their content lives in
 `assets/js/*-content.js`, and `test/bonus-pages.test.js` checks their answer
-keys and wiring. Mochi's Energy Lab and Pepita's Texas Trail also open with
-a **Watch the lesson** video: a narrated cartoon of the teacher's study guide,
+keys and wiring. Mochi's Energy Lab, Pepita's Texas Trail and Dottie's Decimal
+Bakery also open with a **Watch the lesson** video: a narrated cartoon of the
+teacher's study guide,
 made with the pipeline in `tools/video/` (see [Lesson videos](#lesson-videos)).
 
 New games are announced in an **RSS feed** at

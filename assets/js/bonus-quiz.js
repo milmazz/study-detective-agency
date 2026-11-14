@@ -7,11 +7,40 @@
   Importing this module has no side effects; a page calls start(config) from
   its one inline module script. The config is the page's content module
   (assets/js/*-content.js): questions, tags, mascot, copy, and setupLearn()
-  for the page's own Learn-section interactives.
+  for the page's own Learn-section interactives. setupLearn gets
+  { confetti } so a Learn widget can celebrate the way the quiz does.
+
+  Question types: mc, multi, sort (shared labels, or per-row it.labels),
+  order, input (a typed number: answer, show, optional prefix), and write.
+  Any question can carry a `fig` (markup drawn under the prompt) or a
+  `scene`; a sort can carry its own `howto`.
+
+  readNumber() is the typed-answer parser, exported on its own so the tests
+  can hold it to the cases a kid actually types.
 
   It deliberately exports no `modes` array, so the DetectiveGame wiring tests
   in test/question-modules.test.js treat it as a non-game module.
 */
+/*
+  A typed answer, read the forgiving way: "$2.84", " 2.370 ", "2." and ".5"
+  all count. Returns { value } or { need: what to tell the kid }.
+
+  Commas are the trap on a decimals page. "1,000" groups thousands, but on a
+  phone set to a comma-decimal region, inputmode="decimal" offers only a ","
+  key, so "2,84" means 2.84 -- deleting every comma (as the Ledger's
+  whole-number parser does) would turn it into 284 and mark a right answer
+  wrong. So a comma counts as a thousands separator only in a proper
+  1,234,567 grouping; a single comma anywhere else is the decimal point.
+*/
+export function readNumber(text){
+  let raw = String(text == null ? '' : text).trim().replace(/^\$\s*/, '');
+  if (!raw) return { need: 'Type your answer first.' };
+  if (/^\d{1,3}(,\d{3})+(\.\d*)?$/.test(raw)) raw = raw.replace(/,/g, '');
+  else if (/^\d*,\d*$/.test(raw)) raw = raw.replace(',', '.');
+  if (!/^\d*\.?\d*$/.test(raw) || raw === '.') return { need: 'Type a number, like 1.25.' };
+  return { value: parseFloat(raw) };
+}
+
 export function start(P){
 const Q = P.questions;
 const $ = (s, el) => (el || document).querySelector(s);
@@ -74,14 +103,18 @@ function renderQ(){
       <button class="pick" type="button" aria-pressed="false"><span class="let">${LET[i]}</span><span class="otext">${o}</span></button>
       <button class="x" type="button" aria-label="Cross out choice ${LET[i]}" title="Cross out">✕</button></div>`).join('') + '</div>';
   } else if (q.type === 'sort') {
-    body = `<p class="howto">Choose an answer for every row.</p><div class="sort">` + q.items.map((it, i) => `<div class="srow" data-i="${i}">
+    // A row can bring its own choices (it.labels) instead of the shared
+    // q.labels, and its own spoken name (it.aria) when its text is markup.
+    body = `<p class="howto">${q.howto || 'Choose an answer for every row.'}</p><div class="sort">` + q.items.map((it, i) => `<div class="srow" data-i="${i}">
       <span class="stext">${it.t}</span>
-      <span class="sbtns" role="group" aria-label="${strip(it.t).replace(/"/g, '')}">` +
-      q.labels.map((l, j) => `<button type="button" class="sbtn" data-j="${j}" aria-pressed="false">${l}</button>`).join('') +
+      <span class="sbtns" role="group" aria-label="${strip(it.aria || it.t).replace(/"/g, '')}">` +
+      (it.labels || q.labels).map((l, j) => `<button type="button" class="sbtn" data-j="${j}" aria-pressed="false">${l}</button>`).join('') +
       `</span></div>`).join('') + '</div>';
   } else if (q.type === 'order') {
     body = `<p class="howto">Tap the cards in order, first to last. Tap a placed card to send it back.</p>
     <ol class="slots" id="slots"></ol><div class="pool" id="pool"></div>`;
+  } else if (q.type === 'input') {
+    body = `<p class="howto">Type your answer, then check it.</p><div class="inrow" id="inrow">${q.prefix ? '<span>' + q.prefix + '</span>' : ''}<label class="vh" for="ans">Your answer</label><input id="ans" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="?"></div>`;
   } else if (q.type === 'write') {
     body = `<label class="wlabel" for="wta">Your answer</label>
     <textarea id="wta" rows="5" placeholder="Write it the way you would on the test."></textarea>
@@ -89,7 +122,7 @@ function renderQ(){
   }
   $('#qbox').innerHTML = `<div class="qhead"><span class="qnum">Question ${S.cur + 1} of ${Q.length}</span><span class="chip">${P.tags[q.tag].name}</span></div>
     ${q.scene ? `<div class="scene">${q.scene}</div>` : ''}
-    <h2 class="qtext" id="qtext" tabindex="-1">${q.q}</h2>${body}
+    <h2 class="qtext" id="qtext" tabindex="-1">${q.q}</h2>${q.fig ? '<div class="fig">' + q.fig + '</div>' : ''}${body}
     <div class="fb" id="fb" aria-live="polite"></div>
     <div class="qact"><button class="btn primary" id="check" type="button">${q.type === 'write' ? 'Show a strong answer' : 'Check my answer'}</button></div>
     <div class="explain" id="explain" hidden></div>`;
@@ -131,6 +164,11 @@ function wire(q){
     });
   }
   if (q.type === 'order') drawOrder(q);
+  if (q.type === 'input') {
+    const inp = $('#ans');
+    inp.addEventListener('input', () => { $('#inrow').classList.remove('wrongin'); fb('', ''); });
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('#check').click(); } });
+  }
   if (q.type === 'write') {
     const ta = $('#wta'), r = R(q);
     ta.value = r.text || '';
@@ -179,6 +217,14 @@ function grade(q){
     const inPlace = W.order.filter((v, i) => v === i).length;
     return { ok: inPlace === q.items.length, note: `${inPlace} of ${q.items.length} cards are in the right spot.` };
   }
+  if (q.type === 'input') {
+    // Only the number has to match: "$2.84", "2.840" and "2,84" all count.
+    const n = readNumber($('#ans').value);
+    if (n.need) return n;
+    const ok = Math.abs(n.value - q.answer) < 1e-9;
+    if (!ok) $('#inrow').classList.add('wrongin');
+    return { ok, note: '' };
+  }
   return { ok: true };
 }
 
@@ -221,6 +267,15 @@ function showSolved(q, r, live){
     });
   }
   if (q.type === 'order') { W.order = q.items.map((_, i) => i); drawOrder(q, true); $('.howto', box) && ($('.howto', box).hidden = true); }
+  if (q.type === 'input') {
+    const inp = $('#ans');
+    if (r.revealed || !inp.value) inp.value = q.show;
+    // readOnly, not disabled: a disabled box drops out of the accessibility
+    // tree, and the verdict and explanation are about the number in it.
+    inp.readOnly = true; inp.setAttribute('aria-readonly', 'true');
+    $('#inrow').classList.remove('wrongin');
+    $('.howto', box) && ($('.howto', box).hidden = true);
+  }
   if (q.type === 'write') { $$('.ck input', box).forEach(c => c.disabled = false); }
 
   let msg;
@@ -361,8 +416,8 @@ $$('[data-orderer]').forEach(el => {
 
 $('#prev').addEventListener('click', () => go(S.cur - 1));
 $('#next').addEventListener('click', () => go(S.cur + 1));
-if (typeof P.setupLearn === 'function') P.setupLearn();
+if (typeof P.setupLearn === 'function') P.setupLearn({ confetti });
 route();
 }
 
-export default { start };
+export default { start, readNumber };

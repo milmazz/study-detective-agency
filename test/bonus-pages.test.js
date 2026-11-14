@@ -24,6 +24,7 @@ const ENGINE = 'assets/js/bonus-quiz.js';
 const BONUS = {
   energy: { page: 'games/science/energy-lab.html', content: 'assets/js/energy-lab-content.js', url: 'games/science/energy-lab', engine: ENGINE },
   texasTrail: { page: 'games/social-studies/texas-trail.html', content: 'assets/js/texas-trail-content.js', url: 'games/social-studies/texas-trail', engine: ENGINE },
+  decimalBakery: { page: 'games/math/decimal-bakery.html', content: 'assets/js/decimal-bakery-content.js', url: 'games/math/decimal-bakery', engine: ENGINE },
   fractionsBerry: { page: 'games/math/fractions-berry.html', content: 'assets/js/fractions-berry.js', url: 'games/math/fractions-berry' },
   fractionsMango: { page: 'games/math/fractions-mango.html', content: 'assets/js/fractions-mango.js', url: 'games/math/fractions-mango' },
   fractionsPeep: { page: 'games/math/fractions-peep.html', content: 'assets/js/fractions-peep.js', url: 'games/math/fractions-peep' },
@@ -31,7 +32,7 @@ const BONUS = {
 const QUIZ_PAGES = Object.entries(BONUS).filter(([, b]) => b.engine);
 const FRACTION_PAGES = Object.entries(BONUS).filter(([, b]) => !b.engine);
 
-const TYPES = new Set(['mc', 'multi', 'sort', 'order', 'write']);
+const TYPES = new Set(['mc', 'multi', 'sort', 'order', 'input', 'write']);
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 const load = async (rel) => (await import(pathToFileURL(path.join(ROOT, rel)).href)).default;
 
@@ -47,6 +48,29 @@ test('importing the bonus modules has no side effects', async () => {
   }
   for (const [, b] of FRACTION_PAGES) assert.equal(typeof (await load(b.content)).start, 'function');
   assert.equal(typeof globalThis.document, 'undefined');
+});
+
+test('a typed answer is read the way a kid types it', async () => {
+  const { readNumber } = await load(ENGINE);
+  const reads = (text, value) => assert.deepEqual(readNumber(text), { value }, `"${text}" should read as ${value}`);
+  const refuses = (text) => assert.ok(readNumber(text).need, `"${text}" should be sent back, not graded`);
+
+  reads('2.84', 2.84);
+  reads('$2.84', 2.84);
+  reads('$ 2.84', 2.84);
+  reads(' 2.370 ', 2.37);
+  reads('2.', 2);
+  reads('.5', 0.5);
+  reads('1,000', 1000);
+  reads('12,345.6', 12345.6);
+  // A phone set to a comma-decimal region only offers "," on the decimal
+  // keypad. Deleting the comma would read 2,84 as 284 and mark it wrong.
+  reads('2,84', 2.84);
+  reads('0,5', 0.5);
+  reads(',5', 0.5);
+
+  for (const text of ['', '   ', '$', '.', ',', 'abc', '2 84', '2.3.4', '1,2,3', '1.000,5', '1e2', '-1', '2.84$']) refuses(text);
+  assert.match(readNumber('').need, /first/, 'an empty box asks for an answer, not a number');
 });
 
 for (const [key, b] of Object.entries(BONUS)) {
@@ -96,6 +120,7 @@ for (const [key, b] of Object.entries(BONUS)) {
 for (const [key, b] of QUIZ_PAGES) {
   test(`${key}: every question has a valid answer key`, async () => {
     const cfg = await load(b.content);
+    const engine = await load(b.engine);
     const qs = cfg.questions;
     assert.ok(Array.isArray(qs) && qs.length > 0);
     const ids = qs.map((q) => q.id);
@@ -125,12 +150,33 @@ for (const [key, b] of QUIZ_PAGES) {
         assert.ok(q.q.includes(words[q.answers.length]), `${where}: prompt doesn't say pick ${q.answers.length}`);
       }
       if (q.type === 'sort') {
-        assert.ok(q.labels.length >= 2, `${where}: a sort needs two labels`);
         assert.ok(q.items.length >= 2);
-        for (const it of q.items) assert.ok(Number.isInteger(it.a) && it.a >= 0 && it.a < q.labels.length, `${where}: "${it.t}" points at no label`);
+        for (const it of q.items) {
+          // A row's choices are its own it.labels, or the question's shared q.labels.
+          const labels = it.labels || q.labels;
+          assert.ok(Array.isArray(labels) && labels.length >= 2, `${where}: "${it.t}" has fewer than two choices`);
+          assert.ok(Number.isInteger(it.a) && it.a >= 0 && it.a < labels.length, `${where}: "${it.t}" points at no label`);
+        }
         // A sort where every row has the same answer can be passed by tapping
         // one column all the way down.
         assert.ok(new Set(q.items.map((it) => it.a)).size > 1, `${where}: every row has the same answer`);
+      }
+      if (q.type === 'input') {
+        // The engine compares the typed number to `answer` and shows `show`
+        // when it reveals the answer, so the two must be the same number.
+        assert.ok(typeof q.answer === 'number' && Number.isFinite(q.answer), `${where}: answer is not a number`);
+        assert.ok(typeof q.show === 'string' && /^\d*\.?\d+$/.test(q.show), `${where}: show "${q.show}" is not a plain number`);
+        assert.equal(parseFloat(q.show), q.answer, `${where}: show "${q.show}" disagrees with answer ${q.answer}`);
+        assert.equal(engine.readNumber(q.show).value, q.answer, `${where}: typing show "${q.show}" would be marked wrong`);
+      }
+      if (q.fig) {
+        // The figure is often the whole question (count the grid, read the
+        // ruler), so a screen reader needs it in words. Each drawing is
+        // either labeled itself or decoration inside a labeled group.
+        assert.match(q.fig, /role="img" aria-label="[^"]+"/, `${where}: the figure has no text alternative`);
+        for (const [tag] of q.fig.matchAll(/<svg\b[^>]*>/g)) {
+          assert.match(tag, /aria-label="[^"]+"|aria-hidden="true"/, `${where}: an unlabeled drawing: ${tag}`);
+        }
       }
       if (q.type === 'order') {
         assert.ok(q.items.length >= 3);

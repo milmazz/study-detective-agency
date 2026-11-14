@@ -39,6 +39,15 @@ export const GAMES = {
 };
 
 /*
+  Bonus study pages that dom.test.js opens. They run bonus-quiz.js, not
+  DetectiveGame, so they stay out of GAMES: everything that loops over GAMES
+  plays a case file. Only prepareDom() and openPage() know about these.
+*/
+export const BONUS_DOM = {
+  decimalBakery: { page: 'games/math/decimal-bakery.html' },
+};
+
+/*
   Which modules a page loads is read from the page, never listed here. A
   hardcoded list goes on passing after the page stops loading a module, so
   "every question names a registered type" would keep asserting against types
@@ -215,13 +224,17 @@ export function prepareDom() {
       return false; // vite and jsdom install together; treat alike
     }
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'sda-dom-'));
-    for (const [key, game] of Object.entries(GAMES)) {
+    const pages = [
+      ...Object.entries(GAMES).map(([key, game]) => [key, game, true]),
+      ...Object.entries(BONUS_DOM).map(([key, page]) => [key, page, false]),
+    ];
+    for (const [key, game, isCase] of pages) {
       const pageDir = path.dirname(path.join(ROOT, game.page));
       // The page's own inline script, with its relative imports rebased so the
-      // entry can live in a temp dir, plus the test-only global.
+      // entry can live in a temp dir, plus (for case files) the test-only global.
       const entrySource =
         pageScript(game.page).replace(/'(\.[^']+)'/g, (_, spec) => `'${path.resolve(pageDir, spec)}'`) +
-        '\nwindow.DetectiveGame = DetectiveGame;\n';
+        (isCase ? '\nwindow.DetectiveGame = DetectiveGame;\n' : '\n');
       const entryFile = path.join(tmp, `${key}.entry.js`);
       fs.writeFileSync(entryFile, entrySource);
 
@@ -251,11 +264,27 @@ export function prepareDom() {
   return preparing;
 }
 
-export function openPage(gameKey) {
+// hash opens the page at a #fragment, the way a link into a bonus page's
+// #quiz view does.
+export function openPage(gameKey, { hash = '' } = {}) {
   if (!jsdom) return null;
   const html = PAGE_DOMS.get(gameKey);
   if (!html) throw new Error('openPage: await prepareDom() first');
-  const dom = new jsdom.JSDOM(html, { runScripts: 'dangerously', pretendToBeVisual: true });
+  const dom = new jsdom.JSDOM(html, {
+    runScripts: 'dangerously',
+    pretendToBeVisual: true,
+    // Case files keep jsdom's default about:blank, as they always have.
+    ...(hash ? { url: 'http://localhost/' + hash } : {}),
+    beforeParse(win) {
+      // jsdom has no matchMedia; the bonus engine asks it about reduced motion.
+      win.matchMedia ??= (query) => ({
+        matches: false, media: query, addEventListener() {}, removeEventListener() {},
+      });
+      // Nor layout: route() scrolls, which jsdom reports as unimplemented.
+      win.scrollTo = () => {};
+      win.Element.prototype.scrollIntoView ??= function () {};
+    },
+  });
   return dom.window;
 }
 
