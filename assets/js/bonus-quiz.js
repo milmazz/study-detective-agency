@@ -367,6 +367,32 @@ function confetti(anchor){
 /* ---------- shared learn helpers ---------- */
 $$('[data-flip]').forEach(b => b.addEventListener('click', () => { const on = b.getAttribute('aria-pressed') !== 'true'; b.setAttribute('aria-pressed', on); b.classList.toggle('flipped', on); }));
 
+/* Chapter links under a lesson video: <nav data-chapters="videoId"> holding
+   <button data-t="seconds">. A tap jumps there and plays; the section that's
+   playing is marked aria-current. The times are the video's scene starts
+   (tools/video/videos/<name>/build/timeline.json, "scenes"). */
+$$('[data-chapters]').forEach(nav => {
+  const v = document.getElementById(nav.dataset.chapters);
+  if (!v) return;
+  const btns = $$('button[data-t]', nav);
+  function mark(){
+    let cur = null;
+    if (v.currentTime > 0) btns.forEach(b => { if (v.currentTime + .25 >= +b.dataset.t) cur = b; });
+    btns.forEach(b => { if (b === cur) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current'); });
+  }
+  btns.forEach(b => b.addEventListener('click', () => {
+    const t = +b.dataset.t;
+    // preload="none" means nothing is loaded before the first play, and a
+    // seek before the metadata arrives is dropped, so wait for it.
+    const jump = () => { v.currentTime = t; mark(); };
+    if (v.readyState >= 1) jump(); else v.addEventListener('loadedmetadata', jump, { once: true });
+    const p = v.play(); if (p && p.catch) p.catch(() => {});
+    v.scrollIntoView({ block: 'nearest', behavior: reduce ? 'auto' : 'smooth' });
+  }));
+  v.addEventListener('timeupdate', mark);
+  v.addEventListener('seeked', mark);
+});
+
 /* one-at-a-time sorter: <div class="sorter" data-sorter="name"> */
 $$('[data-sorter]').forEach(el => {
   const cfg = P.sorters[el.dataset.sorter]; let i = 0, right = 0;

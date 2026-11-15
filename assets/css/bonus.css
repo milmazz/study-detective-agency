@@ -47,6 +47,15 @@ p{margin:0 0 .8em}
 .sec{padding:34px 0 10px}
 .sec + .sec{border-top:3px dashed var(--line)}
 .lesson-video{display:block;width:100%;height:auto;aspect-ratio:16/9;margin:16px 0;border:2px solid var(--line);border-radius:22px;background:var(--surface)}
+/* chapter links under a lesson video (data-chapters in bonus-quiz.js) */
+.chapters{margin:-4px 0 12px}
+.chapters h3{font-size:1.05rem;margin:0 0 8px}
+.chapters ol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+.chapters button{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;padding:8px 12px;border-radius:16px;border:2px solid var(--line);background:var(--surface);color:var(--ink);font-weight:700;text-align:left;cursor:pointer;line-height:1.25}
+.chapters button:hover{border-color:var(--accent)}
+.chapters button[aria-current]{border-color:var(--accent);background:var(--accent-soft)}
+.chapters .ct{flex:none;font-family:var(--display);font-weight:800;font-size:.9rem;color:var(--accent-text);background:var(--accent-soft);border-radius:999px;padding:2px 9px;font-variant-numeric:tabular-nums}
+.chapters button[aria-current] .ct{background:var(--accent);color:var(--accent-ink)}
 .panel{background:var(--surface);border:2px solid var(--line);border-radius:22px;padding:18px 20px;margin:16px 0}
 .panel.tint{background:var(--accent-soft);border-color:transparent}
 .panel.sun{background:var(--pop-soft);border-color:transparent}

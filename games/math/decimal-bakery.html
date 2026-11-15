@@ -37,10 +37,24 @@
     <h2>Watch the lesson</h2>
     <p>A 6½-minute cartoon with Dottie and Biscuit the puppy that bakes its way through the whole study guide, from tenths and hundredths to number lines, and ends with a pop quiz. Captions are built in.</p>
     <!-- preload="none": the video downloads only when someone presses play. -->
-    <video class="lesson-video" controls playsinline preload="none" width="1280" height="720"
+    <video id="lessonVideo" class="lesson-video" controls playsinline preload="none" width="1280" height="720"
       poster="../../assets/video/dottie-decimal-bakery-poster.jpg"
       src="../../assets/video/dottie-decimal-bakery.mp4"
       aria-label="Dottie’s Decimal Bakery: a cartoon lesson on tenths and hundredths, mixed numbers, money, place value, and number lines"></video>
+    <!-- Jump links: data-t is each big idea's start in seconds, the scene
+         starts from tools/video/videos/dottie-decimal-bakery/build/timeline.json.
+         Re-check them whenever the video is re-rendered. -->
+    <nav class="chapters" data-chapters="lessonVideo" aria-labelledby="chaptersTitle">
+      <h3 id="chaptersTitle">Jump to a part of the video</h3>
+      <ol>
+        <li><button type="button" data-t="21.9"><span class="ct">0:21</span><span>🍪 Tenths &amp; hundredths</span></button></li>
+        <li><button type="button" data-t="84.6"><span class="ct">1:24</span><span>🎂 Mixed numbers</span></button></li>
+        <li><button type="button" data-t="141.8"><span class="ct">2:21</span><span>🪙 Money is decimals</span></button></li>
+        <li><button type="button" data-t="185.9"><span class="ct">3:05</span><span>🏠 The ×10 pattern</span></button></li>
+        <li><button type="button" data-t="244.1"><span class="ct">4:04</span><span>🥕 Grids, number lines &amp; rulers</span></button></li>
+        <li><button type="button" data-t="308.4"><span class="ct">5:08</span><span>⭐ Pop quiz</span></button></li>
+      </ol>
+    </nav>
   </section>
 
   <nav class="toc" aria-label="Bakery stations">
