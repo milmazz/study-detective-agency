@@ -115,6 +115,28 @@ for (const [key, b] of Object.entries(BONUS)) {
     assert.ok(fs.existsSync(path.join(ROOT, b.url + '.html')));
   });
 
+  // Jump links under a lesson video (<nav data-chapters="videoId">). A wrong
+  // one fails quietly: the button just plays the wrong part of the video.
+  test(`${key}: video chapter links point at the video, in order, with matching times`, () => {
+    const html = read(b.page);
+    for (const m of html.matchAll(/<nav\b[^>]*data-chapters="([^"]+)"[^>]*>([\s\S]*?)<\/nav>/g)) {
+      const [, id, body] = m;
+      assert.match(html, new RegExp(`<video\\b[^>]*\\bid="${id}"`), `chapter links point at #${id}, which is not a <video>`);
+      const btns = [...body.matchAll(/<button type="button" data-t="([\d.]+)"><span class="ct">(\d+):(\d\d)<\/span><span>([^<]+)<\/span><\/button>/g)];
+      assert.equal(btns.length, (body.match(/<button\b/g) || []).length, 'a chapter button is not in the expected form');
+      assert.ok(btns.length >= 2, 'fewer than two chapters');
+      let prev = -1;
+      for (const [, t, mm, ss, label] of btns) {
+        const secs = Number(t);
+        assert.ok(secs > prev, `chapter "${label}" at ${t}s is out of order`);
+        // The time shown is the time the button jumps to, rounded down.
+        assert.equal(Number(mm) * 60 + Number(ss), Math.floor(secs), `chapter "${label}" shows ${mm}:${ss} but jumps to ${t}s`);
+        assert.ok(label.trim(), 'a chapter has no label');
+        prev = secs;
+      }
+    }
+  });
+
 }
 
 for (const [key, b] of QUIZ_PAGES) {
