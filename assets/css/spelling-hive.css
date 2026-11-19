@@ -1,0 +1,171 @@
+@import './bonus.css';
+
+/* Honey's Spelling Hive: honey gold and warm brown on a faint honeycomb, plus Honey the
+   bee, the hive of word cells, the spelling card and its letter tiles. */
+:root{
+  --display:"Baloo 2","Trebuchet MS",system-ui,sans-serif;
+  --body:ui-rounded,"SF Pro Rounded","Segoe UI","Helvetica Neue",system-ui,sans-serif;
+  --bg:#FFF8E7; --surface:#FFFFFF; --bar:rgba(255,248,231,.92);
+  --ink:#3B2A12; --muted:#7A6040; --line:#F0DDB0;
+  --accent:#A35C00; --accent-ink:#FFFFFF; --accent-soft:#FFEBC4; --accent-text:#874B00;
+  --pop:#FFC531; --pop-soft:#FFF3C9; --pop-text:#7A5200;
+  --good:#1C9A73; --good-soft:#D8F4E9; --good-text:#11704F;
+  --oops:#E0603F; --oops-soft:#FFE5DC; --oops-text:#B03E20;
+  --focus:#A35C00; --bee:#FFC531; --beeline:#3B2A12; --wing:#E3F4FF; --blush:#FFA07F;
+  --honey:#F5A300; --honey-hi:#FFD45C; --cell:#FFF0CC; --cell-line:#E9C77A;
+  --pattern:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='48'%3E%3Cpath d='M14 0L28 8V24L14 32L0 24V8Z M14 32V48' fill='none' stroke='%23F5E4B8' stroke-width='1.5'/%3E%3C/svg%3E");
+  --pattern-size:28px 48px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#1D150A; --surface:#2A1F10; --bar:rgba(29,21,10,.92);
+    --ink:#FFF4DC; --muted:#E2C998; --line:#4A3818;
+    --accent:#FFB733; --accent-ink:#241800; --accent-soft:#3F2E0E; --accent-text:#FFCB66;
+    --pop:#FFD45C; --pop-soft:#3D3318; --pop-text:#FFD970;
+    --good:#4FCB9F; --good-soft:#173B31; --good-text:#7BE3BE;
+    --oops:#FF8B6B; --oops-soft:#442520; --oops-text:#FFAA90;
+    --focus:#FFCB66; --bee:#FFC531; --beeline:#241800; --wing:#CFE9FA; --blush:#FF9478;
+    --honey:#F5A300; --honey-hi:#FFD45C; --cell:#33270F; --cell-line:#6B5321;
+    --pattern:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='48'%3E%3Cpath d='M14 0L28 8V24L14 32L0 24V8Z M14 32V48' fill='none' stroke='%23302410' stroke-width='1.5'/%3E%3C/svg%3E");
+    color-scheme:dark;
+  }
+}
+
+/* hero + Honey */
+.hero{display:grid;grid-template-columns:1fr 170px;gap:18px;align-items:center;padding:30px 0 6px}
+.hero h1{margin-bottom:.15em}
+.hero .mascot{width:160px}
+@media (max-width:560px){.hero{grid-template-columns:1fr}.hero .mascot{width:120px}#heroBee{order:-1}}
+.mascot{display:block}
+.bee .wings{transform-origin:60px 44px}
+@media (prefers-reduced-motion:no-preference){
+  .bee .wl{transform-box:fill-box;transform-origin:100% 100%;animation:flapL .18s ease-in-out infinite alternate}
+  .bee .wr{transform-box:fill-box;transform-origin:0 100%;animation:flapR .18s ease-in-out infinite alternate}
+  .bee.happy,.bee.cheer{animation:hop .6s ease-out}
+  .bee.cheer{animation:loop 1s ease-in-out}
+  .bee.oops{animation:wobble .5s ease-in-out}
+  .hero .bee{animation:hover 2.4s ease-in-out infinite}
+}
+@keyframes flapL{from{transform:rotate(-28deg)}to{transform:rotate(-40deg)}}
+@keyframes flapR{from{transform:rotate(28deg)}to{transform:rotate(40deg)}}
+@keyframes hop{30%{transform:translateY(-12px)}60%{transform:translateY(0)}80%{transform:translateY(-4px)}}
+@keyframes loop{25%{transform:translateY(-14px) rotate(-12deg)}50%{transform:translateY(-6px) rotate(12deg)}75%{transform:translateY(-12px) rotate(-6deg)}}
+@keyframes wobble{25%{transform:rotate(-7deg)}75%{transform:rotate(7deg)}}
+@keyframes hover{50%{transform:translateY(-8px)}}
+
+/* top bar extras */
+.mute{min-width:44px;min-height:40px;border-radius:999px;border:2px solid var(--line);background:var(--surface);font-size:1.1rem;cursor:pointer}
+.mute:hover{border-color:var(--accent)}
+.stars.honey{transition:transform .2s}
+.stars.honey.bump{animation:bump .5s}
+@keyframes bump{40%{transform:scale(1.25)}}
+
+.vtitle{font-size:clamp(1.8rem,5.5vw,2.5rem);margin:24px 0 10px}
+.center{text-align:center}
+.voice-note{margin-top:18px}
+.remember .beehint{font-size:2.2rem;line-height:1}
+
+/* grade chips */
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0}
+.gchip{flex:1 1 170px;display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:10px 16px;border-radius:18px;border:2px solid var(--line);background:var(--surface);cursor:pointer;text-align:left;min-height:56px}
+.gchip b{font-family:var(--display);font-size:1.12rem}
+.gchip span{font-size:.88rem;color:var(--muted)}
+.gchip:hover{border-color:var(--accent)}
+.gchip[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+
+/* Study: word chips + card */
+.wordgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:10px 0 16px}
+.wchip{display:flex;align-items:center;gap:8px;min-height:46px;padding:8px 12px;border-radius:14px;border:2px solid var(--line);background:var(--surface);cursor:pointer;font-weight:700;text-align:left;font-size:1.02rem}
+.wchip .wn{flex:none;font-size:.75rem;font-weight:800;color:var(--muted);background:var(--bg);border-radius:999px;padding:1px 7px}
+.wchip:hover{border-color:var(--accent)}
+.wchip.full{background:var(--pop-soft);border-color:var(--pop)}
+.wchip[aria-pressed="true"]{outline:3px solid var(--accent);outline-offset:1px}
+.wcard{scroll-margin-top:90px}
+.wtop{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.wnum{font-weight:800;color:var(--muted)}
+.wbig{font-family:var(--display);font-size:clamp(2rem,7vw,2.8rem);font-weight:800;margin:0;flex:1;line-height:1.1;letter-spacing:.02em;word-break:break-word}
+mark{background:var(--honey-hi);color:#3B2A12;border-radius:6px;padding:0 2px}
+.facts{margin:12px 0 0}
+.facts div{display:grid;grid-template-columns:130px 1fr;gap:10px;padding:8px 0;border-top:2px dashed var(--line)}
+.facts dt{font-weight:800;color:var(--accent-text)}
+.facts dd{margin:0}
+@media (max-width:520px){.facts div{grid-template-columns:1fr;gap:2px}}
+.heads{display:block;background:var(--oops-soft);border-radius:14px;padding:8px 12px;margin:10px 0 0;font-size:.98rem}
+.heads.ok{background:var(--good-soft)}
+.tip{background:var(--pop-soft);border-radius:14px;padding:10px 12px;margin:10px 0 0}
+button.link{background:none;border:0;padding:2px 4px;cursor:pointer;font-size:1rem;color:var(--accent-text);text-decoration:underline;font-weight:700}
+
+/* hive of cells */
+.hive{display:flex;flex-direction:column;align-items:center;margin:8px 0 16px;--c:46px}
+.hrow{display:flex;gap:4px;margin-top:calc(var(--c) * -0.22)}
+.hrow:first-child{margin-top:0}
+.hrow:nth-child(even){transform:translateX(calc(var(--c) / 2 + 2px))}
+.cell{width:var(--c);height:calc(var(--c) * 1.12);clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:var(--cell-line);position:relative}
+.cell::after{content:"";position:absolute;inset:3px;clip-path:inherit;background:var(--cell)}
+.cell.full::after{background:radial-gradient(circle at 35% 30%,var(--honey-hi),var(--honey) 70%)}
+@media (prefers-reduced-motion:no-preference){.cell.fresh::after{animation:fill .8s ease-out}}
+@keyframes fill{from{transform:scale(.2);opacity:0}}
+@media (max-width:420px){.hive{--c:40px}}
+
+/* the spelling card */
+.setup .honeyrow,.spellcard .honeyrow{display:flex;gap:12px;align-items:center;margin:4px 0 12px}
+.beebox{flex:none;width:84px}
+.beebox .mascot{width:84px}
+.bubble{position:relative;flex:1;background:var(--accent-soft);border-radius:20px;padding:12px 16px;font-size:1.12rem;line-height:1.4;min-height:52px}
+.bubble::before{content:"";position:absolute;left:-10px;top:50%;margin-top:-10px;border:10px solid transparent;border-right-color:var(--accent-soft);border-left:0}
+.bubble .heads{font-size:.98rem}
+.bubble .small{display:block;margin-top:2px}
+.peekword{font-family:var(--display);font-size:1.6rem;font-weight:800;letter-spacing:.05em}
+.asks{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}
+.ask{min-height:44px;padding:8px 14px;border-radius:999px;border:2px solid var(--line);background:var(--surface);cursor:pointer;font-weight:700;font-size:.98rem}
+.ask:hover{border-color:var(--accent);background:var(--accent-soft)}
+.ask[hidden]{display:none}
+.spellform{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.spell-in{flex:1 1 240px;min-width:0;font:inherit;font-family:var(--display);font-size:1.7rem;font-weight:700;letter-spacing:.08em;padding:8px 16px;border-radius:18px;border:3px solid var(--line);background:var(--bg);color:var(--ink)}
+.spell-in::placeholder{font-size:1.1rem;letter-spacing:0;font-weight:600;color:var(--muted)}
+.spell-in:focus{border-color:var(--accent);outline:none}
+.was-right .spell-in{border-color:var(--good);background:var(--good-soft)}
+.was-wrong .spell-in{border-color:var(--oops);background:var(--oops-soft)}
+.locking .spell-in{border-color:var(--accent);background:var(--bg)}
+.check{min-width:150px}
+.streak{font-weight:800;font-size:.92rem;color:var(--muted)}
+.streak.hot{color:var(--oops-text)}
+.stopbtn{font-size:.9rem}
+.fb p{margin:0 0 .4em}
+.fb .mascot{width:58px}
+.tiles{display:flex;flex-wrap:wrap;gap:5px;margin:12px 0 6px}
+.tile{display:grid;place-items:center;min-width:36px;height:44px;padding:0 6px;border-radius:10px;background:var(--good-soft);color:var(--good-text);font-family:var(--display);font-weight:800;font-size:1.5rem;border:2px solid var(--good)}
+.tile.miss{background:var(--oops);border-color:var(--oops);color:#fff}
+@media (prefers-reduced-motion:no-preference){.tile.miss{animation:pulse 1s ease-in-out 2}}
+@keyframes pulse{50%{transform:scale(1.15)}}
+.lockline{font-weight:800;margin-top:12px!important}
+.locked{font-weight:800;color:var(--good-text);margin-top:10px!important}
+.marked{font-family:var(--display);font-size:1.15rem;letter-spacing:.03em}
+.bigbtn{font-size:1.3rem;padding:14px 32px}
+.bestline{font-family:var(--display);font-size:1.25rem;text-align:center;margin:6px 0}
+.small-panel{font-size:.98rem}
+
+/* round end */
+.roundend .rhead .mascot{width:110px}
+.review{list-style:none;padding:0;margin:8px 0}
+.review li{padding:8px 12px;background:var(--surface);border:2px solid var(--line);border-radius:14px;margin:6px 0}
+.review .small{display:block}
+/* phones: the tabs get their own row under home / sound / honey, and the
+   five "ask Honey" buttons sit two to a row instead of one per line */
+@media (max-width:600px){
+  .topbar .home-link{flex:1}
+  .topbar .tabs{order:3;flex:1 1 100%;justify-content:space-between;gap:4px}
+  .topbar .tab{padding:6px 10px}
+}
+@media (max-width:520px){
+  .gchip{flex:1 1 90px;padding:8px 10px;min-height:0}
+  .gchip b{font-size:1rem}
+  .gchip span{font-size:.78rem}
+  .asks{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .ask{font-size:.9rem;padding:6px 10px;text-align:left;border-radius:14px}
+  .beebox,.beebox .mascot{width:64px}
+  .bubble{font-size:1.02rem}
+  .spell-in{font-size:1.45rem}
+  .check{flex:1 1 100%}
+}

@@ -28,8 +28,10 @@ const BONUS = {
   fractionsBerry: { page: 'games/math/fractions-berry.html', content: 'assets/js/fractions-berry.js', url: 'games/math/fractions-berry' },
   fractionsMango: { page: 'games/math/fractions-mango.html', content: 'assets/js/fractions-mango.js', url: 'games/math/fractions-mango' },
   fractionsPeep: { page: 'games/math/fractions-peep.html', content: 'assets/js/fractions-peep.js', url: 'games/math/fractions-peep' },
+  // Runs its own spelling engine; its word list is checked in test/spelling-hive.test.js.
+  spellingHive: { page: 'games/ela/spelling-hive.html', content: 'assets/js/spelling-hive-words.js', url: 'games/ela/spelling-hive', engine: 'assets/js/spelling-hive.js' },
 };
-const QUIZ_PAGES = Object.entries(BONUS).filter(([, b]) => b.engine);
+const QUIZ_PAGES = Object.entries(BONUS).filter(([, b]) => b.engine === ENGINE);
 const FRACTION_PAGES = Object.entries(BONUS).filter(([, b]) => !b.engine);
 
 const TYPES = new Set(['mc', 'multi', 'sort', 'order', 'input', 'write']);
