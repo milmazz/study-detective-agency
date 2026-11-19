@@ -19,7 +19,11 @@ Live divisions:
 - **Words Division** (ELA) — author's purpose, central message, figurative
   language, text formatting clues; plus a second file on *Kitoto the Mighty*
   covering retelling, story elements, theme, author's craft, context clues,
-  prefixes and suffixes, and punctuating quotations.
+  prefixes and suffixes, and punctuating quotations; plus a bonus page,
+  *Honey's Spelling Hive*, spelling bee practice on the 4th-6th grade words
+  of the 2026-27 classroom list: Honey the bee reads each word aloud, the kid
+  asks for the definition or a sentence and types the spelling, and *Bee Day*
+  runs the list in the bee's own order.
 - **History Division** (social studies) — the four physical regions of Texas,
   the work and traditions the land shapes, and how Texans adapt to and modify
   their environment; plus a bonus page, *Pepita's Texas Trail*, on the
@@ -88,6 +92,10 @@ The suites:
   script imports, and that importing a module has no side effects.
 - **`test/bonus-pages.test.js`** — the bonus pages' fixed quizzes: answer
   keys, question types, and how each page wires up the bonus engine.
+- **`test/spelling-hive.test.js`** — the Spelling Hive's word list and
+  helpers: every definition and sentence can be shown without giving the
+  spelling away, alternate spellings count, and the answer box tells
+  keyboards not to autocorrect.
 - **`test/rss-feed.test.js`** — the RSS feed: one item per catalog game,
   newest first, real dates, links to pages that exist, well-formed XML
   even with `&` or `<` in a title, and the homepage's links to it.
@@ -163,6 +171,7 @@ test/
   dom.test.js                    Rendering + wiring, via jsdom (see "Testing")
   question-modules.test.js       How each page wires up its modules
   bonus-pages.test.js            The bonus pages' quizzes and wiring
+  spelling-hive.test.js          The Spelling Hive's words and helpers
   rss-feed.test.js               The RSS feed built from the catalog
 assets/
   css/                           Each game page links ONE sheet — its subject

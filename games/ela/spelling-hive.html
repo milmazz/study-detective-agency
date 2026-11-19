@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Honey’s Spelling Hive</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐝</text></svg>">
+<!-- Bonus page: its own theme, not a detective case file. One sheet, which
+     @imports bonus.css. Baloo 2 is self-hosted and preloaded like the
+     game pages. -->
+<link rel="preload" as="font" type="font/woff2" href="../../assets/fonts/baloo2-latin1.woff2" crossorigin>
+<link rel="stylesheet" href="../../assets/css/spelling-hive.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap">
+    <a class="home-link" href="../../">← All Divisions</a>
+    <nav class="tabs" aria-label="Sections">
+      <a class="tab" id="tab-study" href="#study">📚 Study</a>
+      <a class="tab" id="tab-practice" href="#practice">🐝 Practice</a>
+      <a class="tab" id="tab-beeday" href="#beeday">🏆 Bee Day</a>
+    </nav>
+    <button type="button" class="mute" id="muteBtn" aria-pressed="true" aria-label="Sound effects on">🔔</button>
+    <span class="stars honey" aria-label="Words in your hive">🍯 <b id="honeycount">0</b></span>
+  </div>
+</header>
+
+<main class="wrap">
+<section id="view-study">
+  <div class="hero">
+    <div>
+      <h1>Honey’s Spelling Hive</h1>
+      <p class="lede">Honey the bee is getting you ready for the class spelling bee! Study the words, practice with Honey reading them out loud, then try Bee Day, a dress rehearsal for the real thing.</p>
+    </div>
+    <div id="heroBee"></div>
+  </div>
+
+  <p class="panel sun voice-note" id="voiceNote" hidden>🔇 This browser can’t read words out loud, so Honey can’t talk here. Try Safari or Chrome, or ask a grown-up to read the words to you. In Practice there’s a <b>👀 Peek</b> button that flashes the word for 2 seconds.</p>
+
+  <section class="sec" id="how">
+    <h2>How a spelling bee works</h2>
+    <div class="grid3">
+      <div class="panel tint"><h3>1. Listen</h3><p>The pronouncer says your word. Listen to every sound.</p></div>
+      <div class="panel sun"><h3>2. Ask</h3><p>You can ask to hear it again, or for the <b>definition</b>, a <b>sentence</b>, the <b>part of speech</b>, or the <b>language of origin</b>.</p></div>
+      <div class="panel tint"><h3>3. Spell</h3><p>Say the word, spell it one letter at a time, then say the word again.</p></div>
+    </div>
+    <div class="remember"><span class="beehint" aria-hidden="true">🐝</span><span>Honey’s tip: when you practice, say each letter out loud as you type it. That’s exactly what you’ll do at the bee!</span></div>
+  </section>
+
+  <section class="sec" id="words">
+    <h2>Your words</h2>
+    <p>The bee starts with the 4th-grade words and goes up from there. Tap a word to hear it and see its tricky part. Words you’ve spelled right in Practice show a 🍯.</p>
+    <div id="studyGrades"></div>
+    <div class="wordgrid" id="studyWords"></div>
+    <div class="panel wcard" id="studyCard" aria-live="polite"></div>
+    <p class="start-quiz"><a class="btn primary" id="studyGo" href="#practice">Practice these words 🐝</a></p>
+  </section>
+</section>
+
+<section id="view-practice" hidden>
+  <h1 class="vtitle">🐝 Practice with Honey</h1>
+  <div id="practiceBox"></div>
+</section>
+
+<section id="view-beeday" hidden>
+  <h1 class="vtitle">🏆 Bee Day</h1>
+  <div id="beeBox"></div>
+</section>
+</main>
+
+<script type="module">
+// The engine and the word list are separate modules; Vite bundles both into
+// the page's hashed entry chunk.
+import SPELLING_HIVE from '../../assets/js/spelling-hive.js';
+import HIVE_WORDS from '../../assets/js/spelling-hive-words.js';
+SPELLING_HIVE.start(HIVE_WORDS);
+</script>
+</body>
+</html>
